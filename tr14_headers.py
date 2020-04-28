@@ -76,28 +76,28 @@ def headerdict2dataframe(header_dicts):
 
 
 def write_headers(filenames, verbose=False):
-   """
-   Save the headers, as csv files that can be read into dataframes, in the folder designated at the top of the file ({0}). The file name is the extension header EXTNAME value, and 'pri' refers to the primary header. Does all the work to compile and write headers. No return value; writes a file instead
+    """
+    Save the headers, as csv files that can be read into dataframes, in the folder designated at the top of the file ({0}). The file name is the extension header EXTNAME value, and 'pri' refers to the primary header. Does all the work to compile and write headers. No return value; writes a file instead
 
-   Parameters
-   ----------
-   filename : None
+    Parameters
+    ----------
+    filename : None
      a list of filenames for FITS images you want to treat as a single dataset
-   verbose : False
+    verbose : False
      if True, print the name of the file written
 
-   Returns
-   -------
-   Nothing
-   """.format(header_path)
+    Returns
+    -------
+    Nothing
+    """.format(header_path)
 
-   header_dicts = headers2dict(filenames)
-   header_dfs = {k: headerdict2dataframe(header_dicts[k]) for k in header_dicts}
-   for k, v in header_dfs.items():
-       out_name = header_path / f'{k}.csv'
-       if verbose == True:
-           print(f'Writing {out_name}')
-       v.to_csv(out_name)
+    header_dicts = headers2dict(filenames)
+    header_dfs = {k: headerdict2dataframe(header_dicts[k]) for k in header_dicts}
+    for k, v in header_dfs.items():
+        out_name = header_path / f'{k}.csv'
+        if verbose == True:
+            print(f'Writing {out_name}')
+        v.to_csv(out_name)
     if verbose == True:
         print("\nFinished.")
 
