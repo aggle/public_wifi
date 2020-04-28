@@ -1,5 +1,6 @@
 """
-V. Bajaj notebook as a python script to be run from the command line
+V. Bajaj notebook as a python script to be run from the command line.
+Run as: python align_tr14_to_gaia.py
 Source location: https://spacetelescope.github.io/notebooks/notebooks/DrizzlePac/align_to_catalogs/align_to_catalogs.html
 """
 
