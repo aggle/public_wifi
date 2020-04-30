@@ -27,11 +27,11 @@ def write_table(table, name, descr):
     """.format(table_path / (name + '.csv'))
     fname = table_path / (name + '.csv')
     # prepend comments that contain the file name and description
-    with open(fname, 'w') as f:
+    with open(fname, 'w') as ff:
         # this clobbers the file if it already exists
-        f.write(f"# {name}\n")
-        f.write(f"# {descr}\n")
-    table.to_csv(f, mode='a') 
+        ff.write(f"# {name}\n")
+        ff.write(f"# {descr}\n")
+    table.to_csv(fname.as_posix(), mode='a') 
     # update the file that keeps track of the list of tables
     """
     table_list = pd.read_csv(table_list_path)

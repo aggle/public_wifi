@@ -95,11 +95,11 @@ def write_headers(filenames, verbose=False):
     header_dicts = headers2dict(filenames)
     header_dfs = {k: headerdict2dataframe(header_dicts[k]) for k in header_dicts}
     for k, v in header_dfs.items():
-        out_name = header_path / f'{k}_hdrs.csv'
+        out_name = f'{k}_hdrs'  # header_path / f'{k}_hdrs.csv'
         if verbose == True:
-            print(f'Writing {out_name}')
-        tutils.write_table(v
-                           out_name.name,
+            print(f'Writing {tutils.table_path / (out_name + ".csv")}')
+        tutils.write_table(v,
+                           out_name,
                            f"Compilation of {k.upper()} headers from HST image files")
         #v.to_csv(out_name)
     if verbose == True:
@@ -119,10 +119,12 @@ def load_headers(extname='pri'):
     -------
     df : a dataframe with the right header selected
     """
+    filepath = header_path / f'{extname.lower()}_hdrs.csv'
+    read_args = {'index_col':0, 'header':2}
     # special case
     if extname == 'all':
         # return all the headers
-        dfs = {e.lower(): pd.read_csv(header_path / f'{e.lower()}_hdrs.csv')
+        dfs = {e.lower(): pd.read_csv(filepath, **read_args)
                for e in all_headers}
         return dfs
     # otherwise, check that the input is OK
@@ -131,7 +133,7 @@ def load_headers(extname='pri'):
     except AssertionError:
         print(f"{extname} not one of {all_headers}, please try again.")
         return None
-    df = pd.read_csv(header_path / f'{extname.lower()}_hdrs.csv', index_col=0)
+    df = pd.read_csv(filepath, **read_args)
     return df
 
 
