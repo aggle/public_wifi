@@ -1,5 +1,6 @@
 """
-This file lists the tables available in code/databases/ and has helper functions for loading them
+This file lists the tables available in data/tables/ and has helper functions for loading them
+Edit: this module is deprecated in favor of utils/table_utils.py, which draws the list from a dynamically updated file list_of_tables.csv
 """
 
 from pathlib import Path
@@ -8,7 +9,7 @@ import pandas as pd
 
 
 # table path - probably should set to read from config
-table_path = Path("./databases")
+table_path = Path("../data/tables/")
 
 # master list of tables stored here. format is `"filename": "description"`
 list_of_tables = {}
