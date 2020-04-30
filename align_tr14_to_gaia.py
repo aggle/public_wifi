@@ -26,13 +26,13 @@ from drizzlepac import tweakreg
 from drizzlepac import astrodrizzle
 
 
-import tr14_headers as TH
+from utils import header_utils as hutils
 from pathlib import Path
 
 datapath = Path("../data/align_catalog/")
 
-prihdrs = TH.load_headers('pri')
-scihdrs = TH.load_headers('sci')
+prihdrs = hutils.load_headers('pri')
+scihdrs = hutils.load_headers('sci')
 
 RA, Dec = prihdrs[['RA_TARG','DEC_TARG']].mean()
 coord = SkyCoord(ra=RA, dec=Dec, unit=(u.deg, u.deg))
