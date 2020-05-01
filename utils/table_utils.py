@@ -53,25 +53,49 @@ def list_available_tables():
     pass
 
 
+def query_table(table, query, return_column=None):
+    """
+    Pass a query to the given table.
+    Parameters
+    ----------
+    table : pd.DataFrame
+      the table to query
+    query : string
+      a string with proper query syntax
+    return_column : string (optional, default is None)
+      the column whose value you want to return. If left as default (None),
+      returns the full (queried) dataframe
+
+    Returns
+    -------
+    return_value : a series (or dataframe) of all the values that match the query
+    """
+    return_value = table.query(query)
+    if return_column is not None:
+        return_column = return_column.lower()
+        return_value = return_value[return_column]
+    return return_value
+
+
 def get_value(table, query_column, value, return_column=None):
     """
     Retrieve a value from a table. Assumes the equality operator ('==')
     Remember to cast any field names into lower case
     Parameters
     ----------
-    table : required
+    table : pd.DataFrame
       the table to query
-    query_column: required
+    query_column: string
       the name of the column to query
-    value: required
+    value: type(query_column)
       the value to match in the query column
-    return_column : None (optional)
+    return_column : string (optional, default is None)
       the column whose value you want to return. If left as default (None),
       returns the full (queried) dataframe
 
     Returns
     -------
-    return_value : a series of all the values that match the query
+    return_value : a series (or dataframe) of all the values that match the query
 
     """
     # all columns are in lowercase
