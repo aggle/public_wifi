@@ -53,20 +53,21 @@ def list_available_tables():
     pass
 
 
-def get_value(table, query_column, value, return_column):
+def get_value(table, query_column, value, return_column=None):
     """
     Retrieve a value from a table. Assumes the equality operator ('==')
     Remember to cast any field names into lower case
     Parameters
     ----------
-    table : None
+    table : required
       the table to query
-    query_column: None
+    query_column: required
       the name of the column to query
-    value: None
+    value: required
       the value to match in the query column
-    return_column : None
-      the column whose value you want to return
+    return_column : None (optional)
+      the column whose value you want to return. If left as default (None),
+      returns the full (queried) dataframe
 
     Returns
     -------
@@ -75,8 +76,10 @@ def get_value(table, query_column, value, return_column):
     """
     # all columns are in lowercase
     query_column = query_column.lower()
-    return_column = return_column.lower()
-    return_value = table.query(f"{query_column} == {value}")[return_column]
+    return_value = table.query(f"{query_column} == {value}")
+    if return_column is not None:
+        return_column = return_column.lower()
+        return_value = return_value[return_column]
     return return_value
 
 
