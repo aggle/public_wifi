@@ -5,8 +5,10 @@ This module contains the API for interacting with data tables
 from pathlib import Path
 import pandas as pd
 
-table_path = Path(__file__).parent / "../../data/tables"
-table_list_path = table_path / "list_of_tables.csv"
+from . import shared_utils as sutils
+
+
+table_list_path = sutils.table_path / "list_of_tables.csv"
 
 def write_table(table, name, descr):
     """
@@ -24,8 +26,8 @@ def write_table(table, name, descr):
     Returns
     -------
     Nothing; writes to file
-    """.format(table_path / (name + '.csv'))
-    fname = table_path / (name + '.csv')
+    """.format(sutils.table_path / (name + '.csv'))
+    fname = sutils.table_path / (name + '.csv')
     # prepend comments that contain the file name and description
     with open(fname, 'w') as ff:
         # this clobbers the file if it already exists

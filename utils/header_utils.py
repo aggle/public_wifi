@@ -6,11 +6,12 @@ For now, the filenames and directories will be hard-coded in
 from pathlib import Path
 import pandas as pd
 from astropy.io import fits
+from . import shared_utils as sutils
 from . import table_utils as tutils
 
 extnames = ['SCI','ERR','DQ','SAMP','TIME']
 all_headers = ['PRI'] + extnames
-header_path = tutils.table_path
+header_path = sutils.table_path
 
 
 def clean_header_dict(hdr_dict):
