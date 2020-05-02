@@ -4,7 +4,7 @@ Helper functions for catalog matching
 
 import pandas as pd
 from pathlib import Path
-
+from stwcs import wcsutil
 
 cat_fit_columns = [
     'x_ref', #     Column 1: X (reference)
@@ -27,20 +27,6 @@ cat_fit_columns = [
     'ref_source' #     Column 18: Ref source provenience
 ]
 
-cat_xy_columns = [
-    "Ref_X",
-    "Ref_Y",
-    "Input_X",
-    "Input_Y",
-    "Ref_X0",
-    "Ref_Y0",
-    "Input_X0",
-    "Input_Y0",
-    "Ref_ID",
-    "Input_ID",
-    "Ref_Source"
-]
-
 def catalog2pandas(filename):
     """
     Takes a *catalog_fit.match file and returns it as a pandas dataframe
@@ -61,6 +47,46 @@ def catalog2pandas(filename):
     )
     df['file_id'] = Path(filename).name.split('_')[0]
     return df
+
+
+def pix2sky(filename):
+    """
+    For the HDUList from an flt file, map the pixel indices to RA and Dec
+    I hacked out the piececs of drizzlepac.pix2sky for this.
+    Store the results in a table
+    THIS NEEDS TESTING TO MAKE SURE ALL THE ARRAY RESHAPING WORKS
+
+    Parameters
+    ----------
+    filename : str
+      The path to and name of a fits file with the appropriate headers
+      Assumes the WCS information is stored in the 'sci' extension, EXTNUM=1
+
+    Returns
+    -------
+    radec : np.array [2 x Ny x Nx]
+      numpy array of RA and Dec coordinates where the indices correspond to
+      the output of np.indices(hdulist[1].data) (i.e. the image shape)
+    """
+    # get the image - you need the shape and indices
+    data = fits.getdata(filename, 'sci')
+    ind = np.indices(data.shape)
+    # this handles the WCS transformation
+    inwcs = wcsutil.HSTWCS(filename.as_posix()+"[sci,1]")
+    # pass in an Nx2 array of the raveled indices for each axis
+    # remember that x is row (1) and y is col (0)
+    radec = inwcs.all_pix2world(np.array([ind[1].ravel(), ind[0].ravel()]).T,
+                                0) # 0 is the origin in python (vs 1 for matlab/DS9)
+    radec = np.reshape(radec.T, ind.shape) 
+    return radec
+
+
+def compile_radec(list_of_files):
+    """
+    For all the files, get the xy-rd maps and combine them in a table
+    Then write the table to file
+    """
+    pass
 
 
 if __name__ == "__main__":
