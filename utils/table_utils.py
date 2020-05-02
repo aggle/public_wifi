@@ -115,3 +115,23 @@ def set_value():
     Set table value
     """
     pass
+
+
+def get_file_from_fileid(file_id):
+    """
+    The header files don't store the whole filename, so this function fills in
+    the rest of the name as well as the path.
+
+    Parameters
+    ----------
+    file_id : str
+      the file identifier (everything except _flt.fits)
+
+    Returns
+    -------
+    filename : pathlib.Path
+      the full absolute path to the fits file
+    """
+    suffix = "_flt.fits"
+    filename = sutils.data_path.absolute() / (file_id + suffix)
+    return filename.absolute()
