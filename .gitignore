@@ -1,3 +1,7 @@
 __pycache__
 figs/
 .ipynb_checkpoints
+*coo
+*png
+*list
+*log
