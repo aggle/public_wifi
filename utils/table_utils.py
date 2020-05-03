@@ -4,6 +4,7 @@ This module contains the API for interacting with data tables
 
 from pathlib import Path
 import pandas as pd
+import csv
 
 from . import shared_utils as sutils
 
@@ -40,6 +41,36 @@ def write_table(table, name, descr):
     if table_list.query(f"name == {name}"):
         table_list.query
     """
+
+def write_table_hdf(table, name, descr):
+    """
+    Write a table to an HDF file in ../data/tables/.
+    Keys are TABLE, NAME, and DESCR
+
+    Parameters
+    ----------
+    table : pd.DataFrame
+      pandas DataFrame (or Series) containing the data you want to store
+    name : str
+      name for the table. File name will be {0}
+    descr : str
+      short description of the contents
+
+    Returns
+    -------
+    Nothing; writes to file
+    """.format(sutils.table_path / (name + '.hdf5'))
+
+    fname = sutils.table_path / (name + 'hdf5')
+    # Step 1: Write the table part
+    table.to_hdf(fname.as_posix(), key='TABLE', mode='w')
+    # Step 2: Add the NAME and DESCR keys
+    with open(fname, 'w') as ff:
+        # this clobbers the file if it already exists
+        ff.write(f"# {name}\n")
+        ff.write(f"# {descr}\n")
+
+
 
 def load_table(name):
     """
@@ -117,7 +148,7 @@ def set_value():
     pass
 
 
-def get_file_from_fileid(file_id):
+def get_file_from_file_id(file_id):
     """
     The header files don't store the whole filename, so this function fills in
     the rest of the name as well as the path.
@@ -135,3 +166,4 @@ def get_file_from_fileid(file_id):
     suffix = "_flt.fits"
     filename = sutils.data_path.absolute() / (file_id + suffix)
     return filename.absolute()
+

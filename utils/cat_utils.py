@@ -2,9 +2,13 @@
 Helper functions for catalog matching
 """
 
+import numpy as np
 import pandas as pd
 from pathlib import Path
 from stwcs import wcsutil
+from astropy.io import fits
+
+from . import table_utils as tutils
 
 cat_fit_columns = [
     'x_ref', #     Column 1: X (reference)
@@ -49,7 +53,7 @@ def catalog2pandas(filename):
     return df
 
 
-def pix2sky(filename):
+def pix2sky(filename, x=None, y=None):
     """
     For the HDUList from an flt file, map the pixel indices to RA and Dec
     I hacked out the piececs of drizzlepac.pix2sky for this.
@@ -58,35 +62,79 @@ def pix2sky(filename):
 
     Parameters
     ----------
-    filename : str
+    filename : pathlib.Path
       The path to and name of a fits file with the appropriate headers
       Assumes the WCS information is stored in the 'sci' extension, EXTNUM=1
-
+    x : number or np.array (Default: None)
+      x (column) indices or positions
+    y : number or np.array (Default: None)
     Returns
     -------
     radec : np.array [2 x Ny x Nx]
       numpy array of RA and Dec coordinates where the indices correspond to
       the output of np.indices(hdulist[1].data) (i.e. the image shape)
     """
-    # get the image - you need the shape and indices
-    data = fits.getdata(filename, 'sci')
-    ind = np.indices(data.shape)
+    # If x and y are not provided, do the whole image
+    if x is None and y is None:
+        data = fits.getdata(filename, 'sci')
+        ind = np.indices(data.shape)
+        y, x = ind[0].ravel(), ind[1].ravel()
+        shape = ind.shape
+    else:
+        shape = np.array([y, x]).shape
+    # handle single numbers
+    if np.ndim(x) == 0:
+        x = np.array([x])
+    if np.ndim(y) == 0:
+        y = np.array([y])
+
     # this handles the WCS transformation
     inwcs = wcsutil.HSTWCS(filename.as_posix()+"[sci,1]")
     # pass in an Nx2 array of the raveled indices for each axis
-    # remember that x is row (1) and y is col (0)
-    radec = inwcs.all_pix2world(np.array([ind[1].ravel(), ind[0].ravel()]).T,
+    # this should also work if x and y are just numbers
+    radec = inwcs.all_pix2world(np.array([x, y], dtype=np.float).T,
                                 0) # 0 is the origin in python (vs 1 for matlab/DS9)
-    radec = np.reshape(radec.T, ind.shape) 
+    radec = np.reshape(radec.T, shape) 
     return radec
 
 
-def compile_radec(list_of_files):
+def compile_radec(list_of_file_ids, verbose=False):
     """
+    Does not work yet
     For all the files, get the xy-rd maps and combine them in a table
     Then write the table to file
+
+    Parameters
+    ----------
+    list_of_fileids : list
+      a list of file_id values for the images (*not* the actual file names)
+    verbose : bool (Default: False)
+      if True, print progress updates
+
+    Returns
+    -------
+    radec_series : pd.Series
+      a pandas Series indexed by [file_id, [ra,dec]] that stores the coordinates for every file
+
     """
-    pass
+    # create a dictionary to hold the data
+    index = pd.MultiIndex.from_product([list_of_file_ids, ['ra','dec']],
+                                       names=['file_id','coord'])
+    radec_df = pd.DataFrame(np.nan,
+                            index=index,
+                            columns=np.arange(1014**2),#radec.shape[-2]*radec.shape[-1]),
+                            dtype=np.float)
+    # loop through the file_ids, updating the series each time
+    for i, file_id in enumerate(list_of_file_ids):
+        filename = tutils.get_file_from_file_id(file_id)
+        radec = pix2sky(filename)
+        #radec_series[file_id] = *radec # the * turns it into a tuple for assignment
+        radec_df[file_id, 'ra'] = radec[0].ravel()
+        radec_df[file_id, 'dec'] = radec[1].ravel()
+        if verbose:
+            if (i+1)%20 == 0: print(f"{i+1}/{len(list_of_file_ids)} processed")
+    if verbose: print("Finished")
+    return radec_df
 
 
 if __name__ == "__main__":
