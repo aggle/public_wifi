@@ -31,6 +31,7 @@ cat_fit_columns = [
     'ref_source' #     Column 18: Ref source provenience
 ]
 
+
 def catalog2pandas(filename):
     """
     Takes a *catalog_fit.match file and returns it as a pandas dataframe
@@ -135,6 +136,27 @@ def compile_radec(list_of_file_ids, verbose=False):
             if (i+1)%20 == 0: print(f"{i+1}/{len(list_of_file_ids)} processed")
     if verbose: print("Finished")
     return radec_df
+
+
+def get_gaia_designation(ref_id, cat_file=shared_utils.align_path / "gaia.cat"):
+    """
+    For the sources used to align WFC3 with Gaia, get their Gaia designations
+    Parameters
+    ----------
+    ref_id : int (or list-like of ints)
+      The value of the ref_id field from the TweakReg output
+    cat_file : filename (default {0}/gaia.cat)
+      File path to the downloaded Gaia catalog
+
+    Returns
+    -------
+    gaia_desig: int or list of ints of the Gaia designation
+
+    """.format(shared_utils.align_path.as_posix())
+    gaia_cat = pd.read_csv("../data/align_catalog/gaia.cat", sep=' ')
+    gaia_ids = gaia_cat.loc[ref_id]['designation']
+    return gaia_ids
+
 
 
 if __name__ == "__main__":

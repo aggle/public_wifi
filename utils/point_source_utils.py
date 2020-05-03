@@ -31,6 +31,6 @@ def sources2df(table, file_id):
     """
     source_df = table.copy()
     source_df['file_id'] = file_id
-    source_df..rename(columns={'id':'ps_img_id'}, inplace=True)
+    source_df.rename(columns={'id':'ps_img_id'}, inplace=True)
     return source_df
 
