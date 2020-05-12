@@ -39,8 +39,12 @@ RA, Dec = prihdrs[['RA_TARG','DEC_TARG']].mean()
 coord = SkyCoord(ra=RA, dec=Dec, unit=(u.deg, u.deg))
 radius = Quantity(6., u.arcmin)
 
-if __name__ == "__main__":
 
+
+
+# if you want to run over all the images, then run this module as a script
+if __name__ == "__main__":
+    
     gaia_query = Gaia.query_object_async(coordinate=coord, radius=radius)
     query_path = datapath / 'gaia.cat'
     # check if catalog exists; if it does, ask to rerun
