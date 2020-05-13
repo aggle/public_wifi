@@ -7,7 +7,7 @@ from pathlib import Path
 import re
 
 
-# trying some literate programming
+
 """
 You only care about a few of the files:
 INPUT.KS2 contains the instructions used to rnun the photometry, and it shows which flt files correspond to the file numbers in the LOGR files
@@ -19,22 +19,24 @@ ks2_files = [ks2path / i for i in ["LOGR.XYVIQ1", "LOGR.FIND_NIMFO", "INPUT.KS2"
 
 
 """
-The following section parses INPUT.KS2 (really, a cutout of INPUT.KS2)
+The following block parses INPUT.KS2
 It creates maps for:
 - file ID  -> file name
 - filter ID -> filter name
 These only apply to this particular KS2 output.
 At the end, you have two dataframes:
-- fileid2file_df (file ID -> file name)
-- filterid2filter_df (filter ID -> filter name)
+- filemapper_df (file ID -> file name)
+- filtermapper_df (filter ID -> filter name)
 """
 def get_file_mapper(ks2_input_file=ks2_files[2]):
     """
     Given a KS2 INPUT.KS2 file, parse the file to get a dataframe that maps between the file numbers and file names.
+
     Parameters
     ----------
     ks2_input_file : pathlib.Path or str
       full path to KS2 file
+
     Returns
     -------
     filemapper_df : pd.DataFrame
@@ -46,7 +48,7 @@ def get_file_mapper(ks2_input_file=ks2_files[2]):
         for line in f:
             # file ID
             if line.find("PIX=") >= 0:
-                file_id = 'G'+line.split(' ')[0] + '.1' # .1 for the hdu index, I believe
+                file_id = 'G'+line.split(' ')[0]
                 file_name = Path(re.search('PIX=".*"', line).group().split('"')[1]).name
                 new_data = {'file_id': file_id,
                             'file_name': file_name}
@@ -57,10 +59,12 @@ def get_file_mapper(ks2_input_file=ks2_files[2]):
 def get_filter_mapper(ks2_input_file=ks2_files[2]):
     """
     Given a KS2 INPUT.KS2 file, parse the file to get a dataframe that maps between the filter numbers and filter names.
+
     Parameters
     ----------
     ks2_input_file : pathlib.Path or str
       full path to KS2 file
+
     Returns
     -------
     filtermapper_df : pd.DataFrame
@@ -81,29 +85,43 @@ def get_filter_mapper(ks2_input_file=ks2_files[2]):
 
 
 """
-The following section parses the master info for each *star* - that is, each astrophysical object.
+The following code block parses the master info for each *star* - that is, each astrophysical object.
 Reminder: LOGR.XYVIQ1 gives the average position for each source on the master frame (cols 1 and 2), the average flux (cols 5 and 11), the flux sigma (cols 6 and 12), and fit quality (cols 7 and 13) in each filter)
-I think the output is a little buggy because all the filters are numbered 1 when the number should be incrementing. I have fixed this
+It also renames the columns of interest with more intuitive names.
 """
+# this dict is used to change the column names into something more readable
+# the zmast, szmast, and q parameters are followed by an integer indicating the filter
+column_name_mapper = {
+    'umast0': 'master_x',           # x position [pix]
+    'vmast0': 'master_y',           # y position [pix]
+    'NMAST': 'astro_obj_id',        # object ID number
+    'zmast': 'master_counts_f',     # mean photometry [counts/sec]
+    'szmast': 'master_e_counts_f',  # sigma photometry [counts/sec]
+    'q': 'master_quality_f',        # PSF fit quality
+}
+
 def get_master_catalog(ks2_master_file=ks2_files[0]):
     """
     From LOGR.XYVIQ1, pull out the master catalog of information about astrophysical objects
+
     Parameters
     ----------
     ks2_master_file : str or pathlib.Path
      full path to the file
+
     Returns
     -------
-    master_catalog : pd.DataFrame
-      pandas dataframe with the following columns: [astro_obj_id, # ID for the astrophysical object
-                                                    x_master, y_master, # average x and y position [pix]
-                                                    counts_filt1, e_counts_filt1, quality_filt1 # counts, count sigma, and fit quality in filter 1
-                                                    counts_filt2, e_counts_filt2, quality_filt2] # counts, count sigma, and fit quality in filter 2
+    master_catalog_df : pd.DataFrame
+      pandas dataframe with the following columns:
+        [astro_obj_id, # ID for the astrophysical object
+        master_x, master_y, # average x and y position [pix]
+        master_counts_f1, e_master_counts_f1, master_quality_f1, # counts, count sigma, and fit quality in filter 1
+        master_counts_f1, e_master_counts_f1, master_quality_f1] # counts, count sigma, and fit quality in filter 2 
     """
     # get the columns
     with open(ks2_master_file) as f:
         columns = f.readlines(2)[1] # get line #2
-        columns = re.findall('[a-z0-9]+', columns)
+        columns = re.findall('[A-Za-z0-9]+', columns)
     # next step, need to fix the filter indexes!
     # find duplicate entries and increment the suffix by 1 for the duplicates
     col_unique = list(set(columns))
@@ -117,21 +135,67 @@ def get_master_catalog(ks2_master_file=ks2_files[0]):
             for i in range(1, len(v)):
                 columns[v[i]] = columns[v[i]][:-1] + str(i+1)
 
-    master_catalog = pd.DataFrame(ks2_master_file,
-                                  names=columns,
-                                  sep=' ',
-                                  skiprows=[0, 1, 2, 3],
-                                  engine='python',
-                                  skipinitialspace=True,
-                                  index_col=False)
+    master_catalog_df = pd.read_csv(ks2_master_file,
+                                    names=columns,
+                                    sep=' ',
+                                    skiprows=[0, 1, 2, 3],
+                                    engine='python',
+                                    skipinitialspace=True,
+                                    index_col=False)
     # ok, now pick the columns you care about and rename them
-    # this dictionary maps between the KS2 column names and mine
-    column_mapper = {'umast0': 'x_master',
-                     'vmast0': 'y_master',
-                     'zmast1': 'astro_obj_id',
-                     'q1': 'quality_f1'}
+    # this dictionary maps between the KS2 column names and mine,
+    # and accounts for the filter ID appended to the end of some
+    # columns
+    new_columns = {}
+    for i in master_catalog_df.columns:
+        for j in column_name_mapper.keys():
+            if i.find(j) >= 0:
+                new_columns[i] = i.replace(j, column_name_mapper[j])
+    master_catalog_df.rename(columns=new_columns, inplace=True)
+    # now, remove all the columns that you don't want to keep
+    for col in master_catalog_df.columns:
+        if col not in new_columns.values():
+            master_catalog_df.drop(col, axis=1, inplace=True)
 
+    return master_catalog_df
+
+
+"""
+Finally, this code block parses LOGR.FIND_NIMFO. Notes from ES: 
+LOGR.FIND_NIMFO gives you the coordinates and fluxes of each star in each exposure. Cols 14 and 15 contain the x and y coordinates in the flt images (i.e. *before* geometric distortion correction). col 36 is the ID number for each star (starts with R). col 39 is the ID for the image (starts with G). col 40 (starts with F) is the ID for the filter.
+n.b. the column numbers start from 1
+So, the column names in the file don't match up with the actual number of columns. I'm just going to have to trust Elena on this one and go by her column numbers.
+"""
+def get_point_source_catalog(ps_file=ks2_files[1]):
+    """
+
+    Parameters
+    ----------
+
+    Returns
+    -------
+    point_sources_df : pd.DataFrame
+      catalog of point sources with the following columns:
+        flt_x, flt_y : position in the FLT images, before geometric distortion correction
+        astro_obj_id : identifier for the astronomical object associated with the point source
+        file_id : identifier for the file that stores the image the point source comes from
+        filter_id : identifier for the filter 
+    """
+    col_names = {13: 'x_flt',
+             14: 'y_flt', 
+             35: 'astro_obj_id', 
+             38: 'file_id', 
+             39: 'filter_id'}
+    point_sources_df = pd.read_csv(ks2_utils.ks2_files[1], sep=' ', 
+                                   skipinitialspace=True, 
+                                   index_col=False, 
+                                   skiprows=5, 
+                                   header=None,
+                                   usecols=col_names.keys())
+    point_sources_df.rename(columns=col_names, inplace=True)
+    return point_sources_df
 
 if __name__ == "__main__":
     ks2_filemapper = get_file_mapper(ks2_files[2])
     ks2_filtermapper = get_filter_mapper(ks2_files[2])
+    ks2_mastercat = get_master_catalog(ks2files[0])
