@@ -97,6 +97,7 @@ column_name_mapper = {
     'zmast': 'master_counts_f',     # mean photometry [counts/sec]
     'szmast': 'master_e_counts_f',  # sigma photometry [counts/sec]
     'q': 'master_quality_f',        # PSF fit quality
+    'o': 'master_crowding_f',       # crowding parameter
 }
 
 def get_master_catalog(ks2_master_file=ks2_files[0]):
@@ -112,10 +113,12 @@ def get_master_catalog(ks2_master_file=ks2_files[0]):
     -------
     master_catalog_df : pd.DataFrame
       pandas dataframe with the following columns:
-        [astro_obj_id, # ID for the astrophysical object
+        astro_obj_id, # ID for the astrophysical object
         master_x, master_y, # average x and y position [pix]
-        master_counts_f1, e_master_counts_f1, master_quality_f1, # counts, count sigma, and fit quality in filter 1
-        master_counts_f1, e_master_counts_f1, master_quality_f1] # counts, count sigma, and fit quality in filter 2 
+        master_counts_f1, e_master_counts_f1, # filter 1 counts and count sigma,
+        master_quality_f1, master_crowding_f1, # filter 1 fit quality and crowding
+        master_counts_f2, e_master_counts_f2, # filter 2 counts and count sigma,
+        master_quality_f2, master_crowding_f2 # filter 2 fit quality and crowding
     """
     # get the columns
     with open(ks2_master_file) as f:
@@ -133,7 +136,7 @@ def get_master_catalog(ks2_master_file=ks2_files[0]):
         if len(v) > 1:
             for i in range(1, len(v)):
                 columns[v[i]] = columns[v[i]][:-1] + str(i+1)
-
+    # ok, now you are ready to read in the file
     master_catalog_df = pd.read_csv(ks2_master_file,
                                     names=columns,
                                     sep=' ',
