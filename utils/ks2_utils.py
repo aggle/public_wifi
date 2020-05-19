@@ -5,7 +5,7 @@ This file contains utilities for handling the KS2 point source catalog
 import pandas as pd
 from pathlib import Path
 import re
-
+from . import shared_utils
 
 
 """
@@ -14,8 +14,7 @@ INPUT.KS2 contains the instructions used to rnun the photometry, and it shows wh
 LOGR.XYVIQ1 gives the average position for each source on the master frame (cols 1 and 2), the average flux (cols 5 and 11), the flux sigma (cols 6 and 12), and fit quality (cols 7 and 13) in each filter)
 LOGR.FIND_NIMFO gives you the coordinates and fluxes of each star in each exposure. Cols 14 and 15 contain the x and y coordinates in the flt images (i.e. *before* geometric distortion correction). col 36 is the ID number for each star (starts with R). col 39 is the ID for the image (starts with G). col 40 (starts with F) is the ID for the filter.
 """
-ks2path = Path("../data/ks2/")
-ks2_files = [ks2path / i for i in ["LOGR.XYVIQ1", "LOGR.FIND_NIMFO", "INPUT.KS2"]]
+ks2_files = [shared_utils.ks2_path / i for i in ["LOGR.XYVIQ1", "LOGR.FIND_NIMFO", "INPUT.KS2"]]
 
 
 """
@@ -179,23 +178,43 @@ def get_point_source_catalog(ps_file=ks2_files[1]):
         flt_x, flt_y : position in the FLT images, before geometric distortion correction
         astro_obj_id : identifier for the astronomical object associated with the point source
         file_id : identifier for the file that stores the image the point source comes from
-        filter_id : identifier for the filter 
+        filter_id : identifier for the filter
+        file_ext_id : number that identifies the HDU in the file HDUList
     """
-    col_names = {13: 'x_flt',
-             14: 'y_flt', 
-             35: 'astro_obj_id', 
-             38: 'file_id', 
-             39: 'filter_id'}
-    point_sources_df = pd.read_csv(ks2_utils.ks2_files[1], sep=' ', 
+    # use only these columns
+    col_names = {
+        13: 'x_flt',        # x-position in the FLT
+        14: 'y_flt',        # y-position in the FLT
+        15: 'flux_f1',      # counts in filt 1?
+        16: 'e_flux_f1',    # counts in filt 2?
+        17: 'psf_fit_f1',   # psf fit quality in filt 1
+        18: 'crowding_f1',  # crowding in filt 1
+        23: 'flux_f2',      # counts in filt 2?
+        24: 'e_flux_f2',    # counts in filt 2?
+        25: 'psf_fit_f2',   # psf fit quality in filt 2
+        26: 'crowding_f2',  # crowding in filt 2
+        35: 'astro_obj_id', # astrophysical object ID number
+        38: 'file_id',      # file ID number
+        39: 'filter_id'     # filter ID number
+    }
+    point_sources_df = pd.read_csv(ks2_files[1],
+                                   sep=' ',
                                    skipinitialspace=True, 
                                    index_col=False, 
                                    skiprows=5, 
                                    header=None,
                                    usecols=col_names.keys())
     point_sources_df.rename(columns=col_names, inplace=True)
+    # split the file identifier into the file number and extension number
+    point_sources_df['file_ext_id'] = point_sources_df['file_id'].apply(lambda x: int(x.split('.')[1]))
+    point_sources_df['file_id'] = point_sources_df['file_id'].apply(lambda x: x.split('.')[0])
     return point_sources_df
 
+
+
 if __name__ == "__main__":
+    # run it in script mode to get all the dataframes
     ks2_filemapper = get_file_mapper(ks2_files[2])
     ks2_filtermapper = get_filter_mapper(ks2_files[2])
     ks2_mastercat = get_master_catalog(ks2files[0])
+    ks2_allsources = get_point_source_catalog(ks2files[1])
