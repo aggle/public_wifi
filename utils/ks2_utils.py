@@ -186,6 +186,8 @@ def get_point_source_catalog(ps_file=ks2_files[1]):
     """
     # use only these columns
     col_names = {
+        0: 'x_master',      # x-position in the master frame
+        1: 'y_master',      # y-position in the master frame
         13: 'x_flt',        # x-position in the FLT
         14: 'y_flt',        # y-position in the FLT
         15: 'flux_f1',      # counts in filt 1?
