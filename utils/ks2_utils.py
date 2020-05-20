@@ -90,6 +90,8 @@ It also renames the columns of interest with more intuitive names.
 """
 # this dict is used to change the column names into something more readable
 # the zmast, szmast, and q parameters are followed by an integer indicating the filter
+# for now, we are just going to use the same column names as in the KS2 output.
+# Their definitions can be found in docs/database/ks2_output_definitions.org
 column_name_mapper = {
     'umast0': 'master_x',           # x position [pix]
     'vmast0': 'master_y',           # y position [pix]
@@ -113,12 +115,12 @@ def get_master_catalog(ks2_master_file=ks2_files[0]):
     -------
     master_catalog_df : pd.DataFrame
       pandas dataframe with the following columns:
-        astro_obj_id, # ID for the astrophysical object
-        master_x, master_y, # average x and y position [pix]
-        master_counts_f1, e_master_counts_f1, # filter 1 counts and count sigma,
-        master_quality_f1, master_crowding_f1, # filter 1 fit quality and crowding
-        master_counts_f2, e_master_counts_f2, # filter 2 counts and count sigma,
-        master_quality_f2, master_crowding_f2 # filter 2 fit quality and crowding
+        astro_id : ID for the astrophysical object
+        umast0, vmast0 :  average x and y position [pix]
+        zmast1, szmast1 : filter 1 counts and count sigma,
+        q1, o1 : filter 1 fit quality and crowding
+        f1, g1 : num exposures and good measurements where star was found in filter 1
+        zmast, szmast, q, o, f, and g columns with higher indices indicate different filters
     """
     # get the columns
     with open(ks2_master_file) as f:
@@ -144,6 +146,8 @@ def get_master_catalog(ks2_master_file=ks2_files[0]):
                                     engine='python',
                                     skipinitialspace=True,
                                     index_col=False)
+    """
+    # remove this block for now
     # ok, now pick the columns you care about and rename them
     # this dictionary maps between the KS2 column names and mine,
     # and accounts for the filter ID appended to the end of some
@@ -158,7 +162,7 @@ def get_master_catalog(ks2_master_file=ks2_files[0]):
     for col in master_catalog_df.columns:
         if col not in new_columns.values():
             master_catalog_df.drop(col, axis=1, inplace=True)
-
+    """
     return master_catalog_df
 
 
@@ -167,52 +171,80 @@ Finally, this code block parses LOGR.FIND_NIMFO. Notes from ES:
 LOGR.FIND_NIMFO gives you the coordinates and fluxes of each star in each exposure. Cols 14 and 15 contain the x and y coordinates in the flt images (i.e. *before* geometric distortion correction). col 36 is the ID number for each star (starts with R). col 39 is the ID for the image (starts with G). col 40 (starts with F) is the ID for the filter.
 n.b. the column numbers start from 1
 So, the column names in the file don't match up with the actual number of columns. I'm just going to have to trust Elena on this one and go by her column numbers.
+Update: After a response from Jay Anderson, the developer of KS2, the full set of column names and descriptions are available in ../docs/database/ks2_output_definitions.org
 """
+# column names and their descriptions
+nimfo_cols = {
+    0: 'umast',           # center along x-axis in pixels in the master frame
+    1: 'vmast',           # center along y-axis in pixels in the master frame
+    2: 'magu',            # probably -2.5*log(z1)
+    3: 'utile',           # x-location within the tile where the star was found
+    4: 'vtile',           # y-location within the tile where the star was found
+    5: 'z0',              # method-0 counts (quick and dirty measurement)
+    6: 'sz0',             # z0 error
+    7: 'f0',              # was the star found in this exposure?
+    8: 'g0',              # was it measured to be consistent with others, or rejected?
+    9: 'u1',              # local tile measurement for this star in this exposure
+    10: 'v1',             # "
+    11: 'x1',             # local detector measurement for this star in this exposure
+    12: 'y1',             # "
+    13: 'xraw1',          # x-position in pixels in the file identified in Col 39
+    14: 'yraw1',          # y-position in pixels in the file identified in Col 39
+    15: 'z1',             # method-1 counts for this exposure
+    16: 'sz1',            # count stderr in "
+    17: 'q1',             # PSF fit quality for above
+    18: 'o1',             # Crowding parameter for above
+    19: 'f1',             # see f0, but for method-1
+    20: 'g1',             # see g0, but for method-1
+    21: 'x0',             # expected position of the star in this image, from method-0
+    22: 'y0',             # "
+    23: 'z2',             # same as above, but for method-2
+    24: 'sz2',            # "
+    25: 'q2',             # "
+    26: 'o2',             # "
+    27: 'f2',             # "
+    28: 'g2',             # "
+    29: 'z3',             # method-3 info
+    30: 'sz3',            # "
+    31: 'q3',             # "
+    32: 'o3',             # "
+    33: 'f3' ,            # "
+    34: 'g3',             # "
+    35: 'NMAST',          # Astrophysical object ID number, name comes from master table
+    36: 'tile_id',        # star number within the tile
+    37: 'tile_exp_id',    # local tile exposure number for this measurement
+    38: 'master_exp_id',  # Master exposure number / file and header ID number
+    39: 'filt_id',        # filter number
+    40: 'chip_id',        # chip number (within the master exposure)
+}
+
 def get_point_source_catalog(ps_file=ks2_files[1]):
     """
+    This 
 
     Parameters
     ----------
+    ps_file : pathlib.Path or string
+      full path to the LOGR.FIND_NIMFO
 
     Returns
     -------
     point_sources_df : pd.DataFrame
-      catalog of point sources with the following columns:
-        flt_x, flt_y : position in the FLT images, before geometric distortion correction
-        astro_obj_id : identifier for the astronomical object associated with the point source
-        file_id : identifier for the file that stores the image the point source comes from
-        filter_id : identifier for the filter
-        file_ext_id : number that identifies the HDU in the file HDUList
+      catalog of all point sources detected and associated information.
+      For documentation on the column names, see docs/database/ks2_output_definitions.org
     """
-    # use only these columns
-    col_names = {
-        0: 'x_master',      # x-position in the master frame
-        1: 'y_master',      # y-position in the master frame
-        13: 'x_flt',        # x-position in the FLT
-        14: 'y_flt',        # y-position in the FLT
-        15: 'flux_f1',      # counts in filt 1?
-        16: 'e_flux_f1',    # counts in filt 2?
-        17: 'psf_fit_f1',   # psf fit quality in filt 1
-        18: 'crowding_f1',  # crowding in filt 1
-        23: 'flux_f2',      # counts in filt 2?
-        24: 'e_flux_f2',    # counts in filt 2?
-        25: 'psf_fit_f2',   # psf fit quality in filt 2
-        26: 'crowding_f2',  # crowding in filt 2
-        35: 'astro_obj_id', # astrophysical object ID number
-        38: 'file_id',      # file ID number
-        39: 'filter_id'     # filter ID number
-    }
     point_sources_df = pd.read_csv(ks2_files[1],
                                    sep=' ',
                                    skipinitialspace=True, 
                                    index_col=False, 
                                    skiprows=5, 
                                    header=None,
-                                   usecols=col_names.keys())
-    point_sources_df.rename(columns=col_names, inplace=True)
+                                   usecols=nimfo_cols.keys(),
+    )
+    point_sources_df.rename(columns=nimfo_cols, inplace=True)
     # split the file identifier into the file number and extension number
-    point_sources_df['file_ext_id'] = point_sources_df['file_id'].apply(lambda x: int(x.split('.')[1]))
-    point_sources_df['file_id'] = point_sources_df['file_id'].apply(lambda x: x.split('.')[0])
+    point_sources_df['master_exp_hdu'] = point_sources_df['master_exp_id'].apply(lambda x: int(x.split('.')[1]))
+    point_sources_df['master_exp_id'] = point_sources_df['master_exp_id'].apply(lambda x: x.split('.')[0])
     return point_sources_df
 
 
