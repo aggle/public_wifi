@@ -7,7 +7,7 @@ import numpy as np
 """
 One handy tool is being able to cut a stamp out of an image. This function cuts out square stamps given the stamp center (can be floating point) and desired shape.
 """
-def get_stamp(image, xy, stamp_shape):
+def get_stamp(image, xy, stamp_shape, return_img_ind=False):
     """
     Cut a stamp from the given image, centered at xy with shape stamp_shape.
     If the stamp shape N is odd, the center c will be at c = (N-1)/2.
@@ -28,9 +28,13 @@ def get_stamp(image, xy, stamp_shape):
     -------
     stamp : np.array
       a copied stamp from the image, centered at xy with shape stamp_shape
+    img_ind : np.array (optional)
+      if return_img_ind is True, return a matrix of the image indices.
+      Can be useful for plotting
     """
     if isinstance(stamp_shape, np.int):
         stamp_shape = np.tile(stamp_shape, 2)
+    xy = np.array(xy)
     center = xy[::-1] # now in row, col order
     # set up the stamp so that negative is below center and positive is above center
     stamp_range = np.outer(np.array(stamp_shape)/2,

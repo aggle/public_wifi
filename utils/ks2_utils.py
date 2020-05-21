@@ -42,7 +42,8 @@ def get_file_mapper(ks2_input_file=ks2_files[2]):
       pandas dataframe with two columns: file_id, and file_name
     """
     filemapper_df = pd.DataFrame(columns=['file_id','file_name'])
-    
+
+    ks2_input_file = Path(ks2_input_file).resolve().as_posix()
     with open(ks2_input_file, 'r') as f:
         for line in f:
             # file ID
@@ -69,7 +70,8 @@ def get_filter_mapper(ks2_input_file=ks2_files[2]):
     filtermapper_df : pd.DataFrame
       pandas dataframe with two columns: filter_id, and filter_name
     """
-    with open(ks2_files[2], 'r') as f:
+    ks2_input_file = Path(ks2_input_file).resolve().as_posix()
+    with open(ks2_input_file, 'r') as f:
         input = f.read() # read in the entire file
         # regex magic
         keys = '|'.join(['F_SLOT *= *[0-9]+?','FILTER * = *"[A-Z0-9]*"'])
@@ -82,6 +84,48 @@ def get_filter_mapper(ks2_input_file=ks2_files[2]):
     filtermapper_df['filter_name'] = filtermapper_df['filter_name'].apply(lambda x: x.replace('"',''))
     return filtermapper_df
 
+"""
+These helper functions keep you from having to duplicate code every time you want to pull a filter or file name from the above tables
+TODO: I think it's possible to build a template function for this so I don't have to make a new one for every table and field
+"""
+def get_filter_name_from_ks2id(filter_id, filter_mapper=get_filter_mapper()):
+    """
+    Given a KS2 filter identifier, get the name of the filter
+
+    Parameters
+    ----------
+    filter_id : str
+      The identifier assigned to each filter by KS2. Typically F followed by a number, like F1 or F2.
+    filter_mapper : pd.DataFrame (default: result of ks2_utils.get_filter_mapper())
+      The dataframe that tracks the filter IDs and the corresponding filter names
+
+    Returns
+    -------
+    filter_name : the HST name of the filter
+    """
+    filter_id = filter_id.upper()
+    filter_name = filter_mapper.query(f"filter_id == '{filter_id}'")['filter_name'].values[0]
+    return filter_name
+
+def get_file_name_from_ks2id(file_id, file_mapper=get_file_mapper()):
+    """
+    Given a KS2 file identifier, get the name of the file
+
+    Parameters
+    ----------
+    file_id : str
+      The identifier assigned to each file by KS2. Typically F followed by a number, like F1 or F2.
+    file_mapper : pd.DataFrame (default: result of ks2_utils.get_file_mapper())
+      The dataframe that tracks the file IDs and the corresponding file names
+
+    Returns
+    -------
+    file_name : the HST identifier for the file
+    """
+    file_id = file_id.upper()
+    file_name = file_mapper.query(f"file_id == '{file_id}'")['file_name'].values[0]
+    return file_name
+
 
 """
 The following code block parses the master info for each *star* - that is, each astrophysical object.
@@ -92,7 +136,7 @@ It also renames the columns of interest with more intuitive names.
 # the zmast, szmast, and q parameters are followed by an integer indicating the filter
 # for now, we are just going to use the same column names as in the KS2 output.
 # Their definitions can be found in docs/database/ks2_output_definitions.org
-column_name_mapper = {
+column_name_mapper = { # no longer used
     'umast0': 'master_x',           # x position [pix]
     'vmast0': 'master_y',           # y position [pix]
     'NMAST': 'astro_obj_id',        # object ID number
@@ -123,6 +167,7 @@ def get_master_catalog(ks2_master_file=ks2_files[0]):
         zmast, szmast, q, o, f, and g columns with higher indices indicate different filters
     """
     # get the columns
+    ks2_master_file = Path(ks2_master_file).resolve().as_posix()
     with open(ks2_master_file) as f:
         columns = f.readlines(2)[1] # get line #2
         columns = re.findall('[A-Za-z0-9]+', columns)
@@ -186,10 +231,10 @@ nimfo_cols = {
     8: 'g0',              # was it measured to be consistent with others, or rejected?
     9: 'u1',              # local tile measurement for this star in this exposure
     10: 'v1',             # "
-    11: 'x1',             # local detector measurement for this star in this exposure
+    11: 'x1',             # local detector measurement for this star in this exposure (method 1)
     12: 'y1',             # "
-    13: 'xraw1',          # x-position in pixels in the file identified in Col 39
-    14: 'yraw1',          # y-position in pixels in the file identified in Col 39
+    13: 'xraw1',          # x-position in pixels in the exposure identified in Col 38
+    14: 'yraw1',          # y-position in pixels in the exposure identified in Col 38
     15: 'z1',             # method-1 counts for this exposure
     16: 'sz1',            # count stderr in "
     17: 'q1',             # PSF fit quality for above
@@ -211,16 +256,16 @@ nimfo_cols = {
     33: 'f3' ,            # "
     34: 'g3',             # "
     35: 'NMAST',          # Astrophysical object ID number, name comes from master table
-    36: 'tile_id',        # star number within the tile
-    37: 'tile_exp_id',    # local tile exposure number for this measurement
+    36: 'ps_tile_id',     # point source number within the tile
+    37: 'tile_id',        # local tile exposure number for this measurement
     38: 'master_exp_id',  # Master exposure number / file and header ID number
     39: 'filt_id',        # filter number
-    40: 'chip_id',        # chip number (within the master exposure)
+    40: 'unk',            # chip number (within the master exposure)
 }
 
 def get_point_source_catalog(ps_file=ks2_files[1]):
     """
-    This 
+    This function reads the KS2 FIND_NIMFO file that stores *every* point source
 
     Parameters
     ----------
@@ -233,7 +278,9 @@ def get_point_source_catalog(ps_file=ks2_files[1]):
       catalog of all point sources detected and associated information.
       For documentation on the column names, see docs/database/ks2_output_definitions.org
     """
-    point_sources_df = pd.read_csv(ks2_files[1],
+    ps_file = Path(ps_file).resolve().as_posix()
+
+    point_sources_df = pd.read_csv(ps_file,
                                    sep=' ',
                                    skipinitialspace=True, 
                                    index_col=False, 
@@ -243,7 +290,7 @@ def get_point_source_catalog(ps_file=ks2_files[1]):
     )
     point_sources_df.rename(columns=nimfo_cols, inplace=True)
     # split the file identifier into the file number and extension number
-    point_sources_df['master_exp_hdu'] = point_sources_df['master_exp_id'].apply(lambda x: int(x.split('.')[1]))
+    point_sources_df['chip_id'] = point_sources_df['master_exp_id'].apply(lambda x: int(x.split('.')[1]))
     point_sources_df['master_exp_id'] = point_sources_df['master_exp_id'].apply(lambda x: x.split('.')[0])
     return point_sources_df
 
