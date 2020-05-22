@@ -2,6 +2,7 @@
 This file contains utilities for handling the KS2 point source catalog
 """
 
+import numpy as np
 import pandas as pd
 from pathlib import Path
 import re
@@ -262,8 +263,53 @@ nimfo_cols = {
     39: 'filt_id',        # filter number
     40: 'unk',            # chip number (within the master exposure)
 }
+# this stores the data types for the FIND_NIMFO columns
+nimfo_dtypes = {
+    "umast": np.float64,
+    "vmast": np.float64,
+    "magu": np.float64,
+    "utile": np.float64,
+    "vtile": np.float64,
+    "z0": np.float64,
+    "sz0": np.float64,
+    "f0": np.int64,
+    "g0": np.int64,
+    "u1": np.float64,
+    "v1": np.float64,
+    "x1": np.float64,
+    "y1": np.float64,
+    "xraw1": np.float64,
+    "yraw1": np.float64,
+    "z1": np.float64,
+    "sz1": np.float64,
+    "q1": np.float64,
+    "o1": np.float64,
+    "f1": np.int64,
+    "g1": str,
+    "x0": np.float64,
+    "y0": np.float64,
+    "z2": np.float64,
+    "sz2": np.float64,
+    "q2": np.float64,
+    "o2": np.float64,
+    "f2": np.int64,
+    "g2": str,
+    "z3": np.float64,
+    "sz3": np.float64,
+    "q3": np.float64,
+    "o3": np.float64,
+    "f3": np.int64,
+    "g3": str,
+    "NMAST": str,
+    "ps_tile_id": str,
+    "tile_id": str,
+    "master_exp_id": str,
+    "filt_id": str,
+    "unk": str,
+    "chip_id": np.int64,
+}
 
-def get_point_source_catalog(ps_file=ks2_files[1]):
+def get_point_source_catalog(ps_file=ks2_files[1], clean=False):
     """
     This function reads the KS2 FIND_NIMFO file that stores *every* point source
 
@@ -271,6 +317,9 @@ def get_point_source_catalog(ps_file=ks2_files[1]):
     ----------
     ps_file : pathlib.Path or string
       full path to the LOGR.FIND_NIMFO
+    clean : bool [False]
+      if True, apply some preliminary cleaning to the catalog,
+      like converting special characters to bool or NaN
 
     Returns
     -------
@@ -287,11 +336,21 @@ def get_point_source_catalog(ps_file=ks2_files[1]):
                                    skiprows=5, 
                                    header=None,
                                    usecols=nimfo_cols.keys(),
+                                   dtype=nimfo_dtypes,
     )
     point_sources_df.rename(columns=nimfo_cols, inplace=True)
     # split the file identifier into the file number and extension number
     point_sources_df['chip_id'] = point_sources_df['master_exp_id'].apply(lambda x: int(x.split('.')[1]))
     point_sources_df['master_exp_id'] = point_sources_df['master_exp_id'].apply(lambda x: x.split('.')[0])
+
+    # should we clean it up?
+    if clean == True:
+        # convert the g* columns to boolean
+        for col in point_sources_df.columns:
+            if re.search('^g[0-9]+', col) is not None:
+                g2bool = lambda x: True if (str(x) == '1') else False
+                point_sources_df[col] = point_sources_df[col].apply(g2bool)
+
     return point_sources_df
 
 
