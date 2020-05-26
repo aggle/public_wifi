@@ -1,0 +1,370 @@
+#+TITLE: List of Subjects
+This document is used to create the lists of subjects as suggested in Database Design for Mere Mortals, Chapter 6
+
+These nouns are compiled from the [[file:rdpy_survey-design_doc.org][design document]] long-form description of the methodology
+* List of nouns
+  Some of these will be subjects, and some will be characteristics
+| Noun                          | Subj (S) or Char (C) |
+|-------------------------------+----------------------|
+| point source                  | S                    |
+| stamp                         | S                    |
+| PSF subtraction target        | S                    |
+| residual stamps               | S                    |
+| references                    | S                    |
+| image similarity metrics      | S                    |
+| companions                    | S                    |
+| fits headers                  | S                    |
+| astrophysical object          | S                    |
+| reference images for a target | S                    |
+| detector quadrant             | S                    |
+| KLIP subtraction              | S                    |
+| reference image for a target  | S                    |
+| psf-subtracted residual       | S                    |
+| ROC curve                     | S                    |
+| photometry                    | C                    |
+| KLIP parameters               | C                    |
+| contrast limits               | C                    |
+| detection threshold           | C                    |
+| completeness                  | C                    |
+| central pixel                 | C                    |
+| catalog designation           | C                    |
+| residual noise                | C                    |
+| artificial star               | C                    |
+| mass                          | C                    |
+| mass limit                    | C                    |
+| flt files                     | C                    |
+| point source RA and Dec       | C                    |
+| catalog RA and Dec            | C                    |
+| WCS information               | C                    |
+| primary magnitude             | C                    |
+| filter                        | C                    |
+| catalog designations          | C                    |
+| membership                    | C                    |
+| pairwise distance             | C                    |
+| image quality                 | C                    |
+| hot pixels                    | C                    |
+| saturated pixels              | C                    |
+| separation                    | C                    |
+| delta magnitude               | C                    |
+| companion flux                | C                    |
+| detection threshold           | C                    |
+| position angle                | C                    |
+| injection location            | C                    |
+| null flux                     | C                    |
+| AUC                           | C                    |
+
+
+* Subjects
+| Subjects                      | Characteristics                         |
+|-------------------------------+-----------------------------------------|
+| point source                  | x, y, counts, file                      |
+| photometry                    | counts, filter, point source            |
+| stamp                         | point source, x, y                      |
+| PSF subtraction target        | point source, x, y, references          |
+| references matrix             | stamps, score                           |
+| image similarity matrix       | stamps, score                           |
+| KLIP parameters               | Kklip, Nref                             |
+| residual stamps               | target stamp, refs used, KL params used |
+| companions                    | primary, stamps found in, SNR           |
+| contrast limits               | primary, threshold, sep                 |
+| detection threshold           |                                         |
+| completeness                  | primary, dmag                           |
+| fits headers                  | fits header fields                      |
+| astrophysical object          | ra, dec, corresponding point sources    |
+| stamp                         | x, y, file                              |
+| reference images for a target | stamps used                             |
+| detector quadrant             | x range, y range                        |
+| KLIP subtraction              | alias for residual stamp                |
+| reference image for a target  | stamp ids                               |
+| psf-subtracted residual       | alias for residual stamps               |
+| ROC curve                     |                                         |
+
+      
+* ONC data fields, organized by subject
+
+** Flux - photometry, color, and membership
+| Field           | type  | Description                                                         |
+|-----------------+-------+---------------------------------------------------------------------|
+| Av              | float | same as klip_bin                                                    |
+| Av              | float | Reddening                                                           |
+| Av_c            | float | Reddening at companion                                              |
+| Av_c            | float | Companion Av reddening                                              |
+| Av_p            | float | Reddening at primary                                                |
+| Av_p            | float | Primary Av reddening                                                |
+| DeltaMag130     | float | Contrast in F130 filter                                             |
+| DeltaMag130     | float | F130 delta mag between primary and companion                        |
+| e130            | float | Robberto catalog magnitude unc. F130                                |
+| e130            | float | same as klip_bin                                                    |
+| e130            | float | F130 magnitude uncertainty                                          |
+| e130_ap         | float | F130 ap phot uncertainty                                            |
+| e130_c          | float | Companion F130 mag uncert.                                          |
+| e130_c          | float | Companion magnitude uncertainty, F130                               |
+| e130_p          | float | Primary F130 uncertainty from Robberto                              |
+| e130_p          | float | Primary magnitude uncertainty in F130                               |
+| e139            | float | Robberto catalog magnitude unc.  F139                               |
+| e139            | float | same as klip_bin                                                    |
+| e139            | float | F139 magnitude uncertainty                                          |
+| e139_ap         | float | F139 ap phot uncertainty                                            |
+| e(m130-m139)    | float | same as klip_bin                                                    |
+| e(m130-m139)    | float | color uncertainty                                                   |
+| e(m130-m139)_ap | float | ap phot color uncertainty                                           |
+| e(m130-m139)_c  | float | Companion color uncert                                              |
+| e(m130-m139)_c  | float | Companion color uncertainty, F130-F139                              |
+| e(m130-m139)_p  | float | Primary color uncertainty from Robberto                             |
+| e(m130-m139)_p  | float | Primary color uncertainty, F130-F139                                |
+| m130            | float | Robberto catalog magnitude F130                                     |
+| m130            | float | same as klip_bin                                                    |
+| m130            | float | F130M magnitude (pimary or companion?)  from Massimo catalog?       |
+| m130_ap         | float | F130 magnitude from aperture photometry, for calculating correction |
+| m130_c          | float | Companion F130M magnitude                                           |
+| m130_c          | float | Companion magnitude, F130                                           |
+| m130-m139       | float | same as klip_bin                                                    |
+| m130-m139       | float | color, F130-F139                                                    |
+| m130-m139_ap    | float | color from ap phot                                                  |
+| m130-m139_c     | float | Companion color                                                     |
+| m130-m139_c     | float | Companion color, F130-F139                                          |
+| m130-m139_p     | float | Primary color from Robberto                                         |
+| m130-m139_p     | float | Primary color, F130-F139                                            |
+| m130_p          | float | Primary F130 photometry from Robberto                               |
+| m130_p          | float | Primary magnitude in the F130 filter                                |
+| m139            | float | Robberto catalog magnitude F139                                     |
+| m139            | float | same as klip_bin                                                    |
+| m139            | float | F139N magnitude (primary or companion?)                             |
+| m139_ap         | float | F139 magnitude from aperture photometry, for calculating correction |
+| SpT             | str   | Spectral type                                                       |
+
+** Object, point source, and image identifiers
+| Field      | type | Description                                                        |
+|------------+------+--------------------------------------------------------------------|
+| GCVS       | int  | General catalog of variable stars?                                 |
+| ID         | int  | Identifier for astrophysical object                                |
+| MainID     | int  | ID for each point source detection (unique per filter)             |
+| MainID     | int  | Same as in others                                                  |
+| Match_Flag | str  | If found in another catalog, name of catalog (DaRio, N/A, Robberto |
+| N          | int  | Same as in others                                                  |
+| N          | int  | number of times source  was detected                               |
+| N          | int  | Number of times source is detected (assume same as other DF)       |
+| N          | int  | same as in others                                                  |
+| SimbadName | str  | Object identifier in SIMBAD                                        |
+| UniqueID   | int  | same as klip_bin                                                   |
+| UniqueID   | int  | Unique number for each astrophysical object                        |
+| UniqueID   | int  | Unique astrophysical object identifier                             |
+| UniqueID   | int  | Same as in others                                                  |
+| UniqueID_c | int  | Astrophys. object ID for companion (-1 if discovered during KLIP)  |
+| UniqueID_p | int  | Astrophys. object ID for primary                                   |
+| Visit      | int  | Same as in others                                                  |
+| Visit      | int  | HST visit ID                                                       |
+| WFC3ID_c   | int  | Companion Identifier from Massimo’s catalog (-1=KLIP)              |
+| WFC3ID_p   | int  | Primary Identifier from Massimo’s catalog                          |
+
+** Mass and object class
+| Field              | type  | Description                                                  |
+|--------------------+-------+--------------------------------------------------------------|
+| Color_c            | arr   | color, for plotting                                          |
+| Color_p            | arr   | color, for plotting                                          |
+| emass              | float | mass uncertainty                                             |
+| emass_c            | float | Companion mass uncertainty                                   |
+| emass_c            | float | Companion mass uncertainty                                   |
+| emassC             | float | companion mass uncertainty                                   |
+| emass_d            | float | ??                                                           |
+| emass_i            | float | mass uncertainty                                             |
+| emass_p            | float | Primary mass uncertainty                                     |
+| emass_p            | float | Primary mass uncertainty                                     |
+| emassP             | float | primary mass uncertainty                                     |
+| FlagMass           | str   | Object class (star, bd, planet)                              |
+| FlagMass_c         | str   | Companion mass label (star, bd, planet)                      |
+| FlagMass_companion | str   | companion mass category (star, bd, planet)                   |
+| FlagMass_p         | str   | Primary mass label (star, bd, planet)                        |
+| FlagMass_primary   | str   | primary mass category (star, bd, planet)                     |
+| mass               | float | ??                                                           |
+| mass_c             | float | Companion mass                                               |
+| mass_c             | float | Companion mass                                               |
+| massC              | float | companion mass (Msol)                                        |
+| MassCompleteness   | float | Completeness at companion mass                               |
+| MassCompleteness   | float | Completeness of the detection at the observed companion mass |
+| MassCompleteness   | float | completeness at the observed companion mass                  |
+| mass_d             | float | ??                                                           |
+| mass_i             | float | mass derived from I-band magnitude?                          |
+| mass_p             | float | Primary mass                                                 |
+| mass_p             | float | Primary mass                                                 |
+| massP              | float | primary mass (Msol)                                          |
+| q                  | float | mass ratio                                                   |
+| q                  | float | mass ratio                                                   |
+| qCompleteness      | float | Completeness at mass ratio                                   |
+| qCompleteness      | float | completeness at the observed mass ratio                      |
+| qCompleteness      | float | Completeness of the detection at the observed mass ratio     |
+
+** Positional information
+| Field           | type  | Description                                          |
+|-----------------+-------+------------------------------------------------------|
+| Dec             | float | same as klip_bin                                     |
+| Dec             | float | Declination                                          |
+| Dec_c           | float | Dec of companion                                     |
+| Dec_c_wfc3      | float | Dec of the companion in WFC3                         |
+| Dec_p           | float | Dec of primary                                       |
+| Dec_p_wfc3      | float | Dec of the primary in WFC3                           |
+| PA              | float | Position angle of companion                          |
+| PA              | float | Position angle (w.r.t. OriC?)                        |
+| PA_wfc3         | flaot | Companion PA in WFC3 data                            |
+| Ra              | float | same as klip_bin                                     |
+| Ra              | float | Right ascension                                      |
+| Ra_c            | float | RA of companion                                      |
+| Ra_c_wfc3       | float | RA of the companion in WFC3                          |
+| Ra_p            | float | RA of primary                                        |
+| Ra_p_wfc3       | float | RA of the primary in WFC3                            |
+| Sep_arcsec      | float | Companion separation (arcsec)                        |
+| Sep_arcsec      | float | separation, in arcsec                                |
+| Sep_arcsec      | float | Sep from Ori C in arcsec                             |
+| Sep_arcsec_wfc3 | float | Separation in arcsec in WFC3                         |
+| Sep_au          | float | Companion separation (AU)                            |
+| Sep_au          | float | separation, in au                                    |
+| Sep_au_wfc3     | float | Separation in AU in WFC3                             |
+| Sep_deg         | float | Companion separation (deg)                           |
+| Sep_deg         | float | separation between primary and companion, in degrees |
+| Sep_deg_wfc3    | float | Separation in degrees in WFC3                        |
+| SepOriC         | float | Same as in others                                    |
+| SepOriC         | float | Separation in pixels from Ori C                      |
+| SepOriC         | float | Separation from Ori C in pixels                      |
+| SepOriC_wfc3    | float | Sep w.r.t. Ori C, WFC3                               |
+| Sep_px          | float | Companion separation (pix)                           |
+| Sep_px          | float | separation, in pixels                                |
+| Sep_px_wfc3     | float | Separation in pixels in WFC3                         |
+| SMA             | float | Projected SMA [units?]                               |
+| x130            | float | position in pixels along x axis in F130              |
+| x139            | float | position in pixels along x axis in F139              |
+| Xflt            | float | X-axis position (pixels)                             |
+| y130            | float | position in pixels along y axis in F130              |
+| y139            | float | position in pixels along y axis in F139              |
+| Yflt            | float | Y-axis position (pixels)                             |
+
+** PSF subtraction
+| Field      | type  | Description                                              |
+|------------+-------+----------------------------------------------------------|
+| Analysis   | str   | does giovanni trust (y) or not (n) the detection         |
+| Flag_group | str   | Detection method (KLIP, or wide binary)                  |
+| KLIPmode   | int   | Number of klip modes                                     |
+| KLIPmode   | int   | Same as in others                                        |
+| KLIPmode   | int   | Number of klip modes used                                |
+| KLIPmode   | int   | Number of KL modes used                                  |
+| Klip_sum   | array | Same as in others                                        |
+| Klip_sum   | array | ?? Co-added sum of klipped images                        |
+| Klip_sum   | float | co-added tile for KLIP                                   |
+| Orig_sum   | array | Same as in others                                        |
+| Orig_sum   | array | ?? Co-added sum of original images                       |
+| Orig_sum   | float | co-added tile for primary                                |
+| PA_V3      | float | PA of the telescope during the visit                     |
+| PA_V3      | float | Position angle of telescope                              |
+| Quadrant   | int   | ID number for the detector quadrant containing the pixel |
+
+** Post-subtraction analysis
+| Field     | type  | Description                             |
+|-----------+-------+-----------------------------------------|
+| AUC       | float | Area under the curve                    |
+| MagBin130 | int   | Which F130 magnitude bin to place it in |
+
+** Data quality and data cleaning
+| Field          | Type | Description                                               |
+|----------------+------+-----------------------------------------------------------|
+| CCD            | int  | ?? which WFC3 ccd the data comes from?                    |
+| Flag           | str  | Background or cluster flag                                |
+| Flag_c         | str  | companion membership                                      |
+| Flag_c         | str  | Companion membership flag (cluster, bgnd)                 |
+| Flag_companion | str  | Flag for cluster or bgnd                                  |
+| Flag_F130N_ap  | str  | ?? (Pos_Strong, Mixed, Good)                              |
+| Flag_F139M_ap  | str  | ?? (Pos_Strong, Mixed, Good)                              |
+| Flag_p         | str  | Primary membership flag (cluster, bgnd)                   |
+| Flag_p         | str  | primary membership                                        |
+| Flag_primary   | str  | Flag for cluster or bgnd                                  |
+| Group_flag     | str  | ID for membership in cluser or bgnd (cluster, background) |
+| HotPixel       | int  | same as in others                                         |
+| HotPixel       | int  | same as klip_bin                                          |
+| HotPixel       | int  | number of hot pixels                                      |
+| Obj_flag       | str  | quality flag (bad, good_psf, good_isolated, wide_double)  |
+
+
+* Holding place for table
+  Tables finished:
+  - [X] StrampelliWFC32019
+  - [ ] counts
+  - [ ] klip_bin/klip_obj
+  - [ ] mean
+  - [ ] unique
+  - [X] wfc3_klip_binaries
+
+#+NAME: unique
+| Field      | Type  | Description                                                           |
+|------------+-------+-----------------------------------------------------------------------|
+| F130N_dist | float | ??                                                                    |
+| F130N_flag | str   | F130N filter quality flag (bad, good_psf, good_isolated, wide_double) |
+| F130N_flt  | str   | name of the FLT file the data comes from                              |
+| F130N_quad | int   | ??                                                                    |
+| F130N_sat  | int   | ?? Number of saturated pixels in F130N?                               |
+| F139M_dist | float | ??                                                                    |
+| F139M_flag | str   | F130M filter quality flag (bad, good-psf, good_isolated, wide_double) |
+| F139M_flt  | str   | name of the FLT file the data comes from                              |
+| F139M_quad | int   | ??                                                                    |
+| F139M_sat  | int   | ?? Number of saturated pixels in F139M?                               |
+| Type       | int   | ?? [0, 1, 2, 3, 5, 6, 7]                                              |
+
+#+NAME: mean
+| Field        | Type  | Description                                                        |
+|--------------+-------+--------------------------------------------------------------------|
+| FirstDist    | float | ??                                                                 |
+| FirstID      | int   | ??                                                                 |
+| SecondDist   | float | ??                                                                 |
+| SecondID     | int   | ??                                                                 |
+| SystemID     | int   | ??                                                                 |
+| ThirdDist    | float | ??                                                                 |
+| ThirdID      | int   | ??                                                                 |
+| Type         | int   | same as klip_bin                                                   |
+
+#+NAME: klip_bin
+| Field              | Type  | Description                                                         |
+|--------------------+-------+---------------------------------------------------------------------|
+| FPanalysis         | str   | ??                                                                  |
+| R                  | float | ??                                                                  |
+| THC                | float | ??                                                                  |
+| Type               | int   | ?? (0, 1, 2, 3)                                                     |
+
+#+NAME: counts
+| Field                       | Type  | Description                                               |
+|-----------------------------+-------+-----------------------------------------------------------|
+| Cube_klip_std               | float | ?? what's with "cube"                                     |
+| Cube_klip_std_sigma_clipped | float | ?? what's with "cube"                                     |
+| Cube_norm_std               | float | ?? what's with "cube"                                     |
+| Cube_norm_std_sigma_clipped | float | ?? what's with "cube"                                     |
+| Cube_orig_std               | float | ?? what's with "cube"                                     |
+| Cube_pos                    | int   | ?? what's with "cube"                                     |
+| Cube_sum                    | float | ?? what's with "cube"                                     |
+| eMag                        | float | filter magnitude uncertainty                              |
+| eMag_c_mf                   | float | not used                                                  |
+| eMag_p_mf                   | float | not used                                                  |
+| exptime                     | float | not used                                                  |
+| eZPT                        | float | not used                                                  |
+| Flag_candidate_ap           | str   | ??                                                        |
+| HotPixel                    | int   | ??                                                        |
+| Mag                         | float | filter magnitude                                          |
+| Mag_c_mf                    | float | not used                                                  |
+| Mag_p_mf                    | float | not used                                                  |
+| Max_cube_klip_1p            | float | ?? (cube?) 1-pixel max after klip                         |
+| Max_cube_klip_ap            | float | ?? (cube?) max after aperture photometry                  |
+| Max_cube_klip_pos           | int   | ?? (cube?) [x, y] of max pixel in cube                    |
+| Max_cube_norm_1p            | float | ??                                                        |
+| Max_cube_norm_ap            | float | ??                                                        |
+| Max_cube_norm_pos           | int   | ??                                                        |
+| Max_cube_orig_1p            | float | ??                                                        |
+| Max_cube_orig_ap            | float | ??                                                        |
+| Max_cube_orig_pos           | int   | ??                                                        |
+| NBox_klip_ap                | float | ??                                                        |
+| NBox_norm_ap                | int   | ??                                                        |
+| NBox_orig_ap                | int   | ??                                                        |
+| Nsat                        | int   | ?? number of saturated pixels?                            |
+| Nsigma                      | float | ??                                                        |
+| Nsigma_det                  | float | ??                                                        |
+| PBox_klip_ap                | int   | ??                                                        |
+| PBox_norm_ap                | int   | ??                                                        |
+| PBox_orig_ap                | list  | ??                                                        |
+| Skew_klip                   | float | ??                                                        |
+| Skew_norm                   | float | ??                                                        |
+| Skew_orig                   | float | ??                                                        |
+| ZPT                         | float | not used                                                  |

@@ -1,0 +1,90 @@
+ #+TITLE: KS2 output definitions
+#+ROAM_TAGS: ks2
+
+* Tables
+#+NAME: LOGR.XYVIQ1 columns
+| Col # | Name    | Type  | Description                                                              |
+|-------+---------+-------+--------------------------------------------------------------------------|
+|     1 | umast0  | float | center along x-axis in pixels in the master frame                        |
+|     2 | vmast0  | float | center along y-axis in pixels in the master frame                        |
+|     3 | mmast1  | float | heuristic mag; used to subtract to find neighbors                        |
+|     4 | NMAST   | str   | ID number for the star                                                   |
+|     5 | zmast1  | float | counts averaged over all detections in Filter 1                          |
+|     6 | szmast1 | float | counts stderr, averaged over all detections in Filter 1                  |
+|     7 | q1      | float | Aggregate PSF fit quality in Filter 1                                    |
+|     8 | o1      | float | Crowding parameter?                                                      |
+|     9 | f1      | int   | number of exposures where this star was found                            |
+|    10 | g1      | int   | # exposures where star was measured consist with other good measurements |
+|    11 | zmast1  | float | same as above, for Filter 2                                              |
+|    12 | szmast1 | float | same as above, for Filter 2                                              |
+|    13 | q1      | float | same as above, for Filter 2                                              |
+|    14 | o1      | float | same as above, for Filter 2                                              |
+|    15 | f1      | int   | same as above, for Filter 2                                              |
+|    16 | g1      | int   | same as above, for Filter 2                                              |
+
+#+NAME: LOGR.FIND_NIMFO columns
+nb: a column name in parens (e.g., (z3) ) indicates the column name is missing from the output file
+| Col # | Name  | Type  | Description                                                          |
+|-------+-------+-------+----------------------------------------------------------------------|
+|     1 | umast | float | center along x-axis in pixels in the master frame                    |
+|     2 | vmast | float | center along y-axis in pixels in the master frame                    |
+|     3 | magu  | float | probably -2.5*log(z1)                                                |
+|     4 | utile | float | x-location within the tile where the star was found                  |
+|     5 | vtile | float | y-location within the tile where the star was found                  |
+|     6 | z0    | float | method-0 counts (quick and dirty measurement)                        |
+|     7 | sz0   | float | z0 error                                                             |
+|     8 | f0    | int   | was the star found in this exposure?                                 |
+|     9 | g0    | int   | was it measured to be consistent with others, or rejected?           |
+|    10 | u1    | float | local tile measurement for this star in this exposure                |
+|    11 | v1    | float | "                                                                    |
+|    12 | x1    | float | local detector measurement for this star in this exposure            |
+|    13 | y1    | float | "                                                                    |
+|    14 | xraw1 | float | x-position in pixels in the file identified in Col 39                |
+|    15 | yraw1 | float | y-position in pixels in the file identified in Col 39                |
+|    16 | z1    | float | method-1 counts for this exposure                                    |
+|    17 | sz1   | float | count stderr in "                                                    |
+|    18 | q1    | float | PSF fit quality for above                                            |
+|    19 | o1    | float | Crowding parameter for above                                         |
+|    20 | f1    | int   | see f0, but for method-1                                             |
+|    21 | g1    | int   | see g0, but for method-1                                             |
+|    22 | x0    | float | expected position of the star in this image, from method-0           |
+|    23 | y0    | float | "                                                                    |
+|    24 | z2    | float | same as above, but for method-2                                      |
+|    25 | sz2   | float | "                                                                    |
+|    26 | q2    | float | "                                                                    |
+|    27 | o2    | float | "                                                                    |
+|    28 | f2    | int   | "                                                                    |
+|    29 | g2    | int   | "                                                                    |
+|    30 | (z3)  | float | method-3 info                                                        |
+|    31 | (sz3) | float | "                                                                    |
+|    32 | (q3)  | float | "                                                                    |
+|    33 | (o3)  | float | "                                                                    |
+|    34 | (f3)  | int   | "                                                                    |
+|    35 | (g3)  | int   | "                                                                    |
+|    36 | --    | str   | Rr, where r is the astrophysical object identifier                   |
+|    37 | --    | str   | Ll, where l refers to the star number within the tile                |
+|    38 | --    | str   | Nn, where n refers to the local contributing exposure/chip number    |
+|    39 | --    | str   | Gg.c, where g is the master exposure number and c is the chip number |
+|    40 | --    | str   | Ff, where f is the filter number                                     |
+|    41 | --    | str   | unclear                                                              |
+
+
+* Notes 
+  The following clarifications of the column names come from an email thread with Jay Anderson on May 19 and 20, 2020.
+
+  #+begin_quote
+  - Method#0 for measurement is just a rough measurement used in the initial finding
+  - Method#1 fits for each star's position and flux in each individual exposure
+  - Method#2 uses the position from Method#0 (determined using all the observations) to get a fixed-position flux
+  - Method#3 is similar to method#2, but it uses a v small aperture, good for stars that are just barely above the background noise.
+  - crowding parameter 'o': `it's the total flux in the aperture that comes from other stars (it's been subtracted off, but if it's big compared to the star's flux, then chances are it wasn't done perfectly)`
+
+  Note that for some of the quantities, I ended up affixing a letter to them so that it would be easy to grep on that element in the file...
+  - 'Ll' --- l refers to the star number in the tile (I'll get to that later)
+  - 'Nn' --- n refers to the local contributing exposure/chip number (each tile has a certain number of contributing images)
+  - 'Gg.c' --- g refers to the master exposure number and c to the chip in that exposure
+  - Ff --- f refers to the filter number
+  KS2 reduces the field in "tiles" or "patches"... these are (I think) 125x125 pixels in the master  frame.  It loads in the local raster for each exposure/chip that overlaps with the tile and then analyzes them simultaneously.  If you've seen a stacked image generated by KS2, perhaps you can see the patch boundaries in this as "panes". 
+  #+end_quote
+
+   

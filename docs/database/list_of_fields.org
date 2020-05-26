@@ -1,0 +1,4 @@
+#+TITLE: List of Fields
+This document is used to create the lists of fields as suggested in Database Design for Mere Mortals
+
+* Preliminary Field List
