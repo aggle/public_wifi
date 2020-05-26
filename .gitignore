@@ -1,7 +1,13 @@
 __pycache__
+# don't track figures
 figs/
+# ignore notebooks and associated files
+*ipynb
 .ipynb_checkpoints
+# ignore astrodrizzle/tweakreg output
 *coo
-*png
 *list
 *log
+*png
+# don't try to track the data or tables; too much memory
+data/
