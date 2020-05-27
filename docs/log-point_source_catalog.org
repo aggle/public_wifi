@@ -30,7 +30,12 @@ I realized that I need a place to compile all the things to do for the point sou
      #+CAPTION: The distribution of PSF fit quality
      [[/user/jaguilar/tr14/code/figs/ks2/q-distro_cumulative.png]]
   3. [ ] Plot the scatter in q as a function of q (or z, the counts)
-  4. [ ] Plot q as a function of z
+  4. [X] Plot q as a function of z
+     #+NAME:  fig:z_vs_q
+     #+CAPTION: q plotted against log of the flux, with the different q thresholds marked by horizontal lines.
+    [[/user/jaguilar/tr14/code/figs/ks2/z_vs_q.png]]
   5. [ ] Look at how the number of stars in each z bin changes as you cut on q; because this will affect how faint you can go
   
   I'll consider cuts to /q/ at the following thresholds: 0.7, 0.8, 0.85, 0.9, 0.95
+
+  Some of the stars that have q=0 in the master dataframe are bad detections, but also some of them are fine - they just get flagged q=0 because they don't appear in one of the filters (so the q for that filter gets set to 0). I think the lesson here is that I should filter for q (and z, and probably others) on the *point source dataframe*, and not the *master dataframe*.
