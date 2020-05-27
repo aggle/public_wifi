@@ -15,7 +15,7 @@ def get_stamp(image, xy, stamp_shape, return_img_ind=False):
     If the stamp would extend past the borders of the image, those parts of the
     stamp are padded with nan's.
 
-    Parametersaaaaa
+    Parameters
     ----------
     image : np.array
       2-D source image
@@ -23,6 +23,8 @@ def get_stamp(image, xy, stamp_shape, return_img_ind=False):
       the xy (col, row) center of the stamp
     stamp_shape : int or tuple of ints
       the dimensions of the stamp
+    return_img_ind : bool [False] (not yet implemented)
+      if True, then return arrays that index the stamp into the original image
 
     Returns
     -------
@@ -58,4 +60,10 @@ def get_stamp(image, xy, stamp_shape, return_img_ind=False):
     stamp = np.ones(stamp_shape)*np.nan
     # index only the relevant stamp pixels into only the relevant image indices
     stamp[cropped_ind[0], cropped_ind[1]] = image[image_ind[0], image_ind[1]]
+    if return_img_ind is True:
+        # get the image indices of the stamp image, even beyond the image bounds
+        full_img_ind = np.ogrid[index_range[0,0]:index_range[0,1],
+                                index_range[1,0]:index_range[1,1]]
+        full_img_ind = [np.squeeze(i) for i in full_img_ind]
+        return stamp, full_img_ind
     return stamp
