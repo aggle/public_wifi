@@ -29,7 +29,8 @@ I realized that I need a place to compile all the things to do for the point sou
      #+NAME:  fig:q-distro-cumulative
      #+CAPTION: The distribution of PSF fit quality
      [[/user/jaguilar/tr14/code/figs/ks2/q-distro_cumulative.png]]
-  3. [ ] Plot the scatter in q as a function of q (or z, the counts)
+  3. [X] Plot the scatter in q as a function of q (or z, the counts)
+     Done, but I'm not sure it's particularly informative
   4. [X] Plot q as a function of z
      #+NAME:  fig:z_vs_q
      #+CAPTION: q plotted against log of the flux, with the different q thresholds marked by horizontal lines.
