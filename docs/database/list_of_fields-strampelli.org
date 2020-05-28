@@ -95,50 +95,50 @@ This file list the dataframes and fields used in the Orion Nebula Cluster projec
 #+NAME: counts
 | Field                       | Type  | Description                                               |
 |-----------------------------+-------+-----------------------------------------------------------|
-| Cube_klip_std               | float | ?? what's with "cube"                                     |
-| Cube_klip_std_sigma_clipped | float | ?? what's with "cube"                                     |
-| Cube_norm_std               | float | ?? what's with "cube"                                     |
-| Cube_norm_std_sigma_clipped | float | ?? what's with "cube"                                     |
-| Cube_orig_std               | float | ?? what's with "cube"                                     |
-| Cube_pos                    | int   | ?? what's with "cube"                                     |
-| Cube_sum                    | float | ?? what's with "cube"                                     |
+| Cube_klip_std               | float | std of the klipped cube                                   |
+| Cube_klip_std_sigma_clipped | float | std of the klipped cube after 3-sigma cut                 |
+| Cube_norm_std               | float | std of klipped cube, after normalization                  |
+| Cube_norm_std_sigma_clipped | float | std of klipped cube, after normalization                  |
+| Cube_orig_std               | float | std of the original cube                                  |
+| Cube_pos                    | int   | position of the tile in the fits datacube of targets      |
+| Cube_sum                    | float | sum of the original tile                                  |
 | eMag                        | float | filter magnitude uncertainty                              |
 | eMag_c_mf                   | float | not used                                                  |
 | eMag_p_mf                   | float | not used                                                  |
 | exptime                     | float | not used                                                  |
 | eZPT                        | float | not used                                                  |
-| Flag_candidate_ap           | str   | ??                                                        |
+| Flag_candidate_ap           | str   | type of detection, based on skewness of residuals         |
 | Group_flag                  | str   | ID for membership in cluser or bgnd (cluster, background) |
-| HotPixel                    | int   | ??                                                        |
+| HotPixel                    | int   | 0 if no hot pixels in tile; 1 otherwise                   |
 | KLIPmode                    | int   | Number of klip modes                                      |
 | Mag                         | float | filter magnitude                                          |
 | Mag_c_mf                    | float | not used                                                  |
 | Mag_p_mf                    | float | not used                                                  |
 | MainID                      | int   | ID for each point source detection (unique per filter)    |
-| Max_cube_klip_1p            | float | ?? (cube?) 1-pixel max after klip                         |
-| Max_cube_klip_ap            | float | ?? (cube?) max after aperture photometry                  |
-| Max_cube_klip_pos           | int   | ?? (cube?) [x, y] of max pixel in cube                    |
-| Max_cube_norm_1p            | float | ??                                                        |
-| Max_cube_norm_ap            | float | ??                                                        |
-| Max_cube_norm_pos           | int   | ??                                                        |
-| Max_cube_orig_1p            | float | ??                                                        |
-| Max_cube_orig_ap            | float | ??                                                        |
-| Max_cube_orig_pos           | int   | ??                                                        |
-| NBox_klip_ap                | float | ??                                                        |
-| NBox_norm_ap                | int   | ??                                                        |
-| NBox_orig_ap                | int   | ??                                                        |
-| Nsat                        | int   | ?? number of saturated pixels?                            |
-| Nsigma                      | float | ??                                                        |
-| Nsigma_det                  | float | ??                                                        |
+| Max_cube_klip_1p            | float | Highest 1-pixel counts in klipped tile/cube               |
+| Max_cube_klip_ap            | float | Max aperture counts in the klipped tile/cube              |
+| Max_cube_klip_pos           | int   | position of max pixel in klipped tile/cube                |
+| Max_cube_norm_1p            | float | highest counts in normed tile (or cube?) in single pixel  |
+| Max_cube_norm_ap            | float | highest counts in aperture in normed tile/cube            |
+| Max_cube_norm_pos           | int   | position of max_cube_norm_1p                              |
+| Max_cube_orig_1p            | float | 1-pixel max, for the original tile/cube                   |
+| Max_cube_orig_ap            | float | Aperture max, for the original tile/cube                  |
+| Max_cube_orig_pos           | int   | 1-pixel max position, for the original tile/cube          |
+| NBox_klip_ap                | float | # pixels in aperture used for max_cube_klip_ap            |
+| NBox_norm_ap                | int   | # pixels in aperture used form ax_cube_norm_ap            |
+| NBox_orig_ap                | int   | # pixels in aperture used for max_cube_orig_ap            |
+| Nsat                        | int   | number of saturated pixels                                |
+| Nsigma                      | float | nsigma threshold for candidate detection                  |
+| Nsigma_det                  | float | candidate nsigma (compare to threshold)                   |
 | Obj_flag                    | str   | quality flag (bad, good_psf, good_isolated, wide_double)  |
 | PA_V3                       | float | PA of the telescope during the visit                      |
-| PBox_klip_ap                | int   | ??                                                        |
-| PBox_norm_ap                | int   | ??                                                        |
-| PBox_orig_ap                | list  | ??                                                        |
+| PBox_klip_ap                | int   | position of max_cube_klip_ap                              |
+| PBox_norm_ap                | int   | position of max_cube_norm_ap                              |
+| PBox_orig_ap                | list  | position of max_cube_orig_ap                              |
 | Quadrant                    | int   | ID number for the detector quadrant containing the pixel  |
-| Skew_klip                   | float | ??                                                        |
-| Skew_norm                   | float | ??                                                        |
-| Skew_orig                   | float | ??                                                        |
+| Skew_klip                   | float | Skewness of the pixel counts in the KLIP tile             |
+| Skew_norm                   | float | Skewness of the pixel counts in the normed tile           |
+| Skew_orig                   | float | Skewness of the pixel counts in the original tile         |
 | UniqueID                    | int   | Unique number for each astrophysical object               |
 | Visit                       | int   | HST visit ID                                              |
 | Xflt                        | float | X-axis position (pixels)                                  |
