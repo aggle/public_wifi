@@ -309,6 +309,10 @@ nimfo_dtypes = {
     "chip_id": np.int64,
 }
 
+# this array is useful for looping over photometry methods
+# you can concatenate it with z, sz, q, o, f, and g
+phot_method_ids = ['1', '2', '3']
+
 def get_point_source_catalog(ps_file=ks2_files[1], clean=False):
     """
     This function reads the KS2 FIND_NIMFO file that stores *every* point source
