@@ -41,8 +41,9 @@ def get_stamp(image, xy, stamp_shape, return_img_ind=False):
     # set up the stamp so that negative is below center and positive is above center
     stamp_range = np.outer(np.array(stamp_shape)/2,
                            np.array((-1, 1))).T
-    stamp_range = np.floor(stamp_range) # for proper indexing
-    index_range = np.transpose(center + stamp_range).astype(np.int)
+    # on the following line np.floor is necessary to index the proper pixels;
+    # astype(np.int) just makes it compatible with an index
+    index_range = np.floor(np.transpose(center + stamp_range)).astype(np.int)
     # crop the range, in case index_range goes beyond the image shape
     cropped_range = np.clip(index_range, [0, 0], image.shape)
     # generate indices into the image to pull out the stamp
@@ -51,7 +52,7 @@ def get_stamp(image, xy, stamp_shape, return_img_ind=False):
     # fancy index math to align the valid regions of the image with the stamp
     cropped_shape = image_ind.shape[-2:]
     cropped_ind = np.indices(cropped_shape)
-    # this keeps track of the stamp cropping
+    # this keeps track of the stamp cropping - 0 if no cropping performed
     expand_ind = index_range - cropped_range
     # if necessary, shift the coordinates to adjust for cropping 
     for ax, shift in enumerate(expand_ind[:, 0]):
