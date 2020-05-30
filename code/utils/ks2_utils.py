@@ -349,15 +349,31 @@ def get_point_source_catalog(ps_file=ks2_files[1], clean=False):
 
     # should we clean it up?
     if clean == True:
-        # convert the g* columns to boolean
-        for col in point_sources_df.columns:
-            if re.search('^g[0-9]+', col) is not None:
-                g2bool = lambda x: True if (str(x) == '1') else False
-                point_sources_df[col] = point_sources_df[col].apply(g2bool)
-
+        point_sources_df = clean_point_source_catalog(point_sources_df)
     return point_sources_df
 
 
+def clean_point_source_catalog(cat):
+    """
+    This function, when called, cleans the point source catalog by applying the listed series of cuts:
+    1) q > 0
+    2) z > 0
+    """
+
+    # don't keep any point sources that have any q = 0
+    q_gt_0 = ' and '.join([f"q{method_id} > 0" for method_id in phot_method_ids])
+    z_gt_0 = ' and '.join([f"z{method_id} > 0" for method_id in phot_method_ids])
+    q_gt_95 = "q3 >= 0.95"
+    # convert the g* columns to int
+    # g is 1 if the stamp is consistent with other stamps for this star, else 0
+    for col in cat.columns:
+        if re.search('^g[0-9]+', col) is not None:
+            g2bool = lambda x: True if (str(x) == '1') else False
+            cat[col] = cat[col].apply(g2bool)
+    #print(cut_q, cut_z)
+    full_query = q_gt_0 + ' and ' + z_gt_0 and q_gt_95
+    cut_df = cat.query(full_query)
+    return cut_df
 
 if __name__ == "__main__":
     # run it in script mode to get all the dataframes
