@@ -4,6 +4,9 @@ This file contains utilities for image manipulation: cutting stamps, rotations a
 
 import numpy as np
 
+from astropy.io import fits
+from . import ks2_utils, shared_utils
+
 """
 One handy tool is being able to cut a stamp out of an image. This function cuts out square stamps given the stamp center (can be floating point) and desired shape.
 """
@@ -68,3 +71,37 @@ def get_stamp(image, xy, stamp_shape, return_img_ind=False):
         full_img_ind = [np.squeeze(i) for i in full_img_ind]
         return stamp, full_img_ind
     return stamp
+
+
+"""
+OK, this is good, but it's a little clunky to use. What I need is a wrapper
+that takes in a row of the KS2 FIND_NIMFO catalog and handles the parsing
+and file-finding for you to get the stamp
+"""
+def get_stamp_from_ks2(row, stamp_size, return_img_ind=False):
+    """
+    Given a row of the FIND_NIMFO dataframe, this gets a stamp of the specified
+    size of the given point source
+    TODO: accept multiple rows
+
+    Parameters
+    ----------
+    row : pd.DataFrame row
+      a row containing the position and file information for the source
+    stamp_size : int or tuple
+      (row, col) size of the stamp [(int, int) if only int given]
+    return_img_ind : bool (False)
+      if True, return the row and col indices of the stamp in the image
+
+    Returns
+    -------
+    stamp_size-sized stamp
+    """
+    # get the file name where the point source is located and pull the exposure
+    flt_file = ks2_utils.get_file_name_from_ks2id(row['master_exp_id'])
+    img = fits.getdata(shared_utils.get_data_file(flt_file), 1)
+    # location of the point source in the image
+    xy = row[['xraw1','yraw1']].values
+    # finally, get the stamp (and indices, if requested)
+    return_vals = get_stamp(img, xy, stamp_size, return_img_ind)
+    return return_vals
