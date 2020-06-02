@@ -363,17 +363,52 @@ def clean_point_source_catalog(cat):
     # don't keep any point sources that have any q = 0
     q_gt_0 = ' and '.join([f"q{method_id} > 0" for method_id in phot_method_ids])
     z_gt_0 = ' and '.join([f"z{method_id} > 0" for method_id in phot_method_ids])
-    q_gt_95 = "q3 >= 0.95"
+    #q_gt_95 = " and ".join([f"q{method_id} >= 0.95" for method_id in phot_method_ids])
     # convert the g* columns to int
     # g is 1 if the stamp is consistent with other stamps for this star, else 0
-    for col in cat.columns:
-        if re.search('^g[0-9]+', col) is not None:
-            g2bool = lambda x: True if (str(x) == '1') else False
-            cat[col] = cat[col].apply(g2bool)
+    # leave as int for easy summation
+    #for col in cat.columns:
+    #    if re.search('^g[0-9]+', col) is not None:
+    #        g2bool = lambda x: True if (str(x) == '1') else False
+    #        cat[col] = cat[col].apply(g2bool)
     #print(cut_q, cut_z)
-    full_query = q_gt_0 + ' and ' + z_gt_0 and q_gt_95
+    full_query = q_gt_0 + ' and ' + z_gt_0 #+ ' and ' + q_gt_95
     cut_df = cat.query(full_query)
     return cut_df
+
+
+def generate_exposure_distance_matrix(df, same_nan=True):
+    """
+    Given a KS2 dataframe, compute a symmetric matrix of pixelwise distances.
+    The dataframe should only contain point sources from the same exposure.
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+      dataframe that at least contains the columns [NMAST, xraw1, and yraw1]
+    same_nan : bool (False)
+      if True, set the diagonal to nan instead of 0
+
+    Returns
+    -------
+    dist_mat : pd.DataFrame
+      N sources x N sources dataframe, where the index and columns are
+      the NMAST identifiers, containing the pixelwise distance between sources
+
+    """
+    dist_mat = pd.DataFrame(index=df['NMAST'], columns=df['NMAST'], dtype=np.float)
+    for i, row in df.iterrows():
+        star = row['NMAST']
+        diff = df[['xraw1','yraw1']] - row[['xraw1','yraw1']].values
+        dist_mat[star] = np.linalg.norm(diff, axis=1)
+
+    # if desired, set the diagonal to nan instead of 0
+    if same_nan == True:
+        for col in dist_mat.columns:
+            dist_mat.loc[col, col] = np.nan
+
+    return dist_mat
+
 
 if __name__ == "__main__":
     # run it in script mode to get all the dataframes
