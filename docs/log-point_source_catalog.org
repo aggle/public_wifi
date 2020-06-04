@@ -40,3 +40,10 @@ I realized that I need a place to compile all the things to do for the point sou
   I'll consider cuts to /q/ at the following thresholds: 0.7, 0.8, 0.85, 0.9, 0.95
 
   Some of the stars that have q=0 in the master dataframe are bad detections, but also some of them are fine - they just get flagged q=0 because they don't appear in one of the filters (so the q for that filter gets set to 0). I think the lesson here is that I should filter for q (and z, and probably others) on the *point source dataframe*, and not the *master dataframe*.
+
+* Duplicate sources
+  <2020-06-02 Tue>
+  As I was trying to set intelligent cuts on /q/, I discovered that some sources appear to be duplicates. Upon further inspection, it became clear that hundreds of sources have identical entries in the KS2 point source and master catalogs. I am now trying to figure out a way to deal with them. 
+  <2020-06-03 Wed>
+  Put a duplicate-cleaning method in /ks2_utils.py/.
+  

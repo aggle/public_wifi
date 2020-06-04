@@ -143,6 +143,7 @@ This file list the dataframes and fields used in the Orion Nebula Cluster projec
 | Visit                       | int   | HST visit ID                                              |
 | Xflt                        | float | X-axis position (pixels)                                  |
 | ZPT                         | float | not used                                                  |
+| Xflt                        | float | X-axis position (pixels)                                  |
 | Yflt                        | float | Y-axis position (pixels)                                  |
 
 * header
@@ -293,7 +294,7 @@ This file list the dataframes and fields used in the Orion Nebula Cluster projec
 | F130N_quad | int   | Detector cell (user defined) where a detection occurred                 |
 | F130N_sat  | int   | Number of saturated pixels in F130N                                     |
 | F139M_dist | float | Closest distance to another star                                        |
-| F139M_flag | str   | F130M filter quality flag (bad, good-psf, good_isolated, wide_double)   |
+| F139M_flag | str   | F139M filter quality flag (bad, good-psf, good_isolated, wide_double)   |
 | F139M_flt  | str   | name of the FLT file the data comes from                                |
 | F139M_quad | int   | Detector cell (user defined) where a detection occurred                 |
 | F139M_sat  | int   | Number of saturated pixels in F139M                                     |

@@ -1,8 +1,60 @@
 #+TITLE: RDPy Survey Design Doc
 #+ROAM_KEY: rdpy
 
+* Steps
+  1) [X] Defining a mission statement and mission objectives
+  2) [X] Analyzing the current database
+  3) [ ] Creating the data structures
+  4) [ ] Determining and establishing table relationships
+  5) [ ] Determining and defining business rules
+  6) [ ] Determining and defining views
+  7) [ ] Reviewing data integrity
 
-* Processing steps
+* Mission statement
+The purpose of the Trumpler 14 project is to determine the occurrence rate of wide-separation binaries in the Trumpler 14 young massive cluster, using PSF subtraction to access closer working angles. The purpose of the Trumpler 14 *database* is to provide the required information for, and track the progress of, the processing of thousands of point sources.
+
+* Mission objectives
+- Compile the initial catalog of point sources
+  - Position, magnitude, and all instances of an astrophysical object
+- Make sure each point source corresponds to 1, and only 1, astrophysical object
+- Keep track of which astrophysical objects are included in the database
+- Keep track of which point sources are in which stamp
+- Keep track of which point sources come from which exposure
+- Keep track of which point sources are associated with a particular astrophyiscal object
+- Keep track of which stamps are suitable to use as reference PSFs
+- Track stages of PSF subtraction:
+  1) Unsubtracted
+  2) Subtracted
+  3) SNR'd
+  4) Completeness'd
+- Keep track of which stamps are used as references for all PSF subtractions
+- Keep track of the KLIP parameters used for all PSF subtractions
+- Keep track of which candidates appear under which PSF subtraction conditions
+- Keep track of which primary a candidate is associated with
+- Keep track of photometry and position for each candidate
+- Keep track of photometric KLIP correction for each point source
+- Keep track of photometric KLIP correction for each candidate
+- Maintain completeness information for each stamp
+- Track model-derived properties for primaries and companions
+  - mass
+  - mostly mass
+
+
+* Analyzing the current database
+  A description of all fields in the ONC database can be found [[./list_of_fields-strampelli.org][here]]
+  The List of Fields can be found [[file:list_of_fields.org][here]]
+* Create the data structures
+
+* Determine and establish table relationships
+
+* Determine and define business rules
+
+* Determine and define views
+
+* Review data integrity
+
+* Appendices
+** Processing steps
   The database should be designed to support these analysis steps:
   1. Generate *point source* catalog
      - x, y *coordinates* of each point source
@@ -55,20 +107,8 @@
      3. Measure SNR in target pixel and declare it above or below threshold for detection.
      4. Build ROC curves and compute AUC.
 
-* Mission statement
-The purpose of the Trumpler 14 project determine the occurrence rate of wide-separation binaries in the Trumpler 14 young massive cluster, using PSF subtraction to access closer working angles. The purpose of the Trumpler 14 *d*atabase is to track the progress of, and provide the required information for, the processing of thousands of point sources.
-
-* Mission objectives
-- Compile complete unprocessed point source information
-- Track stages of PSF subtraction and related information
-- Compile companion candidate information
-- Maintain completeness information for each point source
-- Capture model-derived properties for primaries and companions
-
-
-
-* Table format
-The tables will be stored as HDF5? files with the following fields:
+** Table format
+   The tables will be stored as HDF5? files with the following fields:
 - NAME: the name of the header (same as the filename, no suffix)
 - DESCR: one-line description of the table contents (e.g. Primary Headers from the original data FITS files)
 - TABLE: this field stores the actual table
@@ -77,12 +117,11 @@ table_utils.write_table() also creates (or updates) an entry in a file called li
 
 Maybe all the tables should be stored in one big HDF file, under different keys, so that they can be pulled form the file by name
 
-
-* Tables
-  
-** RA and Dec tables: see [[file:2020-05-01.org][2020-05-01 notes]]
+** Tables
+** RA and Dec tables: see [[file:~/Documents/org-notes/2020-05-01.org][2020-05-01 notes]]
    The drizzlepac function `pixtosky` will give you the RA and Dec for each pixel of a WFC3 image. Every image from the same subarray (or full frame) will have the same number of pixels, so they can be stored in the same table. I can't ssh into AZG right now to run it and see what the output looks like, but either way the values for a file should be indexed by a hierarchical index with two levels: file_id, and coord (RA or Dec). Then the pixel values can be stored raveled in a column (for a dataframe), or collapsed inside a single cell (series). 
 
    Update: so if you want to save it in a portable format like HDF5 or .csv, and not in a python-specific format like a pickle, then you'll have to do some real thinking about how to store this data. maybe the column is a raveled pixel coordinate? See [[file:2020-05-01.org][2020-05-02 notes]].
 
-  
+   
+   
