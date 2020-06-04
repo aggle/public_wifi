@@ -91,7 +91,7 @@ TODO: I think it's possible to build a template function for this so I don't hav
 """
 def get_filter_name_from_ks2id(filter_id, filter_mapper=get_filter_mapper()):
     """
-    Given a KS2 filter identifier, get the name of the filter
+    Given a KS2 filter identifier, get the name of the HST filter
 
     Parameters
     ----------
@@ -110,7 +110,7 @@ def get_filter_name_from_ks2id(filter_id, filter_mapper=get_filter_mapper()):
 
 def get_file_name_from_ks2id(file_id, file_mapper=get_file_mapper()):
     """
-    Given a KS2 file identifier, get the name of the file
+    Given a KS2 file identifier, get the name of the FLT file
 
     Parameters
     ----------
@@ -147,7 +147,7 @@ column_name_mapper = { # no longer used
     'o': 'master_crowding_f',       # crowding parameter
 }
 
-def get_master_catalog(ks2_master_file=ks2_files[0]):
+def get_master_catalog(ks2_master_file=ks2_files[0], raw=False):
     """
     From LOGR.XYVIQ1, pull out the master catalog of information about astrophysical objects
 
@@ -155,12 +155,13 @@ def get_master_catalog(ks2_master_file=ks2_files[0]):
     ----------
     ks2_master_file : str or pathlib.Path
      full path to the file
-
+    raw : bool (False)
+      if True, returns the raw version of the catalog (i.e. straight from KS2)
     Returns
     -------
     master_catalog_df : pd.DataFrame
       pandas dataframe with the following columns:
-        astro_id : ID for the astrophysical object
+        NMAST : ID for the astrophysical object
         umast0, vmast0 :  average x and y position [pix]
         zmast1, szmast1 : filter 1 counts and count sigma,
         q1, o1 : filter 1 fit quality and crowding
@@ -169,6 +170,13 @@ def get_master_catalog(ks2_master_file=ks2_files[0]):
     """
     # get the columns
     ks2_master_file = Path(ks2_master_file).resolve().as_posix()
+
+    # if desired, return the cleaned catalog. else, return raw
+    if raw == False:
+        master_catalog_df = pd.read_csv(ks2_master_file + '-nodup.csv')
+        return master_catalog_df
+
+    # otherwise, parse the original KS2 output file
     with open(ks2_master_file) as f:
         columns = f.readlines(2)[1] # get line #2
         columns = re.findall('[A-Za-z0-9]+', columns)
@@ -259,7 +267,7 @@ nimfo_cols = {
     35: 'NMAST',          # Astrophysical object ID number, name comes from master table
     36: 'ps_tile_id',     # point source number within the tile
     37: 'tile_id',        # local tile exposure number for this measurement
-    38: 'master_exp_id',  # Master exposure number / file and header ID number
+    38: 'exp_id',  # Master exposure number / file and header ID number
     39: 'filt_id',        # filter number
     40: 'unk',            # chip number (within the master exposure)
 }
@@ -303,7 +311,7 @@ nimfo_dtypes = {
     "NMAST": str,
     "ps_tile_id": str,
     "tile_id": str,
-    "master_exp_id": str,
+    "exp_id": str,
     "filt_id": str,
     "unk": str,
     "chip_id": np.int64,
@@ -313,7 +321,7 @@ nimfo_dtypes = {
 # you can concatenate it with z, sz, q, o, f, and g
 phot_method_ids = ['1', '2', '3']
 
-def get_point_source_catalog(ps_file=ks2_files[1]):
+def get_point_source_catalog(ps_file=ks2_files[1], raw=False):
     """
     This function reads the KS2 FIND_NIMFO file that stores *every* point source
 
@@ -321,9 +329,9 @@ def get_point_source_catalog(ps_file=ks2_files[1]):
     ----------
     ps_file : pathlib.Path or string
       full path to the LOGR.FIND_NIMFO
-    clean : bool [False]
-      if True, apply some preliminary cleaning to the catalog,
-      like converting special characters to bool or NaN
+    raw : bool [False]
+      if False, return the cleaned point source catalog. If True, return the
+      original KS2 catalog.
 
     Returns
     -------
@@ -333,6 +341,12 @@ def get_point_source_catalog(ps_file=ks2_files[1]):
     """
     ps_file = Path(ps_file).resolve().as_posix()
 
+    # if desired, return the cleaned catalog. else, return raw
+    if raw == False:
+        point_sources_df = pd.read_csv(ps_file + '-nodup.csv')
+        return point_sources_df
+
+    # otherwise, parse the original KS2 output file
     point_sources_df = pd.read_csv(ps_file,
                                    sep=' ',
                                    skipinitialspace=True, 
@@ -344,8 +358,8 @@ def get_point_source_catalog(ps_file=ks2_files[1]):
     )
     point_sources_df.rename(columns=nimfo_cols, inplace=True)
     # split the file identifier into the file number and extension number
-    point_sources_df['chip_id'] = point_sources_df['master_exp_id'].apply(lambda x: int(x.split('.')[1]))
-    point_sources_df['master_exp_id'] = point_sources_df['master_exp_id'].apply(lambda x: x.split('.')[0])
+    point_sources_df['chip_id'] = point_sources_df['exp_id'].apply(lambda x: int(x.split('.')[1]))
+    point_sources_df['exp_id'] = point_sources_df['exp_id'].apply(lambda x: x.split('.')[0])
 
     return point_sources_df
 
@@ -372,12 +386,13 @@ def remove_duplicates(ps_cat, master_cat):
     master_cat_nodup : pd.DataFrame
       pandas dataframe of the master catalog that matches the remaining point sources
     """
-    # get the ps columns that will be used to find duplicates
+    # drop the ps columns that will not be used to find duplicates
     ps_cols = list(ps_cat.columns)
-    for i in ['NMAST', 'ps_tile_id', 'tile_id', 'master_exp_id', 'filt_id', 'unk', 'chip_id']:
+    for i in ['NMAST', 'g0', 'g1', 'g2', 'g3', 'ps_tile_id',
+              'tile_id', 'exp_id', 'filt_id', 'unk', 'chip_id']:
         ps_cols.pop(ps_cols.index(i))
 
-    # get the ps columns that will be used to find duplicates
+    # drop the master columns that will not be used to find duplicates
     master_cols = list(master_cat.columns)
     for i in ['NMAST']:
         master_cols.pop(master_cols.index(i))

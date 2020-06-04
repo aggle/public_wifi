@@ -46,4 +46,8 @@ I realized that I need a place to compile all the things to do for the point sou
   As I was trying to set intelligent cuts on /q/, I discovered that some sources appear to be duplicates. Upon further inspection, it became clear that hundreds of sources have identical entries in the KS2 point source and master catalogs. I am now trying to figure out a way to deal with them. 
   <2020-06-03 Wed>
   Put a duplicate-cleaning method in /ks2_utils.py/.
-  
+  <2020-06-04 Thu>
+  Wrote out the duplicate-cleaned catalogs to
+  - tr14/data/ks2/LOGR.FIND_NIMFO-nodup.csv
+  - tr14/data/ks2/LOGR.XYVIQ1-nodup.csv
+  KS2_duplicates.ipynb, the notebook that did the duplicate removal, is now closed.
