@@ -113,12 +113,13 @@ def load_headers(extname='pri'):
 
     Parameters
     ----------
-    extname : pri
+    extname : str [pri]
       shorthand name for the extension whose dataframe you want
-
+      options are: pri, sci, err, dq, samp, and time
     Returns
     -------
-    df : a dataframe with the right header selected
+    df : pd.DataFrame
+      a dataframe with the right header selected
     """
     filepath = header_path / f'{extname.lower()}_hdrs.csv'
     read_args = {'index_col':0, 'header':2}
