@@ -1,0 +1,14 @@
+#+TITLE: Tr14 paper
+bibliography:manuscript.bib
+
+* Introduction
+
+* Observations
+
+* Methods
+  The initial catalog of point sources was created using KS2 
+
+* Results
+
+* Conclusions
+
