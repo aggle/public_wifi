@@ -78,7 +78,7 @@ OK, this is good, but it's a little clunky to use. What I need is a wrapper
 that takes in a row of the KS2 FIND_NIMFO catalog and handles the parsing
 and file-finding for you to get the stamp
 """
-def get_stamp_from_ks2(row, stamp_size, return_img_ind=False):
+def get_stamp_from_ks2(row, stamp_size=11, return_img_ind=False):
     """
     Given a row of the FIND_NIMFO dataframe, this gets a stamp of the specified
     size of the given point source
@@ -88,7 +88,7 @@ def get_stamp_from_ks2(row, stamp_size, return_img_ind=False):
     ----------
     row : pd.DataFrame row
       a row containing the position and file information for the source
-    stamp_size : int or tuple
+    stamp_size : int or tuple [11]
       (row, col) size of the stamp [(int, int) if only int given]
     return_img_ind : bool (False)
       if True, return the row and col indices of the stamp in the image
@@ -98,7 +98,7 @@ def get_stamp_from_ks2(row, stamp_size, return_img_ind=False):
     stamp_size-sized stamp
     """
     # get the file name where the point source is located and pull the exposure
-    flt_file = ks2_utils.get_file_name_from_ks2id(row['master_exp_id'])
+    flt_file = ks2_utils.get_file_name_from_ks2id(row['exp_id'])
     img = fits.getdata(shared_utils.get_data_file(flt_file), 1)
     # location of the point source in the image
     xy = row[['xraw1','yraw1']].values
