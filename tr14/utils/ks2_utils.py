@@ -455,6 +455,44 @@ def clean_point_source_catalog(cat):
     return cut_df
 
 
+"""
+It is useful to quickly calculate the distances of objects from each other,
+in a particular exposure. The following methods do that:
+calc_exp_dist_from_obj efficiently gets the distances from a particular object, and
+generate_exposure_distance_matrix uses this to get the distances of all objects
+from each other
+"""
+def calc_exp_dist_from_obj(df, obj_id, set_nan=True):
+    """
+    Given a KS2 dataframe of a single exposure and a particular object,
+    calculate the pixelwise distance of every other point source in that
+    exposure from the specified object.
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+      pandas dataframe for a single exposure with only one entry per astrophysical object
+    obj_id : str
+      identifier for the astrophysical object
+    set_nan : bool [True]
+      if True, set the distance of the object from itself to nan instead of 0
+    """
+    obj_row = df.query('NMAST == @obj_id').squeeze()
+    obj_pos = obj_row[['xraw1', 'yraw1']]
+    diff = df[['xraw1','yraw1']] - obj_row[['xraw1','yraw1']]
+    # now set the index to be the obj_id
+    # this is a little convoluted but it uses pandas' automatic
+    # index matching to make sure the distances line up with the right
+    # objects
+    diff['NMAST'] = df['NMAST']
+    diff.set_index('NMAST', inplace=True)
+    dist = diff.apply(np.linalg.norm, axis=1)
+
+    if set_nan == True:
+        dist[dist == 0] = np.nan
+        dist.loc[obj_id] = np.nan
+    return dist
+
 def generate_exposure_distance_matrix(df, same_nan=True):
     """
     Given a KS2 dataframe, compute a symmetric matrix of pixelwise distances.
@@ -475,10 +513,8 @@ def generate_exposure_distance_matrix(df, same_nan=True):
 
     """
     dist_mat = pd.DataFrame(index=df['NMAST'], columns=df['NMAST'], dtype=np.float)
-    for i, row in df.iterrows():
-        star = row['NMAST']
-        diff = df[['xraw1','yraw1']] - row[['xraw1','yraw1']].values
-        dist_mat[star] = np.linalg.norm(diff, axis=1)
+    for obj_id in dist_mat.columns:
+        dist_mat[obj_id] = calc_dist_from_obj(df, obj_id)
 
     # if desired, set the diagonal to nan instead of 0
     if same_nan == True:
@@ -486,6 +522,44 @@ def generate_exposure_distance_matrix(df, same_nan=True):
             dist_mat.loc[col, col] = np.nan
 
     return dist_mat
+
+
+"""
+I have found it helpful to collect all the neighbors of an a star -- in a
+particular exposure -- within some radius. This helps with plotting to see
+if the nearby point sources are real or spurious.
+"""
+def get_exposure_neighbors(catalog, obj_id, exp_id, radius):
+    """
+    Get all the point sources within a certain radius of an object in a
+    particular exposure. This tests the selected obj_id's xraw1 and yraw1
+    against those of the rest of the objects in that exposure.
+    Returns a dataframe of the neighbors.
+
+    Parameters
+    ----------
+    catalog : pd.DataFrame
+      a catalog of point sources
+    obj_id : str
+      the stellar object identifier. Only one should be present in any exposure
+    exp_id : str
+      identifier for the exposure
+    radius : int
+      distance in pixels from the object to keep
+
+    Returns
+    -------
+    neighbor_df : pd.DataFrame
+      catalog entries for the neighbors
+    """
+    # untested
+    # first, make sure the catalog is a single exposure
+    exp_df = catalog.query("exp_id == @exp_id")
+    dist = calc_exp_dist_from_obj(exp_df, obj_id)
+    neighbors = dist[dist <= radius].index
+    neighbor_df = exp_df[exp_df['NMAST'].isin(neighbors)]
+    return neighbor_df
+
 
 
 if __name__ == "__main__":

@@ -41,7 +41,7 @@ def mast_cat_nodup():
 
 catalogs = [ # For some reason, the fixtures can't be used directly here
     ks2_utils.get_point_source_catalog(raw=False),#ps_cat_nodup,
-    ks2_utils.get_point_source_catalog(raw=False),#mast_cat_nodup,
+    ks2_utils.get_master_catalog(raw=False),#mast_cat_nodup,
 ]
 drop_cols = [
     ['NMAST', 'ps_tile_id', 'tile_id', 'exp_id', 'filt_id', 'unk', 'chip_id'],
@@ -50,6 +50,7 @@ drop_cols = [
 @pytest.mark.parametrize('cat, drop_cols',
                          [(i, j) for i, j in zip(catalogs, drop_cols)],
 )
+@pytest.mark.clean
 def test_remove_duplicates(cat, drop_cols):
     """
     make sure all duplicate stars are removed from the dataframes
@@ -69,7 +70,8 @@ def test_remove_duplicates(cat, drop_cols):
     assert dups.empty == True
 
 
-@pytest.mark.skip("Skip this test because it takes a long time to run")
+@pytest.mark.skip(reason="Skip this test because it takes a long time to run")
+@pytest.mark.clean
 def test_remove_duplicates_raw(ps_cat_raw, mast_cat_raw):
     """
     Test that ks2_utils.remove_duplicates() works as billed
@@ -93,3 +95,42 @@ def test_remove_duplicates_raw(ps_cat_raw, mast_cat_raw):
                                                          keep=False)]
     assert mast_dups.size == 0
 
+@pytest.mark.clean
+def test_clean_point_source_catalog(ps_cat_nodup):
+    """
+    Test that the cleaned catalog doesn't contain any point sources with cut values.
+    Current cuts are:
+    1. q > 0 (for all the q's)
+    2. z > 0 (for all the z's)
+    This starts from the 'nodup' catalog that has been cleaned of duplicate entries
+    There should be a way to parameterize this
+    """
+    cut_cat = ks2_utils.clean_point_source_catalog(ps_cat_nodup)
+    # test q cuts
+    # get 'q' columns
+    qstr = '^q[0-9]+'
+    cols = [i for i in ps_cat_nodup.columns if ks2_utils.re.search(qstr, i) is not None]
+    # all test results should be empty
+    for col in cols:
+        cut = f"{col} <= 0"#"@col <= 0"
+        assert ps_cat_nodup.query(cut).empty == False
+
+    # test z cuts
+    # get 'z' columns
+    zstr = '^z[0-9]+'
+    cols = [i for i in ps_cat_nodup.columns if ks2_utils.re.search(zstr, i) is not None]
+    # all test results should be empty
+    for col in cols:
+        cut = f"{col} <= 0"
+        assert ps_cat_nodup.query(cut).empty == False
+
+
+def test_get_exposure_neighbors(ps_cat_nodup):
+    """
+    get_exposure_neighbors retrieves all the point sources in a particular
+    exposure that are within some distance from a specified point source,
+    and returns a dataframe of those neighbors.
+    How can I test this?
+
+    """
+    pass
