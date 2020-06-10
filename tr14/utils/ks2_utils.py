@@ -2,10 +2,13 @@
 This file contains utilities for handling the KS2 point source catalog
 """
 
+import re
+from pathlib import Path
 import numpy as np
 import pandas as pd
-from pathlib import Path
-import re
+
+from astropy.io import fits
+
 from . import shared_utils
 
 
@@ -344,6 +347,7 @@ def get_point_source_catalog(ps_file=ks2_files[1], raw=False):
     # if desired, return the cleaned catalog. else, return raw
     if raw == False:
         point_sources_df = pd.read_csv(ps_file + '-nodup.csv')
+        point_sources_df.astype(nimfo_dtypes)
         return point_sources_df
 
     # otherwise, parse the original KS2 output file
@@ -354,9 +358,10 @@ def get_point_source_catalog(ps_file=ks2_files[1], raw=False):
                                    skiprows=5, 
                                    header=None,
                                    usecols=nimfo_cols.keys(),
-                                   dtype=nimfo_dtypes,
+                                   #dtype=nimfo_dtypes,
     )
     point_sources_df.rename(columns=nimfo_cols, inplace=True)
+    point_sources_df.astype(nimfo_dtypes)
     # split the file identifier into the file number and extension number
     point_sources_df['chip_id'] = point_sources_df['exp_id'].apply(lambda x: int(x.split('.')[1]))
     point_sources_df['exp_id'] = point_sources_df['exp_id'].apply(lambda x: x.split('.')[0])
@@ -414,6 +419,48 @@ def remove_duplicates(ps_cat, master_cat):
     master_cat_nodup = master_cat.loc[keep_names]
 
     return ps_cat_nodup, master_cat_nodup
+
+"""
+We only want to keep stars that are detected in at least N (probably 10) exposures,
+to remove spurious detections. This function cuts on that threshold
+"""
+def catalog_cut_ndet(cat, ndet_thresh=10, mast_cat=None):
+    """
+    This function only keeps stars that are detected more than ndet times in all exposures.
+
+    Parameters
+    ----------
+    cat : pd.DataFrame
+      a catalog of point source detections
+    ndet : int [10]
+      the lower threshold on the number of detections (>=)
+    mast_cat : None or pd.DataFrame
+      if a dataframe containing the master catalog is given, make sure the
+      entries in the master catalog are consistent with the new cuts in the
+      point source catalog
+
+    Returns
+    -------
+    cut_cat : pd.DataFrame
+      a catalog with the cuts applied. Note that the master catalog should also
+      be updated
+    """
+    # collect the number of detections per point source
+    ndet = cat.groupby('NMAST')['exp_id'].agg('count').reset_index()
+    ndet.rename(columns={'exp_id':'n'}, inplace=True)
+    # collect the object ids for those that satisfy the threshold
+    #keep_objs = (ndet.groupby('NMAST').sum() >= ndet_thresh).query("n == True").index
+    keep_objs = ndet.query('n >= @ndet_thresh')['NMAST']
+    # and finally use them to index the catalog
+    cut_cat = cat[cat['NMAST'].isin(keep_objs)]
+
+    if mast_cat is not None:
+        # update the master catalog in-place
+        drop_ind = mast_cat['NMAST'].isin(obj_ids).reset_index().query("NMAST == False")['index']
+        mast_cat.drop(drop_ind, inplace=True)
+
+    return cut_cat
+
 
 """
 We also want to apply the following requirements to the catalog:
@@ -489,7 +536,6 @@ def calc_exp_dist_from_obj(df, obj_id, set_nan=True):
     dist = diff.apply(np.linalg.norm, axis=1)
 
     if set_nan == True:
-        dist[dist == 0] = np.nan
         dist.loc[obj_id] = np.nan
     return dist
 
@@ -497,6 +543,7 @@ def generate_exposure_distance_matrix(df, same_nan=True):
     """
     Given a KS2 dataframe, compute a symmetric matrix of pixelwise distances.
     The dataframe should only contain point sources from the same exposure.
+    this goes really slowly as the size of the dataframe increases; I'm not sure why
 
     Parameters
     ----------
@@ -512,9 +559,19 @@ def generate_exposure_distance_matrix(df, same_nan=True):
       the NMAST identifiers, containing the pixelwise distance between sources
 
     """
-    dist_mat = pd.DataFrame(index=df['NMAST'], columns=df['NMAST'], dtype=np.float)
+    obj_ids = df['NMAST'].values # all the object ids
+    dist_mat = pd.DataFrame(data=np.nan,
+                            index=obj_ids, columns=obj_ids,
+                            dtype=np.float)
     for obj_id in dist_mat.columns:
-        dist_mat[obj_id] = calc_dist_from_obj(df, obj_id)
+        dist_mat[obj_id] = calc_exp_dist_from_obj(df, obj_id)
+
+    # alternate algorithm:
+    """
+    dist_mat = df.apply(lambda x: calc_exp_dist_from_obj(df, x['NMAST']),
+                        axis=1)
+    dist_mat.set_index(dist_mat.columns)
+    """
 
     # if desired, set the diagonal to nan instead of 0
     if same_nan == True:
@@ -561,6 +618,28 @@ def get_exposure_neighbors(catalog, obj_id, exp_id, radius):
     return neighbor_df
 
 
+"""
+This utility does all the work to pull out a full exposure, given the KS2 file ID.
+"""
+def get_img_from_ks2_file_id(ks2_exp_id, hdr='SCI'):
+    """
+    Pull out an image from the fits file, given the KS2 exposure identifier.
+
+    Parameters
+    ----------
+    ks2_exp_id : str
+      the exposure identifier assigned by KS2
+    hdr : str or int ['SCI']
+      which header? allowed values: ['SCI','ERR','DQ','SAMP','TIME']
+
+    Returns:
+    img : numpy.array
+      2-D image from the fits file
+    """
+    flt_name = get_file_name_from_ks2id(ks2_exp_id)
+    flt_path = shared_utils.get_data_file(flt_name)
+    img = fits.getdata(flt_path, hdr)
+    return img
 
 if __name__ == "__main__":
     # run it in script mode to get all the dataframes

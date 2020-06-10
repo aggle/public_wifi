@@ -4,6 +4,7 @@ This module contains tests for tr14.utils.ks2_utils.py
 import pytest
 from pathlib import Path
 
+import random
 import tr14.utils.ks2_utils as ks2_utils
 
 ############
@@ -134,3 +135,12 @@ def test_get_exposure_neighbors(ps_cat_nodup):
 
     """
     pass
+
+@pytest.mark.parametrize("hdr", ['SCI','ERR','DQ','SAMP','TIME', 1, 2, 3, 4, 5])
+def test_get_img_from_ks2_file_id(ps_cat_nodup, hdr):
+    """
+    get_img_from_ks2_file_id should return a 2-D array
+    """
+    exp_id = random.choice(ps_cat_nodup['exp_id'].values)
+    img = ks2_utils.get_img_from_ks2_file_id(exp_id, hdr)
+    assert ks2_utils.np.ndim(img) == 2
