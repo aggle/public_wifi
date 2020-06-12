@@ -5,7 +5,7 @@ This file contains utilities for image manipulation: cutting stamps, rotations a
 import numpy as np
 
 from astropy.io import fits
-from . import ks2_utils, shared_utils
+from . import shared_utils
 
 """
 One handy tool is being able to cut a stamp out of an image. This function cuts out square stamps given the stamp center (can be floating point) and desired shape.
@@ -77,31 +77,36 @@ def get_stamp(image, xy, stamp_shape, return_img_ind=False):
 OK, this is good, but it's a little clunky to use. What I need is a wrapper
 that takes in a row of the KS2 FIND_NIMFO catalog and handles the parsing
 and file-finding for you to get the stamp
+OK, I put the wrapper in ks2_utils
+ks2_utils.get_stamp_from_ks2(row, stamp_size=11, return_img_ind=False)
 """
-def get_stamp_from_ks2(row, stamp_size=11, return_img_ind=False):
+
+"""
+This is a handy utility that converts an array of indices into one that
+pyplot.pcolor will accept
+"""
+def make_pcolor_index(indices):
     """
-    Given a row of the FIND_NIMFO dataframe, this gets a stamp of the specified
-    size of the given point source
-    TODO: accept multiple rows
+    pyplot.pcolor likes to have the x and y arrays for an image have 1 more
+    element than the image, i.e. if the image is  MxN, then the row indices
+    for y should have M+1 elements, and the col indices (x) should have N+1
+    elements. This assumes that all the indexes are pixel integers.
+    It then applies a half-pixel shift so that the integer values
+    refer to the pixel centers.
 
     Parameters
     ----------
-    row : pd.DataFrame row
-      a row containing the position and file information for the source
-    stamp_size : int or tuple [11]
-      (row, col) size of the stamp [(int, int) if only int given]
-    return_img_ind : bool (False)
-      if True, return the row and col indices of the stamp in the image
+    indices: list-like, dim 2xN 
+      a tuple, list, or array of the indices, as (row, col) (i.e. y, x). They
+      do not need to have the same number of elements
 
     Returns
     -------
-    stamp_size-sized stamp
+    extended_indices : tuple (y, x)
+      the indices with one more element tacked onto the end
     """
-    # get the file name where the point source is located and pull the exposure
-    flt_file = ks2_utils.get_file_name_from_ks2id(row['exp_id'])
-    img = fits.getdata(shared_utils.get_data_file(flt_file), 1)
-    # location of the point source in the image
-    xy = row[['xraw1','yraw1']].values
-    # finally, get the stamp (and indices, if requested)
-    return_vals = get_stamp(img, xy, stamp_size, return_img_ind)
-    return return_vals
+    # adjust x and y for use with pcolor
+    y = list(indices[0]) + [indices[0][-1] + 1]
+    x = list(indices[1]) + [indices[1][-1] + 1]
+    return (np.array(y)+0.5,
+            np.array(x)+0.5)
