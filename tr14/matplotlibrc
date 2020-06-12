@@ -558,7 +558,7 @@ axes.labelsize     : large  ## fontsize of the x any y labels
 ## ***************************************************************************
 #image.aspect : equal            ## {equal, auto} or a number
 #image.interpolation  : antialiased  ## see help(imshow) for options
-#image.cmap   : viridis          ## A colormap name, gray etc...
+image.cmap   : magma          ## A colormap name, gray etc...
 #image.lut    : 256              ## the size of the colormap lookup table
 image.origin : lower            ## {lower, upper}
 #image.resample  : True
