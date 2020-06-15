@@ -17,7 +17,9 @@ INPUT.KS2 contains the instructions used to rnun the photometry, and it shows wh
 LOGR.XYVIQ1 gives the average position for each source on the master frame (cols 1 and 2), the average flux (cols 5 and 11), the flux sigma (cols 6 and 12), and fit quality (cols 7 and 13) in each filter)
 LOGR.FIND_NIMFO gives you the coordinates and fluxes of each star in each exposure. Cols 14 and 15 contain the x and y coordinates in the flt images (i.e. *before* geometric distortion correction). col 36 is the ID number for each star (starts with R). col 39 is the ID for the image (starts with G). col 40 (starts with F) is the ID for the filter.
 """
-ks2_files = [shared_utils.ks2_path / i for i in ["LOGR.XYVIQ1", "LOGR.FIND_NIMFO", "INPUT.KS2"]]
+ks2_files = [shared_utils.ks2_path / i for i in ["LOGR.XYVIQ1",
+                                                 "LOGR.FIND_NIMFO",
+                                                 "INPUT.KS2"]]
 
 
 """
@@ -52,7 +54,8 @@ def get_file_mapper(ks2_input_file=ks2_files[2]):
             # file ID
             if line.find("PIX=") >= 0:
                 file_id = 'G'+line.split(' ')[0]
-                file_name = Path(re.search('PIX=".*"', line).group().split('"')[1]).name
+                file_name = Path(re.search('PIX=".*"',\
+                                           line).group().split('"')[1]).name
                 new_data = {'file_id': file_id,
                             'file_name': file_name}
                 filemapper_df = filemapper_df.append(new_data, ignore_index=True)
