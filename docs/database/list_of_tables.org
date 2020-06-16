@@ -10,3 +10,53 @@ They were assembled loosely (i.e. poorly) following the procedure laid out in [[
 Review the [[./list_of_fields.org][List of Fields]]. If you can group some into a subject, add that subject to the preliminary tables list
 *** Use the List of Subjects 
 Merge the list of implied subjects with the list of subjects you made [[./list_of_subjects.org][here]].
+** Tables
+*** Astrophysical objects table
+**** astro_id                                                         :PK:
+**** x_mast, y_mast
+x and y position in the master frame
+**** phot_i, e_phot_i
+Photometry (and uncertainty) in Filter Fi, where i is a label for the filter
+*** Point sources table
+A "point source" is the detection of an astrophysical object in a particular exposure
+**** ps_id                                                            :PK:
+unique id for the point source.
+**** astro_id                                                         :FK:
+the astrophysical object it corresponds to.
+**** x_mast, y_mast
+x and y position for that point source in the master frame.
+**** x_exp, y_exp
+x and y position for this particular exposure.
+**** phot, e_phot
+Photometry and uncertainty.
+**** filter_id
+The filter used for the exposure.
+**** exp_id
+The exposure the point source was found in.
+*** Stamps table
+Stamp ID and data quality
+**** stamp_id
+**** ps_id
+**** astro_id
+**** stamp_file
+File where the stamp is saved
+**** data quality flags?
+***** hot_pixels
+Number of hot pixels in the stamp?
+***** maybe 1 field for every data quality flag
+number of pixels in the stamp that match that DQ flag
+**** good_ref
+Flag for if this can be used as a reference for PSF subtraction.
+** Future tables
+These tables don't need to be implemented until we start doing PSF subtraction
+*** Companions table
+All the same info as the point sources table, but also:
+**** companion_id                                                     :PK:
+**** sep, pa
+*** Subtraction table
+This table stores the parameters used for a PSF subtraction
+**** target_id
+id for the target stamp
+**** reference_id_i..n
+ids for the reference stamps
+     
