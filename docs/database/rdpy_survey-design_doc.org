@@ -43,12 +43,13 @@ The purpose of the Trumpler 14 project is to determine the occurrence rate of wi
 * Analyzing the current database
   A description of all fields in the ONC database can be found [[./list_of_fields-strampelli.org][here]]
   The List of Fields can be found [[file:list_of_fields.org][here]]
+
 * Create the data structures
 
 * Determine and establish table relationships
 
 * Determine and define business rules
-
+  
 * Determine and define views
 
 * Review data integrity

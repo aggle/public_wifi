@@ -2,64 +2,77 @@
 This document is used to create the lists of fields as suggested in Database Design for Mere Mortals
 
 * Steps:
- 1) [-] Review and refine the list of characteristics
+ 1) [X] Review and refine the list of characteristics [3/3]
     1) [X] Refine items with the same name
-    2) [ ] Refine items representing the same characteristic
-    3) [ ] Ensure each item represents a characteristic
- 2) [ ] Determine whether there are new characteristics in any of your samples
+    2) [X] Refine items representing the same characteristic
+    3) [X] Ensure each item represents a characteristic
+       - Can this word be used to describe something?
+       - Does this word represent a component, detail, or piece of something in particular?
+       - Does this word represent a /collection/ of things?
+       - Does this word represent something that can be broken into smaller pieces?
+ 2) [X] Determine whether there are new characteristics in any of your samples
     - Go through your notes (in my case, my ongoing analysis) and decide if there's anything new that's missing from these lists
- 3) [ ] Separate the /calculated fields/ and place them in a new list
+ 3) [X] Separate the /calculated fields/ and place them in a new list
 
 * Step 1: List of Characteristics
 
 ** Tr14 table
-| Field           | Type  | Description                                                       |
-|-----------------+-------+-------------------------------------------------------------------|
-| astro_id        | str   | unique identifier for a real astrophysical object                 |
-| ps_id           | str   | unique identifier for a point source detection                    |
-| ps_file         | str   | the source file for a point source                                |
-| x_flt           | float | x-position in pixels in the flt file                              |
-| y_flt           | float | y-position in pixels in the flt file                              |
-| x_mast          | float | x-position in pixels in the master frame                          |
-| y_mast          | float | y-position in pixels in the master frame                          |
-| n_det           | float | number of times an astro object is detected                       |
-| phot_ks2        | flaot | ks2 photometry (for either point source or astro obj)             |
-| e_phot_ks2      | float | ks2 phot uncertainty                                              |
-| exp_id          | str   | identifier for an exposure / flt file                             |
-| filt_id         | str   | identifier for a filter                                           |
-| color_fi-fj     | float | color between filters i and j                                     |
-| e_color_fi-fj   | float | color uncertainty between filters i and j                         |
-| stamp_id        | str   | identifier for a particular stamp (may have more than 1 PS in it) |
-| stamp_x0        | int   | lower x limit of stamp                                            |
-| stamp_x1        | int   | upper x limit of stamp                                            |
-| stamp_y0        | int   | lower y limit of stamp                                            |
-| stamp_y1        | int   | upper y limit of stamp                                            |
-| stamp_file      | str   | file of origin for stamp                                          |
-| refs_used       | list  | list of references used for psf subtraction                       |
-| kklip           | list  | list of kklips used for psf subtraction                           |
-| kklip_file      | str   | path to file where klip results are saved                         |
-| cand_id         | path  | unique identifier for a candidate companion                       |
-| cand_stamp_id   | float | stamp where a companion was found                                 |
-| cand_x          | int   | x (within stamp) where a companion was found                      |
-| cand_y          | int   | y (within stamp) where a companion was found                      |
-| cand_phot       | float | my photometry for point sources/companions                        |
-| parent_ps_id    | str   | identifier for the parent point source                            |
-| parent_astro_id | str   | identifier for the parent astro object                            |
-| ps_dist         | float | distance between point sources                                    |
-| dx              | float | separation in x between companion candidate and primary           |
-| dy              | float | separation in y between companion candidate and primary           |
-| sep             | float | radial separation between companion candidate and primary (pix)   |
-| pa              | float | position angle between candidate and primary (deg)                |
-| good_ref        | bool  | is a stamp a good reference or not                                |
-| AUC             | float | area under the curve of the ROC                                   |
-| Av              | float | reddening for a point source                                      |
-| ra              | float | right ascension                                                   |
-| dec             | float | declination                                                       |
-| membership_flag | bool  | True if Tr14 member, False if background object                   |
-| hot_pix         | int   | number of hot pixels in a stamp                                   |
-| catalog_name    | str   | name of a catalog an object is found in                           |
-| catalog_id      | str   | the id in that catalog                                            |
-| quadrant        | int   | the detector quadrant a point source is located in                |
+| Field           | Type  | Description                                                       | Subj/Char? |
+|-----------------+-------+-------------------------------------------------------------------+------------|
+| astro_id        | str   | unique identifier for a real astrophysical object                 | C          |
+| ps_id           | str   | unique identifier for a point source detection                    | C          |
+| ps_file         | str   | the source file for a point source                                | C          |
+| x_flt           | float | x-position in pixels in the flt file                              | C          |
+| y_flt           | float | y-position in pixels in the flt file                              | C          |
+| x_mast          | float | x-position in pixels in the master frame                          | C          |
+| y_mast          | float | y-position in pixels in the master frame                          | C          |
+| phot_ks2        | flaot | ks2 photometry (for either point source or astro obj)             | C          |
+| e_phot_ks2      | float | ks2 phot uncertainty                                              | C          |
+| exp_id          | str   | identifier for an exposure / flt file                             | C          |
+| filt_id         | str   | identifier for a filter                                           | C          |
+| stamp_id        | str   | identifier for a particular stamp (may have more than 1 PS in it) | C          |
+| stamp_x0        | int   | lower x limit of stamp                                            | C          |
+| stamp_x1        | int   | upper x limit of stamp                                            | C          |
+| stamp_y0        | int   | lower y limit of stamp                                            | C          |
+| stamp_y1        | int   | upper y limit of stamp                                            | C          |
+| stamp_file      | str   | file of origin for stamp                                          | C          |
+| Av              | float | reddening for a point source                                      | C          |
+| ra              | float | right ascension                                                   | C          |
+| dec             | float | declination                                                       | C          |
+| header fields   | N/A   | placeholder for the fields made directly from the fits headers    | S          |
+| refs_used       | list  | list of references used for psf subtraction                       | S          |
+| kklip           | list  | list of kklips used for psf subtraction                           | S          |
+| klip_file       | str   | path to file where klip results are saved                         | C          |
+| cand_id         | path  | unique identifier for a candidate companion                       | C          |
+| cand_stamp_id   | float | stamp where a companion was found                                 | C          |
+| cand_x          | int   | x (within stamp) where a companion was found                      | C          |
+| cand_y          | int   | y (within stamp) where a companion was found                      | C          |
+| cand_phot       | float | my photometry for point sources/companions                        | C          |
+| parent_ps_id    | str   | identifier for the parent point source of a candidate             | C          |
+| parent_astro_id | str   | identifier for the parent astro object of a candidate             | C          |
+| good_ref        | bool  | can this stamp be used as a reference for PSF subtraction         | C          |
+| AUC             | float | area under the curve of the ROC                                   | C          |
+
+Note - this is not final, but at least it's a start! Best to consider this an evolving document. Better to have something than nothing.
+
+
+** Calculated Fields
+| Field           | Type  | Description                                                     | Subj/Char? |
+|-----------------+-------+-----------------------------------------------------------------+------------|
+| n_det           | float | number of times an astro object is detected                     | C          |
+| color_fi-fj     | float | color between filters i and j                                   | C          |
+| e_color_fi-fj   | float | color uncertainty between filters i and j                       | C          |
+| membership_flag | bool  | True if Tr14 member, False if background object                 | C          |
+| ps_dist         | float | distance between point sources                                  | C          |
+| dx              | float | separation in x between companion candidate and primary         | C          |
+| dy              | float | separation in y between companion candidate and primary         | C          |
+| sep             | float | radial separation between companion candidate and primary (pix) | C          |
+| pa              | float | position angle between candidate and primary (deg)              | C          |
+| catalog_name    | str   | name of a catalog an object is found in (e.g. Gaia)             | S          |
+| catalog_id      | str   | the id in that catalog                                          | C          |
+| quadrant        | int   | the detector quadrant a point source is located in              | C          |
+| hot_pix         | int   | number of hot pixels in a stamp                                 | C          |
+|                 |       |                                                                 |            |
 
 
 ** Strampelli table
@@ -149,7 +162,7 @@ This document is used to create the lists of fields as suggested in Database Des
 | MassCompleteness            | float | Completeness of the detection at the observed companion mass          |
 | mass_p                      | float | Primary mass                                                          |
 | massP                       | float | primary mass (Msol)                                                   |
-| Match_Flag                  | str   | If found in another catalog, name of catalog (DaRio, N/A, Robberto    |
+| Match_Flag                  | str   | If found in another catalog, name of catalog (DaRio, N/A, Robberto)   |
 | Max_cube_klip_1p            | float | Highest 1-pixel counts in klipped tile/cube                           |
 | Max_cube_klip_ap            | float | Max aperture counts in the klipped tile/cube                          |
 | Max_cube_klip_pos           | int   | position of max pixel in klipped tile/cube                            |
@@ -222,4 +235,23 @@ This document is used to create the lists of fields as suggested in Database Des
 
 
 * Preliminary Field List
-  
+
+* List of subjects  
+** Master Catalog
+*** astro_id
+*** x_mast
+*** y_mast
+*** phot_filt1-avg
+*** phot_filt2-avg
+*** n_det
+** Point source catalog
+*** ps_id
+    PK
+*** astro_id
+    FK
+*** phot
+*** filt_id
+    Technically you can get this from exp_id
+*** exp_id
+*** x_flt
+*** y_flt

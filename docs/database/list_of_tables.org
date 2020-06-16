@@ -1,0 +1,12 @@
+#+TITLE: List of Tables
+#+AUTHOR: Jonathan Aguilar
+
+This document contains a list of tables for the Tr14 database, and their descriptions.
+They were assembled loosely (i.e. poorly) following the procedure laid out in [[https://learning.oreilly.com/library/view/database-design-for/9780133122282/ch07.html][Database Design for Mere Mortals, Ch. 7]].
+
+* Preliminary Tables List
+** Procedure
+*** Identify implied subjects
+Review the [[./list_of_fields.org][List of Fields]]. If you can group some into a subject, add that subject to the preliminary tables list
+*** Use the List of Subjects 
+Merge the list of implied subjects with the list of subjects you made [[./list_of_subjects.org][here]].
