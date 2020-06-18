@@ -13,7 +13,7 @@ Merge the list of implied subjects with the list of subjects you made [[./list_o
 ** Tables
 *** stars 
 formerly known as Astrophysical objects table
-**** astro_id
+**** star_id
 **** x_mast, y_mast
 x and y position in the master frame
 **** phot_i, e_phot_i
@@ -24,7 +24,7 @@ Does the star belong to the cluster (True) or the background (False)
 A "point source" is the detection of an astrophysical object in a particular exposure
 **** ps_id                                                            :PK:
 unique id for the point source.
-**** astro_id                                                         :FK:
+**** star_id                                                         :FK:
 the astrophysical object it corresponds to.
 **** x_mast, y_mast
 x and y position for that point source in the master frame.
@@ -42,7 +42,7 @@ Stamp ID and data quality
 unique identifier for each stamp
 **** ps_id
 ID of the point source in the center of the stamp
-**** astro_id
+**** star_id
 ID of the astrophysical object in the center of the stamp (redundant)?
 **** stamp_file
 File name where the stamp is saved
@@ -75,6 +75,8 @@ for IR data only, the number of samples used to derive the pixel values in the s
 for IR data only, effective integration time associated with each science image pixel
 *** Data quality table
 This table contains the flag value, the binary code, and a short description of the meaning
+*** Candidates table
+Basically same data as point sources, but for the candidates
 ** Future tables
    These tables don't need to be implemented until we start doing PSF subtraction
 *** Companions table
@@ -102,6 +104,11 @@ Data
 *** Description
 This table contains every point source detected in every exposure taken during the observations. 
 The point sources are important because they are the fundamental result of each *observation* and must be collected and combined for interpretation. Multiple point source detections of the same star can be combined for improved analysis. The master list of unique astrophysical objects is derived by transforming the list of point sources onto the plane of the sky and combining overlapping point sources.
+** candidaes
+*** Type
+Data
+*** Description
+This table contains the basic information for all candidates, such as the ID of the primary star, separation position angle. photometry, and the stamp(s) in which it was found.
 ** stamps
 *** Type
 Data
@@ -114,30 +121,80 @@ Subset
 *** Description
 This table stores the names of the HST filters that correspond to the filter IDs
 ** headers
-I should probably expand this to have one for each header table
-*** Type
+This set of tables contains all the header information from the exposures, except for the history and comments. These should be read-only.
+*** hdr_sci
+**** Type
 data
-*** Description
-This set of tables contains all the header information from the exposures, except for the history and comments
+**** Description
+Science headers
+*** hdr_err
+**** Type
+data
+**** Description
+error  headers
+*** hdr_dq
+**** Type
+data
+**** Description
+data quality headers
+*** hdr_samp
+**** Type
+data
+**** Description
+sampling headers
+*** hdr_time
+**** Type
+data
+**** Description
+exposure time headers
 
 * Tables and fields
-| stars           | point_sources | stamps         | filters   | headers  | data_qual_flags    |
-|-----------------+---------------+----------------+-----------+----------+--------------------|
-| star_id         | ps_id         | stamp_id       | filt_id   | hdr_sci  |                  0 |
-| x_mast          | ps_exp_id     | stamp_file     | filt_name | hdr_err  |                  1 |
-| y_mast          | ps_filter_id  | stamp_ref_flag |           | hdr_dq   |                  2 |
-| star_phot_fi    | ps_phot       | stamp_dq_0     |           | hdr_samp |                  4 |
-| star_e_phot_fi  | ps_e_phot     | stamp_dq_1     |           | hdr_time |                  8 |
-| star_clust_memb | ps_y_exp      | stamp_dq_2     |           |          |                 16 |
-|                 | ps_x_exp      | stamp_dq_4     |           |          |                 32 |
-|                 | ps_y_mast     | stamp_dq_8     |           |          |                 64 |
-|                 | ps_x_mast     | stamp_dq_16    |           |          |                256 |
-|                 |               | stamp_dq_32    |           |          |                512 |
-|                 |               | stamp_dq_64    |           |          |               1024 |
-|                 |               | stamp_dq_256   |           |          |               2048 |
-|                 |               | stamp_dq_512   |           |          |               4096 |
-|                 |               | stamp_dq_1024  |           |          |               8192 |
-|                 |               | stamp_dq_2048  |           |          |              16384 |
-|                 |               | stamp_dq_4096  |           |          |                    |
-|                 |               | stamp_dq_8192  |           |          |                    |
-|                 |               | stamp_dq_16384 |           |          |                    |
+** stars
+| stars           |
+|-----------------+
+| star_id         |
+| x_mast          |
+| y_mast          |
+| star_phot_fi    |
+| star_e_phot_fi  |
+| star_clust_memb |
+
+** point_sources
+| point_sources |
++---------------+
+| ps_id         |
+| ps_exp_id     |
+| ps_filter_id  |
+| ps_phot       |
+| ps_e_phot     |
+| ps_y_exp      |
+| ps_x_exp      |
+
+** candidates
+
+
+** stamps
+| stamps         |
+|----------------|
+| stamp_id       |
+| stamp_file     |
+| stamp_ref_flag |
+** stamp_dq_flags
+| stamp_dq_flags      |
+|---------------------|
+| stamp_id            |
+| stamp_dq_flag       |
+| stamp_dq_flag_value |
+** filters
+| filters   |
++-----------+
+| filt_id   |
+| filt_name |
+** headers
+| headers  |
++----------|
+| hdr_sci  |
+| hdr_err  |
+| hdr_dq   |
+| hdr_samp |
+| hdr_time |
