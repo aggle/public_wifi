@@ -1,0 +1,7 @@
+A place to collect all the tasks to do
+* Analysis
+** 
+  
+* Database
+** TODO Settle on a common set of fields for the master and point source catalogs
+   So you can process the KS2 catalogs into the final form

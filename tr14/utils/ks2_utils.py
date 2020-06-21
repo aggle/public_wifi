@@ -649,7 +649,6 @@ This is a wrapper for get_stamp, which is a little clunky to use by itself.
 This takes in a row of the FIND_NIMFO catalog and pulls out a stamp for that
 point source, in that file, of the specified size
 """
-
 def get_stamp_from_ks2(row, stamp_size=11, return_img_ind=False):
     """
     Given a row of the FIND_NIMFO dataframe, this gets a stamp of the specified
@@ -680,6 +679,15 @@ def get_stamp_from_ks2(row, stamp_size=11, return_img_ind=False):
 
 
 
+"""
+I need to have a single function that contains all the steps needed to turn the KS2 output into a catalog that's ready for me to use. The steps are:
+1. Process INPUT.KS2 to get the file and filter name mappers
+2. Process and clean the point source catalog
+3. Process and clean the master catalog.
+This all can be found in the notebook: 
+"""
+def process_ks2_input_catlaog():
+    pass
 
 if __name__ == "__main__":
     # run it in script mode to get all the dataframes
