@@ -1,5 +1,3 @@
-
-
 """
 Includes shared useful stuff, like path definitions
 """
@@ -12,22 +10,10 @@ config_file = (Path(__file__).parent.absolute() / "../config.ini").resolve()
 config = configparser.ConfigParser()
 config.read(config_file)
 
-"""
-This block defines some useful paths
-"""
-# HST data files for manipulation
-data_path = (Path(config['PATHS']['DATA_PATH']).resolve())
-# Database tables
-table_path = (Path(config['PATHS']['TABLE_PATH']).resolve())
-# Gaia catalog and source matches
-align_path = (Path(config['PATHS']['ALIGN_PATH']).resolve())
-# KS2 output files
-ks2_path = (Path(config['PATHS']['KS2_PATH']).resolve())
 
 
 """
-Here's a wrapper function for loading paths from the config file
-t turns relative into absolute
+This block defines some useful paths, as well as a wrapper function for loading paths from the config file and handling them properly, like turning relative paths into absolute paths
 """
 def load_config_path(key):
     """
@@ -51,6 +37,14 @@ def load_config_path(key):
         return None
     return path
 
+# HST data files for manipulation
+data_path = load_config_path("data_path")
+# Database tables
+table_path = load_config_path("table_path")
+# Gaia catalog and source matches
+align_path = load_config_path("align_path")
+# KS2 output files
+ks2_path = load_config_path("ks2_path")
 
 
 """
