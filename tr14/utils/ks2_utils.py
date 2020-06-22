@@ -360,13 +360,12 @@ def get_point_source_catalog(ps_file=ks2_files[1], raw=False):
                                    skiprows=5, 
                                    header=None,
                                    usecols=nimfo_cols.keys(),
-                                   #dtype=nimfo_dtypes,
     )
     point_sources_df.rename(columns=nimfo_cols, inplace=True)
-    point_sources_df.astype(nimfo_dtypes)
     # split the file identifier into the file number and extension number
     point_sources_df['chip_id'] = point_sources_df['exp_id'].apply(lambda x: int(x.split('.')[1]))
     point_sources_df['exp_id'] = point_sources_df['exp_id'].apply(lambda x: x.split('.')[0])
+    point_sources_df = point_sources_df.astype(nimfo_dtypes, copy=True)
 
     return point_sources_df
 
@@ -374,20 +373,24 @@ def get_point_source_catalog(ps_file=ks2_files[1], raw=False):
 It turns out there are a bunch of duplicated entries in both the FIND_NIMFO and master catalogs. Fortunately, they appear to be duplicated for every detection. We need to remove them.
 """
 
-def remove_duplicates(ps_cat, master_cat):
+def remove_duplicates(ps_cat, master_cat, verbose=False):
     """
     Remove duplicate entries from the point source catalog and master catalogs.
     For all duplicate entries with different NMAST designations, a primary
     designation is chosen ("primary id"), and the alternative NMAST
     designations are referred to as "aliases".
 
-    Parameters:
+    Parameters
+    ----------
     ps_cat : pd.DataFrame
       pandas dataframe containing the point source catalog
     master_cat : pd.DataFrame
       pandas dataframe containing the master catalog
+    verbose : bool [False]
+      if True, print out the number of duplicates found
 
-    Returns:
+    Returns
+    -------
     ps_cat_nodup : pd.DataFrame
       pandas dataframe of the point source catalog with duplicate entries removed
     master_cat_nodup : pd.DataFrame
@@ -414,6 +417,8 @@ def remove_duplicates(ps_cat, master_cat):
     keep_indices = [ind[0] for ind in ps_gb.groups.values()]
     # use set logic to find the indices to drop
     drop_indices = set.difference(set(ps_cat.index), set(keep_indices))
+    if verbose == True:
+        print(f"Number of duplicates found: {len(drop_indices)}")
     ps_cat_nodup = ps_cat.drop(index=drop_indices)
     # now reduced the master catalog to only the entries that have an NMAST in
     # the new reduced point source catalog
@@ -684,10 +689,17 @@ I need to have a single function that contains all the steps needed to turn the 
 1. Process INPUT.KS2 to get the file and filter name mappers
 2. Process and clean the point source catalog
 3. Process and clean the master catalog.
+4. Subtract 1 from all the xraw1 and yraw1 values to convert from FORTRAN to PYTHON!
 This all can be found in the notebook: 
 """
 def process_ks2_input_catlaog():
+    """
+    This function reads the KS2 output files, applies the cleaning and cutting procedures, and writes them to tables in the data/tables directory
+    """
     pass
+
+
+
 
 if __name__ == "__main__":
     # run it in script mode to get all the dataframes
