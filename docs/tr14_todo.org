@@ -1,0 +1,26 @@
+A place to collect all the tasks to do
+* Analysis
+** TODO move ks2_utils.ks2_file paths to config.ini
+** TODO write test for shared_utils.load_config_path
+** DONE move csv format dict from ks2_utils to table_utils
+CLOSED: [2020-06-22 Mon 00:20]
+This is for ensuring consistency in how the csv files are saved
+** TODO find a way to collect all the table-generating functions in one place
+So if you change the table format, you can run them all and recreate all the new tables at once
+- ks2_utils:
+  - get_file_mapper()
+  - get_filter_mapper()
+  - get_master_catalog()
+  - get_point_source_catalog()
+- header_utils:
+  - write_headers()
+Remember, tables are written with table_utils.write_table()
+** TODO save KS2 catalogs to the tables directory and read them from there
+** TODO finish writing ks2_utils.process_ks2_input_catalog()
+This function reads the KS2 output files, applies the cleaning and cutting procedures, and writes them to tables in the data/tables directory
+
+  
+* Database
+** TODO Settle on a common set of fields for the master and point source catalogs
+So you can process the KS2 catalogs into the final form
+   
