@@ -206,6 +206,20 @@ def get_master_catalog(ks2_master_file=ks2_files[0], raw=False):
                                     skipinitialspace=True,
                                     index_col=False)
     """
+    # there may be some typing issues. make sure the floats are all float or nan
+    float_cols = ['umast0', 'vmast0',
+                  'mmast1', 'zmast1', 'szmast1', 'q1',
+                  'mmast2', 'zmast2', 'szmast2', 'q2']
+    def col2float(x):
+        try:
+            return np.float(x)
+        except ValueError:
+            return np.nan
+    for col in float_cols:
+        mast_cat[col] = mast_cat[col].apply(col2float)
+    """
+    
+    """
     # remove this block for now
     # ok, now pick the columns you care about and rename them
     # this dictionary maps between the KS2 column names and mine,
@@ -690,7 +704,8 @@ I need to have a single function that contains all the steps needed to turn the 
 2. Process and clean the point source catalog
 3. Process and clean the master catalog.
 4. Subtract 1 from all the xraw1 and yraw1 values to convert from FORTRAN to PYTHON!
-This all can be found in the notebook: 
+5. Make sure all the columns have the write dtype and have no flag values. All flag values must be handled appropriately, and changes matched between the master and point source catalogs.
+This all can be found in the notebook: ???
 """
 def process_ks2_input_catlaog():
     """
