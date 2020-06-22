@@ -17,7 +17,7 @@ So if you change the table format, you can run them all and recreate all the new
 Remember, tables are written with table_utils.write_table()
 ** TODO save KS2 catalogs to the tables directory and read them from there
 ** TODO finish writing ks2_utils.process_ks2_input_catalog()
-This function reads the KS2 output files, applies the cleaning and cutting procedures, and writes them to tables in the data/tables directory
+This function reads the KS2 output files, applies the cleaning and cutting procedures, and writes them to tables in the data directory
 
   
 * Database
