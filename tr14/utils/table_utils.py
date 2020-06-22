@@ -6,37 +6,44 @@ from pathlib import Path
 import pandas as pd
 import csv
 
-from . import shared_utils as sutils
+from . import shared_utils
 
 
-table_list_path = sutils.table_path / "list_of_tables.csv"
+table_list_path = shared_tils.table_path / "list_of_tables.csv"
 
+
+
+# TABLE CSV FORMAT
+csv_args  = {'sep': ',',
+             'index': False,
+             'header': True,
+}
 def write_table(table, name, descr):
     """
     Write a table to file in ../data/tables
 
     Parameters
     ----------
-    table : None
-      a pandas Dataframe
-    name : None
+    table : pd.DataFrame
+      a pandas Dataframe containing the data
+    name : str
       name for the table. File name will be {0}
-    descr : None
-      short description of the contents
+    descr : str
+      short description of the contents, prended as the header
 
     Returns
     -------
     Nothing; writes to file
-    """.format(sutils.table_path / (name + '.csv'))
-    fname = sutils.table_path / (name + '.csv')
+    """.format(shared_tils.table_path / ('_name_.csv'))
+    fname = shared_tils.table_path / (name + '.csv')
     # prepend comments that contain the file name and description
     with open(fname, 'w') as ff:
         # this clobbers the file if it already exists
         ff.write(f"# {name}\n")
         ff.write(f"# {descr}\n")
-    table.to_csv(fname.as_posix(), mode='a') 
-    # update the file that keeps track of the list of tables
+    table.to_csv(fname.as_posix(), mode='a', **csv_args) 
     """
+    # update the file that keeps track of the list of tables
     table_list = pd.read_csv(table_list_path)
     if table_list.query(f"name == {name}"):
         table_list.query
@@ -59,9 +66,9 @@ def write_table_hdf(table, name, descr):
     Returns
     -------
     Nothing; writes to file
-    """.format(sutils.table_path / (name + '.hdf5'))
+    """.format(shared_tils.table_path / (name + '.hdf5'))
 
-    fname = sutils.table_path / (name + 'hdf5')
+    fname = shared_tils.table_path / (name + 'hdf5')
     # Step 1: Write the table part
     table.to_hdf(fname.as_posix(), key='TABLE', mode='w')
     # Step 2: Add the NAME and DESCR keys
@@ -164,6 +171,6 @@ def get_file_from_file_id(file_id):
       the full absolute path to the fits file
     """
     suffix = "_flt.fits"
-    filename = sutils.data_path.absolute() / (file_id + suffix)
+    filename = shared_tils.data_path.absolute() / (file_id + suffix)
     return filename.absolute()
 
