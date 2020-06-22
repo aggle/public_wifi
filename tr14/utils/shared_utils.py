@@ -1,17 +1,17 @@
 """
-Includes shared useful stuff, like path definitions
+Includes shared useful stuff, like path definitions and file formats
 """
 
 from pathlib import Path
 import configparser
 
+#########
+# PATHS #
+#########
 # the paths are stored in the config file
 config_file = (Path(__file__).parent.absolute() / "../config.ini").resolve()
 config = configparser.ConfigParser()
 config.read(config_file)
-
-
-
 """
 This block defines some useful paths, as well as a wrapper function for loading paths from the config file and handling them properly, like turning relative paths into absolute paths
 """
@@ -33,7 +33,7 @@ def load_config_path(key):
     try:
         assert(path.exists())
     except AssertionError:
-        print(f"Error: {path} not found.")
+3        print(f"Error: {path} not found.")
         return None
     return path
 
@@ -46,7 +46,9 @@ align_path = load_config_path("align_path")
 # KS2 output files
 ks2_path = load_config_path("ks2_path")
 
-
+#############
+# FLT files #
+#############
 """
 Here's a helper function for loading a data file
 """
@@ -71,3 +73,5 @@ def get_data_file(file_name):
         print(f"Error: {file_path.as_posix()} does not exist.")
         return None
     return file_path.resolve()
+
+
