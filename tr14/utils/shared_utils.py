@@ -33,7 +33,7 @@ def load_config_path(key):
     try:
         assert(path.exists())
     except AssertionError:
-3        print(f"Error: {path} not found.")
+        print(f"Error: {path} not found.")
         return None
     return path
 

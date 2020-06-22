@@ -31,15 +31,15 @@
 |     5 | zmast1  | float | counts averaged over all detections in Filter 1                     |
 |     6 | szmast1 | float | counts stderr, averaged over all detections in Filter 1             |
 |     7 | q1      | float | Aggregate PSF fit quality in Filter 1                               |
-|     8 | o1      | float | Crowding parameter?                                                 |
+|     8 | o1      | float | Crowding parameter                                                 |
 |     9 | f1      | int   | number of exposures where this star was found                       |
 |    10 | g1      | int   | # exp where star was measured consistent w/ other good measurements |
-|    11 | zmast1  | float | same as above, for Filter 2                                         |
-|    12 | szmast1 | float | same as above, for Filter 2                                         |
-|    13 | q1      | float | same as above, for Filter 2                                         |
-|    14 | o1      | float | same as above, for Filter 2                                         |
-|    15 | f1      | int   | same as above, for Filter 2                                         |
-|    16 | g1      | int   | same as above, for Filter 2                                         |
+|    11 | zmast2  | float | same as above, for Filter 2                                         |
+|    12 | szmast2 | float | same as above, for Filter 2                                         |
+|    13 | q2      | float | same as above, for Filter 2                                         |
+|    14 | o2      | float | same as above, for Filter 2                                         |
+|    15 | f2      | int   | same as above, for Filter 2                                         |
+|    16 | g2      | int   | same as above, for Filter 2                                         |
 
 #+NAME: LOGR.FIND_NIMFO columns
 nb: a column name in parens (e.g., (z3) ) indicates the column name is missing from the output file
@@ -88,3 +88,11 @@ nb: a column name in parens (e.g., (z3) ) indicates the column name is missing f
 |    41 | (--)  | str   | unclear                                                              |
 
 
+* Value flags
+** z1, z2, z3
+   - -999999.0 : ???
+*** TODO find out what this flag means
+** g1, g2, g3
+   - '\*' : ??? (note: '\' is just there to escape the asterisk, which will make org display bold)
+   - 9 : ???
+*** TODO remind yourself what the flags are  
