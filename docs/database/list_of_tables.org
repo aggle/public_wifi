@@ -153,12 +153,701 @@ exposure time headers
 | stars           |
 |-----------------+
 | star_id         |
-| x_mast          |
-| y_mast          |
+| u_mast          |
+| v_mast          |
 | star_phot_fi    |
-| star_e_phot_fi  |
+| star_phot_e_fi  |
 | star_clust_memb |
+*** TODO star_id
+**** General Elements
+***** Field Name
+      star_id
+***** Parent Table
+      stars
+***** Label:
+      none
+***** Specification Type
+      - [X] Unique
+      - [ ] Generic
+      - [ ] Replica
+***** Source Specification
+      none
+***** Shared By
+      List other tables that share this field here
+***** Aliases
+      List other names for this field here
+***** Description
+      This field is a unique identifier for an astrophysical object.
+**** Physical Elements
+***** Data Type
+      alphanumeric
+***** Length
+      7
+***** Decimal Places
+      none
+***** Character Support
+      - [X] Letters (A-Z)
+      - [X] Numbers (0-9)
+      - [ ] Keyboard (.,/$#%)
+      - [ ] Special
+***** Input Mask
+      none
+***** Display Format
+      S######
 
+**** Logical Elements
+***** Key Type
+      - [ ] Non
+      - [ ] Foreign
+      - [X] Primary
+      - [ ] Alternate
+***** Key Structure
+      - [X] Simple
+      - [ ] Composite
+***** Uniqueness
+      - [ ] Non-unique
+      - [X] Unique
+***** Null Support
+      - [ ] Nulls Allowed
+      - [X] No Nulls
+***** Values Entered By
+      - [ ] User
+      - [X] System
+***** Required Value
+      - [ ] No
+      - [X] Yes
+***** Default Value
+      none
+***** Range of Values
+      R000000 - R999999
+***** Edit Rule
+      - [ ] Enter Now, Edits Allowed
+      - [X] Enter Now, Edits Not Allowed
+      - [ ] Enter Later, Edits Allowed
+      - [ ] Enter Later, Edits Not Allowed
+      - [ ] Not Determined At This Time
+***** Comparisons Allowed
+      - [-] Same Field
+        - [ ] All
+        - [X] =
+        - [ ] >
+        - [ ] >=
+        - [X] !=
+        - [ ] <
+        - [ ] <=
+      - [-] Other Fields
+        - [ ] All
+        - [X] =
+        - [ ] >
+        - [ ] >=
+        - [ ] !=
+        - [ ] <
+        - [ ] <=
+      - [ ] Value Expression
+        - [ ] All
+        - [ ] =
+        - [ ] >
+        - [ ] >=
+        - [ ] !=
+        - [ ] <
+        - [ ] <=
+***** Operations Allowed
+      - [ ] Same Field
+        - [ ] All
+        - [ ] +
+        - [ ] -
+        - [ ] *
+        - [ ] /
+        - [ ] Concatenation
+      - [ ] Other Fields
+        - [ ] All
+        - [ ] +
+        - [ ] -
+        - [ ] *
+        - [ ] /
+        - [ ] Concatenation
+      - [ ] Value Expression
+        + [ ] All
+        + [ ] +
+        + [ ] -
+        + [ ] *
+        + [ ] /
+        + [ ] Concatenation
+*** TODO u_mast
+**** General Elements
+***** Field Name
+      Enter field name here
+***** Parent Table
+      Enter parent table here
+***** Label:
+      Enter label or shorter name here
+***** Specification Type
+      - [ ] Unique
+      - [ ] Generic
+      - [ ] Replica
+***** Source Specification
+      If /Specification Type/ is /Replica/, enter source field here
+***** Shared By
+      List other tables that share this field here
+***** Aliases
+      List other names for this field here
+***** Description
+      Describe the field here
+**** Physical Elements
+***** Data Type
+      Enter data type here (alphanumeric, numeric, datetime)
+***** Length
+      Number of characters the field will hold
+***** Decimal Places
+      Enter number of decimal places here (can be all)
+***** Character Support
+      - [ ] Letters (A-Z)
+      - [ ] Numbers (0-9)
+      - [ ] Keyboard (.,/$#%)
+      - [ ] Special
+***** Input Mask
+      Enter input mask here (the manner in which a user should enter the data)
+***** Display Format
+      Enter display format here
+
+**** Logical Elements
+***** Key Type
+      - [ ] Non
+      - [ ] Foreign
+      - [ ] Primary
+      - [ ] Alternate
+***** Key Structure
+      - [ ] Simple
+      - [ ] Composite
+***** Uniqueness
+      - [ ] Non-unique
+      - [ ] Unique
+***** Null Support
+      - [ ] Nulls Allowed
+      - [ ] No Nulls
+***** Values Entered By
+      - [ ] User
+      - [ ] System
+***** Required Value
+      - [ ] No
+      - [ ] Yes
+***** Default Value
+      Enter default value here
+***** Range of Values
+      Enter range of allowed values here
+***** Edit Rule
+      - [ ] Enter Now, Edits Allowed
+      - [ ] Enter Now, Edits Not Allowed
+      - [ ] Enter Later, Edits Allowed
+      - [ ] Enter Later, Edits Not Allowed
+      - [ ] Not Determined At This Time
+***** Comparisons Allowed
+      - [ ] Same Field
+        - [ ] All
+        - [ ] =
+        - [ ] >
+        - [ ] >=
+        - [ ] !=
+        - [ ] <
+        - [ ] <=
+      - [ ] Other Fields
+        - [ ] All
+        - [ ] =
+        - [ ] >
+        - [ ] >=
+        - [ ] !=
+        - [ ] <
+        - [ ] <=
+      - [ ] Value Expression
+        - [ ] All
+        - [ ] =
+        - [ ] >
+        - [ ] >=
+        - [ ] !=
+        - [ ] <
+        - [ ] <=
+***** Operations Allowed
+      - [ ] Same Field
+        - [ ] All
+        - [ ] +
+        - [ ] -
+        - [ ] *
+        - [ ] /
+        - [ ] Concatenation
+      - [ ] Other Fields
+        - [ ] All
+        - [ ] +
+        - [ ] -
+        - [ ] *
+        - [ ] /
+        - [ ] Concatenation
+      - [ ] Value Expression
+        - [ ] All
+        - [ ] +
+        - [ ] -
+        - [ ] *
+        - [ ] /
+        - [ ] Concatenation
+*** TODO v_mast
+**** General Elements
+***** Field Name
+      Enter field name here
+***** Parent Table
+      Enter parent table here
+***** Label:
+      Enter label or shorter name here
+***** Specification Type
+      - [ ] Unique
+      - [ ] Generic
+      - [ ] Replica
+***** Source Specification
+      If /Specification Type/ is /Replica/, enter source field here
+***** Shared By
+      List other tables that share this field here
+***** Aliases
+      List other names for this field here
+***** Description
+      Describe the field here
+**** Physical Elements
+***** Data Type
+      Enter data type here (alphanumeric, numeric, datetime)
+***** Length
+      Number of characters the field will hold
+***** Decimal Places
+      Enter number of decimal places here (can be all)
+***** Character Support
+      - [ ] Letters (A-Z)
+      - [ ] Numbers (0-9)
+      - [ ] Keyboard (.,/$#%)
+      - [ ] Special
+***** Input Mask
+      Enter input mask here (the manner in which a user should enter the data)
+***** Display Format
+      Enter display format here
+
+**** Logical Elements
+***** Key Type
+      - [ ] Non
+      - [ ] Foreign
+      - [ ] Primary
+      - [ ] Alternate
+***** Key Structure
+      - [ ] Simple
+      - [ ] Composite
+***** Uniqueness
+      - [ ] Non-unique
+      - [ ] Unique
+***** Null Support
+      - [ ] Nulls Allowed
+      - [ ] No Nulls
+***** Values Entered By
+      - [ ] User
+      - [ ] System
+***** Required Value
+      - [ ] No
+      - [ ] Yes
+***** Default Value
+      Enter default value here
+***** Range of Values
+      Enter range of allowed values here
+***** Edit Rule
+      - [ ] Enter Now, Edits Allowed
+      - [ ] Enter Now, Edits Not Allowed
+      - [ ] Enter Later, Edits Allowed
+      - [ ] Enter Later, Edits Not Allowed
+      - [ ] Not Determined At This Time
+***** Comparisons Allowed
+      - [ ] Same Field
+        - [ ] All
+        - [ ] =
+        - [ ] >
+        - [ ] >=
+        - [ ] !=
+        - [ ] <
+        - [ ] <=
+      - [ ] Other Fields
+        - [ ] All
+        - [ ] =
+        - [ ] >
+        - [ ] >=
+        - [ ] !=
+        - [ ] <
+        - [ ] <=
+      - [ ] Value Expression
+        - [ ] All
+        - [ ] =
+        - [ ] >
+        - [ ] >=
+        - [ ] !=
+        - [ ] <
+        - [ ] <=
+***** Operations Allowed
+      - [ ] Same Field
+        - [ ] All
+        - [ ] +
+        - [ ] -
+        - [ ] *
+        - [ ] /
+        - [ ] Concatenation
+      - [ ] Other Fields
+        - [ ] All
+        - [ ] +
+        - [ ] -
+        - [ ] *
+        - [ ] /
+        - [ ] Concatenation
+      - [ ] Value Expression
+        - [ ] All
+        - [ ] +
+        - [ ] -
+        - [ ] *
+        - [ ] /
+        - [ ] Concatenation
+*** TODO star_phot_fi
+**** General Elements
+***** Field Name
+      Enter field name here
+***** Parent Table
+      Enter parent table here
+***** Label:
+      Enter label or shorter name here
+***** Specification Type
+      - [ ] Unique
+      - [ ] Generic
+      - [ ] Replica
+***** Source Specification
+      If /Specification Type/ is /Replica/, enter source field here
+***** Shared By
+      List other tables that share this field here
+***** Aliases
+      List other names for this field here
+***** Description
+      Describe the field here
+**** Physical Elements
+***** Data Type
+      Enter data type here (alphanumeric, numeric, datetime)
+***** Length
+      Number of characters the field will hold
+***** Decimal Places
+      Enter number of decimal places here (can be all)
+***** Character Support
+      - [ ] Letters (A-Z)
+      - [ ] Numbers (0-9)
+      - [ ] Keyboard (.,/$#%)
+      - [ ] Special
+***** Input Mask
+      Enter input mask here (the manner in which a user should enter the data)
+***** Display Format
+      Enter display format here
+
+**** Logical Elements
+***** Key Type
+      - [ ] Non
+      - [ ] Foreign
+      - [ ] Primary
+      - [ ] Alternate
+***** Key Structure
+      - [ ] Simple
+      - [ ] Composite
+***** Uniqueness
+      - [ ] Non-unique
+      - [ ] Unique
+***** Null Support
+      - [ ] Nulls Allowed
+      - [ ] No Nulls
+***** Values Entered By
+      - [ ] User
+      - [ ] System
+***** Required Value
+      - [ ] No
+      - [ ] Yes
+***** Default Value
+      Enter default value here
+***** Range of Values
+      Enter range of allowed values here
+***** Edit Rule
+      - [ ] Enter Now, Edits Allowed
+      - [ ] Enter Now, Edits Not Allowed
+      - [ ] Enter Later, Edits Allowed
+      - [ ] Enter Later, Edits Not Allowed
+      - [ ] Not Determined At This Time
+***** Comparisons Allowed
+      - [ ] Same Field
+        - [ ] All
+        - [ ] =
+        - [ ] >
+        - [ ] >=
+        - [ ] !=
+        - [ ] <
+        - [ ] <=
+      - [ ] Other Fields
+        - [ ] All
+        - [ ] =
+        - [ ] >
+        - [ ] >=
+        - [ ] !=
+        - [ ] <
+        - [ ] <=
+      - [ ] Value Expression
+        - [ ] All
+        - [ ] =
+        - [ ] >
+        - [ ] >=
+        - [ ] !=
+        - [ ] <
+        - [ ] <=
+***** Operations Allowed
+      - [ ] Same Field
+        - [ ] All
+        - [ ] +
+        - [ ] -
+        - [ ] *
+        - [ ] /
+        - [ ] Concatenation
+      - [ ] Other Fields
+        - [ ] All
+        - [ ] +
+        - [ ] -
+        - [ ] *
+        - [ ] /
+        - [ ] Concatenation
+      - [ ] Value Expression
+        - [ ] All
+        - [ ] +
+        - [ ] -
+        - [ ] *
+        - [ ] /
+        - [ ] Concatenation
+*** TODO star_phot_e_fi
+**** General Elements
+***** Field Name
+      Enter field name here
+***** Parent Table
+      Enter parent table here
+***** Label:
+      Enter label or shorter name here
+***** Specification Type
+      - [ ] Unique
+      - [ ] Generic
+      - [ ] Replica
+***** Source Specification
+      If /Specification Type/ is /Replica/, enter source field here
+***** Shared By
+      List other tables that share this field here
+***** Aliases
+      List other names for this field here
+***** Description
+      Describe the field here
+**** Physical Elements
+***** Data Type
+      Enter data type here (alphanumeric, numeric, datetime)
+***** Length
+      Number of characters the field will hold
+***** Decimal Places
+      Enter number of decimal places here (can be all)
+***** Character Support
+      - [ ] Letters (A-Z)
+      - [ ] Numbers (0-9)
+      - [ ] Keyboard (.,/$#%)
+      - [ ] Special
+***** Input Mask
+      Enter input mask here (the manner in which a user should enter the data)
+***** Display Format
+      Enter display format here
+
+**** Logical Elements
+***** Key Type
+      - [ ] Non
+      - [ ] Foreign
+      - [ ] Primary
+      - [ ] Alternate
+***** Key Structure
+      - [ ] Simple
+      - [ ] Composite
+***** Uniqueness
+      - [ ] Non-unique
+      - [ ] Unique
+***** Null Support
+      - [ ] Nulls Allowed
+      - [ ] No Nulls
+***** Values Entered By
+      - [ ] User
+      - [ ] System
+***** Required Value
+      - [ ] No
+      - [ ] Yes
+***** Default Value
+      Enter default value here
+***** Range of Values
+      Enter range of allowed values here
+***** Edit Rule
+      - [ ] Enter Now, Edits Allowed
+      - [ ] Enter Now, Edits Not Allowed
+      - [ ] Enter Later, Edits Allowed
+      - [ ] Enter Later, Edits Not Allowed
+      - [ ] Not Determined At This Time
+***** Comparisons Allowed
+      - [ ] Same Field
+        - [ ] All
+        - [ ] =
+        - [ ] >
+        - [ ] >=
+        - [ ] !=
+        - [ ] <
+        - [ ] <=
+      - [ ] Other Fields
+        - [ ] All
+        - [ ] =
+        - [ ] >
+        - [ ] >=
+        - [ ] !=
+        - [ ] <
+        - [ ] <=
+      - [ ] Value Expression
+        - [ ] All
+        - [ ] =
+        - [ ] >
+        - [ ] >=
+        - [ ] !=
+        - [ ] <
+        - [ ] <=
+***** Operations Allowed
+      - [ ] Same Field
+        - [ ] All
+        - [ ] +
+        - [ ] -
+        - [ ] *
+        - [ ] /
+        - [ ] Concatenation
+      - [ ] Other Fields
+        - [ ] All
+        - [ ] +
+        - [ ] -
+        - [ ] *
+        - [ ] /
+        - [ ] Concatenation
+      - [ ] Value Expression
+        - [ ] All
+        - [ ] +
+        - [ ] -
+        - [ ] *
+        - [ ] /
+        - [ ] Concatenation
+*** TODO star_clust_memb
+**** General Elements
+***** Field Name
+      Enter field name here
+***** Parent Table
+      Enter parent table here
+***** Label:
+      Enter label or shorter name here
+***** Specification Type
+      - [ ] Unique
+      - [ ] Generic
+      - [ ] Replica
+***** Source Specification
+      If /Specification Type/ is /Replica/, enter source field here
+***** Shared By
+      List other tables that share this field here
+***** Aliases
+      List other names for this field here
+***** Description
+      Describe the field here
+**** Physical Elements
+***** Data Type
+      Enter data type here (alphanumeric, numeric, datetime)
+***** Length
+      Number of characters the field will hold
+***** Decimal Places
+      Enter number of decimal places here (can be all)
+***** Character Support
+      - [ ] Letters (A-Z)
+      - [ ] Numbers (0-9)
+      - [ ] Keyboard (.,/$#%)
+      - [ ] Special
+***** Input Mask
+      Enter input mask here (the manner in which a user should enter the data)
+***** Display Format
+      Enter display format here
+
+**** Logical Elements
+***** Key Type
+      - [ ] Non
+      - [ ] Foreign
+      - [ ] Primary
+      - [ ] Alternate
+***** Key Structure
+      - [ ] Simple
+      - [ ] Composite
+***** Uniqueness
+      - [ ] Non-unique
+      - [ ] Unique
+***** Null Support
+      - [ ] Nulls Allowed
+      - [ ] No Nulls
+***** Values Entered By
+      - [ ] User
+      - [ ] System
+***** Required Value
+      - [ ] No
+      - [ ] Yes
+***** Default Value
+      Enter default value here
+***** Range of Values
+      Enter range of allowed values here
+***** Edit Rule
+      - [ ] Enter Now, Edits Allowed
+      - [ ] Enter Now, Edits Not Allowed
+      - [ ] Enter Later, Edits Allowed
+      - [ ] Enter Later, Edits Not Allowed
+      - [ ] Not Determined At This Time
+***** Comparisons Allowed
+      - [ ] Same Field
+        - [ ] All
+        - [ ] =
+        - [ ] >
+        - [ ] >=
+        - [ ] !=
+        - [ ] <
+        - [ ] <=
+      - [ ] Other Fields
+        - [ ] All
+        - [ ] =
+        - [ ] >
+        - [ ] >=
+        - [ ] !=
+        - [ ] <
+        - [ ] <=
+      - [ ] Value Expression
+        - [ ] All
+        - [ ] =
+        - [ ] >
+        - [ ] >=
+        - [ ] !=
+        - [ ] <
+        - [ ] <=
+***** Operations Allowed
+      - [ ] Same Field
+        - [ ] All
+        - [ ] +
+        - [ ] -
+        - [ ] *
+        - [ ] /
+        - [ ] Concatenation
+      - [ ] Other Fields
+        - [ ] All
+        - [ ] +
+        - [ ] -
+        - [ ] *
+        - [ ] /
+        - [ ] Concatenation
+      - [ ] Value Expression
+        - [ ] All
+        - [ ] +
+        - [ ] -
+        - [ ] *
+        - [ ] /
+        - [ ] Concatenation
 ** point_sources
 | point_sources |
 +---------------+
@@ -172,13 +861,13 @@ exposure time headers
 
 ** candidates
 
-
 ** stamps
 | stamps         |
 |----------------|
 | stamp_id       |
 | stamp_file     |
 | stamp_ref_flag |
+
 ** stamp_dq_flags
 | stamp_dq_flags      |
 |---------------------|

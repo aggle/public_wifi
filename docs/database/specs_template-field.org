@@ -1,117 +1,115 @@
-#+TITLE: FieldSpecs - Template
+* field name
+** General Elements
+*** Field Name
+    Enter field name here
+*** Parent Table
+    Enter parent table here
+*** Label:
+    Enter label or shorter name here
+*** Specification Type
+    - [ ] Unique
+    - [ ] Generic
+    - [ ] Replica
+*** Source Specification
+    If /Specification Type/ is /Replica/, enter source field here
+*** Shared By
+    List other tables that share this field here
+*** Aliases
+    List other names for this field here
+*** Description
+    Describe the field here
+** Physical Elements
+*** Data Type
+    Enter data type here (alphanumeric, numeric, datetime)
+*** Length
+    Number of characters the field will hold
+*** Decimal Places
+    Enter number of decimal places here (can be all)
+*** Character Support
+    - [ ] Letters (A-Z)
+    - [ ] Numbers (0-9)
+    - [ ] Keyboard (.,/$#%)
+    - [ ] Special
+*** Input Mask
+    Enter input mask here (the manner in which a user should enter the data)
+*** Display Format
+    Enter display format here
 
-* General Elements
-** Field Name
-   Enter field name here
-** Parent Table
-   Enter parent table here
-** Label:
-   Enter label or shorter name here
-** Specification Type
-   - [ ] Unique
-   - [ ] Generic
-   - [ ] Replica
-** Source Specification
-   If /Specification Type/ is /Replica/, enter source field here
-** Shared By
-   List other tables that share this field here
-** Aliases
-   List other names for this field here
-** Description
-   Describe the field here
-
-* Physical Elements
-** Data Type
-   Enter data type here (alphanumeric, numeric, datetime)
-** Length
-   Number of characters the field will hold
-** Decimal Places
-   Enter number of decimal places here (can be all)
-** Character Support
-   - [ ] Letters (A-Z)
-   - [ ] Numbers (0-9)
-   - [ ] Keyboard (.,/$#%)
-   - [ ] Special
-** Input Mask
-   Enter input mask here (the manner in which a user should enter the data)
-** Display Format
-   Enter display format here
-
-* Logical Elements
-** Key Type
-   - [ ] Non
-   - [ ] Foreign
-   - [ ] Primary
-   - [ ] Alternate
-** Key Structure
-   - [ ] Simple
-   - [ ] Composite
-** Uniqueness
-   - [ ] Non-unique
-   - [ ] Unique
-** Null Support
-   - [ ] Nulls Allowed
-   - [ ] No Nulls
-** Values Entered By
-   - [ ] User
-   - [ ] System
-** Required Value
-   - [ ] No
-   - [ ] Yes
-** Default Value
-   Enter default value here
-** Range of Values
-   Enter range of allowed values here
-** Edit Rule
-   - [ ] Enter Now, Edits Allowed
-   - [ ] Enter Now, Edits Not Allowed
-   - [ ] Enter Later, Edits Allowed
-   - [ ] Enter Later, Edits Not Allowed
-   - [ ] Not Determined At This Time
-** Comparisons Allowed
-   - [ ] Same Field
-     - [ ] All
-     - [ ] =
-     - [ ] >
-     - [ ] >=
-     - [ ] !=
-     - [ ] <
-     - [ ] <=
-   - [ ] Other Fields
-     - [ ] All
-     - [ ] =
-     - [ ] >
-     - [ ] >=
-     - [ ] !=
-     - [ ] <
-     - [ ] <=
-   - [ ] Value Expression
-     - [ ] All
-     - [ ] =
-     - [ ] >
-     - [ ] >=
-     - [ ] !=
-     - [ ] <
-     - [ ] <=
-** Operations Allowed
-   - [ ] Same Field
-     - [ ] All
-     - [ ] +
-     - [ ] -
-     - [ ] *
-     - [ ] /
-     - [ ] Concatenation
-   - [ ] Other Fields
-     - [ ] All
-     - [ ] +
-     - [ ] -
-     - [ ] *
-     - [ ] /
-     - [ ] Concatenation
-   - [ ] Value Expression
-     - [ ] All
-     - [ ] +
-     - [ ] -
-     - [ ] *
-     - [ ] /
-     - [ ] Concatenation
+** Logical Elements
+*** Key Type
+    - [ ] Non
+    - [ ] Foreign
+    - [ ] Primary
+    - [ ] Alternate
+*** Key Structure
+    - [ ] Simple
+    - [ ] Composite
+*** Uniqueness
+    - [ ] Non-unique
+    - [ ] Unique
+*** Null Support
+    - [ ] Nulls Allowed
+    - [ ] No Nulls
+*** Values Entered By
+    - [ ] User
+    - [ ] System
+*** Required Value
+    - [ ] No
+    - [ ] Yes
+*** Default Value
+    Enter default value here
+*** Range of Values
+    Enter range of allowed values here
+*** Edit Rule
+    - [ ] Enter Now, Edits Allowed
+    - [ ] Enter Now, Edits Not Allowed
+    - [ ] Enter Later, Edits Allowed
+    - [ ] Enter Later, Edits Not Allowed
+    - [ ] Not Determined At This Time
+*** Comparisons Allowed
+    - [ ] Same Field
+      - [ ] All
+      - [ ] =
+      - [ ] >
+      - [ ] >=
+      - [ ] !=
+      - [ ] <
+      - [ ] <=
+    - [ ] Other Fields
+      - [ ] All
+      - [ ] =
+      - [ ] >
+      - [ ] >=
+      - [ ] !=
+      - [ ] <
+      - [ ] <=
+    - [ ] Value Expression
+      - [ ] All
+      - [ ] =
+      - [ ] >
+      - [ ] >=
+      - [ ] !=
+      - [ ] <
+      - [ ] <=
+*** Operations Allowed
+    - [ ] Same Field
+      - [ ] All
+      - [ ] +
+      - [ ] -
+      - [ ] *
+      - [ ] /
+      - [ ] Concatenation
+    - [ ] Other Fields
+      - [ ] All
+      - [ ] +
+      - [ ] -
+      - [ ] *
+      - [ ] /
+      - [ ] Concatenation
+    - [ ] Value Expression
+      - [ ] All
+      - [ ] +
+      - [ ] -
+      - [ ] *
+      - [ ] /
+      - [ ] Concatenation
