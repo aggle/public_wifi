@@ -6,10 +6,11 @@ import re
 from pathlib import Path
 import numpy as np
 import pandas as pd
+from configparser import ConfigParser
 
 from astropy.io import fits
 
-from . import shared_utils, image_utils
+from . import shared_utils, image_utils, table_utils
 
 """
 You only care about a few of the files:
@@ -713,6 +714,37 @@ def process_ks2_input_catlaog():
     """
     pass
 
+
+
+#####################################
+# CONVERTING TO TR14 CATALOG TABLES #
+#####################################
+"""
+This dictionary stores the conversion between the Tr14 table fields and the KS2 fields
+"""
+field_conversion_dict = {
+    "star_id"        : "NMAST",
+    "u_mast"         : "umast0",
+    "v_mast"         : "vmast0",
+    "star_phot_f"    : "zmast",
+    "star_phot_e_f"  : "szmast",
+    "ps_exp_id"      : "exp_id",
+    "ps_filter_id"   : "filt_id"
+    "ps_phot"        : "z2",
+    "ps_phot_e"      : "sz2",
+    "ps_x_exp"       : "xraw1",
+    "ps_y_exp"       : "yraw1",
+}
+
+def ks2_cat_to_tr14(cat):
+    """
+    Take the KS2 catalog and put it in the right format for the Tr14 database
+    Parameters
+    ----------
+    cat : pd.DataFrame
+      a KS2 catalog
+    """
+    pass
 
 
 
