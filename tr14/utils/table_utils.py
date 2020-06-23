@@ -9,8 +9,8 @@ import csv
 from . import shared_utils
 
 
-table_list_path = shared_tils.table_path / "list_of_tables.csv"
-
+table_list_path = shared_utils.table_path / "list_of_tables.csv"
+table_definitions = shared_utils.table_path / "table_definitions.ini"
 
 
 # TABLE CSV FORMAT
