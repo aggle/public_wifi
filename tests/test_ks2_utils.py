@@ -144,3 +144,21 @@ def test_get_img_from_ks2_file_id(ps_cat_nodup, hdr):
     exp_id = random.choice(ps_cat_nodup['exp_id'].values)
     img = ks2_utils.get_img_from_ks2_file_id(exp_id, hdr)
     assert ks2_utils.np.ndim(img) == 2
+
+##########################
+# CATALOG CLEANING TESTS #
+##########################
+def test_fix_catalog_dtypes(mast_cat_raw):
+    """
+    Make sure all the entries in the catalog have the right dtype
+    """
+    cat = ks2_utils.fix_catalog_dtypes(mast_cat_raw, ks2_utils.master_dtypes)
+    cat_dtypes = cat.dtypes
+    for col in cat_dtypes.index:
+        assert(cat_dtypes[col] == ks2_utils.master_dtypes[col])
+
+def test_clean_ks2_input_catalogs(mast_cat_raw, ps_cat_raw):
+    """
+    Test that after the cuts are applied, no sources remain in violation of the cuts
+    """
+    # 

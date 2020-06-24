@@ -8,8 +8,9 @@
 ** Initial data processing
    We work exclusively on the FLT files, so whatever was done to them goes here. I think this includes at least bias-subtraction and flat-fielding. 
 ** Making the catalog
-   The initial catalog of point sources was created using KS2 cite:2013AJ....146...53S, so describe whatever that does here.
-   The KS2 catalog was corrected for duplicates. We also required that any source have at least 10 detections in both filters.
+   The initial catalog of point sources was created using KS2 (cite:2013AJ....146...53S and cite:anderson08_acs_survey_globul_clust), so describe whatever that does here.
+   The KS2 catalog was checked for duplicates. We also required that any source have at least 10 detections in both filters. Bright stars were treated specially by adding an extra subtraction.
+
    
 * Results
 

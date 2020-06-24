@@ -153,6 +153,24 @@ column_name_mapper = { # no longer used
     'o': 'master_crowding_f',       # crowding parameter
 }
 
+master_dtypes = {
+    "umast0": np.float,
+    "vmast0": np.float,
+    "mmast1": np.float,
+    "NMAST": str,
+    "zmast1": np.float,
+    "szmast1": np.float,
+    "q1": np.float,
+    "o1": np.float,
+    "f1": np.int,
+    "g1": np.int,
+    "zmast2": np.float,
+    "szmast2": np.float,
+    "q2": np.float,
+    "o2": np.float,
+    "f2": np.int,
+    "g2": np.int,
+}
 def get_master_catalog(ks2_master_file=ks2_files[0], raw=False):
     """
     From LOGR.XYVIQ1, pull out the master catalog of information about astrophysical objects
@@ -708,11 +726,35 @@ I need to have a single function that contains all the steps needed to turn the 
 5. Make sure all the columns have the write dtype and have no flag values. All flag values must be handled appropriately, and changes matched between the master and point source catalogs.
 This all can be found in the notebook: ???
 """
-def process_ks2_input_catlaog():
+
+# we also need some helper functions
+
+# this is the reference dictionary for null values
+dtype_nulls = {
+    np.float : np.nan,
+    np.int : np.nan,
+    str : '',
+    object : None
+}
+def fix_catalog_dtypes(cat, dtype_dict):
+    """
+    Make sure each entry in a catalog has the write data type.
+    If it doesn't, fill it with an appropriate null value
+    Parameters
+    ----------
+    cat : pd.Dataframe
+      the catalog where each column has an appropriate data type
+    dtype_dict : dict
+      a dictionary whose keys are the column names and whose values are the dtypes
+    """
+    return None
+
+
+def clean_ks2_input_catlaog(mast_cat, ps_cat):
     """
     This function reads the KS2 output files, applies the cleaning and cutting procedures, and writes them to tables in the data/tables directory
     """
-    pass
+    
 
 
 
@@ -729,7 +771,7 @@ field_conversion_dict = {
     "star_phot_f"    : "zmast",
     "star_phot_e_f"  : "szmast",
     "ps_exp_id"      : "exp_id",
-    "ps_filter_id"   : "filt_id"
+    "ps_filter_id"   : "filt_id",
     "ps_phot"        : "z2",
     "ps_phot_e"      : "sz2",
     "ps_x_exp"       : "xraw1",
