@@ -1,15 +1,20 @@
 A place to collect all the tasks to do
-* TODO add q to the fields list for stars and point sources. maybe just for point sources.
-* TODO move ks2_utils.ks2_file paths to config.ini
-* TODO write test for shared_utils.load_config_path
-* TODO save KS2 catalogs to the tables directory and read them from there
-* TODO finish writing ks2_utils.process_ks2_input_catalog()
+* TODO linking tables to add: [0/2]                                :database:
+** TODO tr14 star_id <--> ks2 NMAST
+** TODO tr14 ps_id <--> ks2 point source composite key
+* TODO add q to the fields list for stars and point sources. maybe just for point sources. :ana:
+* TODO decide format for saving header tables                      :database:
+Do I want them in separate CSV files, or in a single HDF file with different headers?
+* TODO move ks2_utils.ks2_file paths to config.ini                      :ana:
+* TODO write test for shared_utils.load_config_path                :ana:test:
+* TODO save KS2 catalogs to the tables directory and read them from there :database:
+* TODO finish writing ks2_utils.process_ks2_input_catalog()        :database:
   This function reads the KS2 output files, applies the cleaning and cutting procedures, and writes them to tables in the data directory
 
-* TODO Settle on a common set of fields for the master and point source catalogs
+* TODO Settle on a common set of fields for the master and point source catalogs :database:
   So you can process the KS2 catalogs into the final form
    
-* TODO find a way to collect all the table-generating functions in one place
+* TODO find a way to collect all the table-generating functions in one place :database:
   So if you change the table format, you can run them all and recreate all the new tables at once
   - ks2_utils:
     - get_file_mapper()
@@ -19,6 +24,6 @@ A place to collect all the tasks to do
   - header_utils:
     - write_headers()
   Remember, tables are written with table_utils.write_table()
-* DONE move csv format dict from ks2_utils to table_utils
+* DONE move csv format dict from ks2_utils to table_utils          :database:
   CLOSED: [2020-06-22 Mon 00:20]
   This is for ensuring consistency in how the csv files are saved

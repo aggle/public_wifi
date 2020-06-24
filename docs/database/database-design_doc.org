@@ -45,7 +45,8 @@ The purpose of the Trumpler 14 project is to determine the occurrence rate of wi
   The List of Fields can be found [[file:list_of_fields.org][here]]
 
 * Create the data structures
-
+  I'm creating the Final List of Tables [[list_of_tables.org][here]]
+  
 * Determine and establish table relationships
 
 * Determine and define business rules

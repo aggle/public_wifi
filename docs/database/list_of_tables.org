@@ -14,11 +14,12 @@ Merge the list of implied subjects with the list of subjects you made [[./list_o
 *** stars 
 formerly known as Astrophysical objects table
 **** star_id
-**** x_mast, y_mast
-x and y position in the master frame
-**** phot_i, e_phot_i
+unique identifier
+**** u_mast, v_mast
+u and v positions in the master frame of reference
+**** star_phot_fi, star_phot_e_fi
 Photometry (and uncertainty) in Filter Fi, where i is a label for the filter
-**** cluster_memb
+**** star_cluster_memb
 Does the star belong to the cluster (True) or the background (False)
 *** Point sources table
 A "point source" is the detection of an astrophysical object in a particular exposure
@@ -26,15 +27,13 @@ A "point source" is the detection of an astrophysical object in a particular exp
 unique id for the point source.
 **** star_id                                                         :FK:
 the astrophysical object it corresponds to.
-**** x_mast, y_mast
-x and y position for that point source in the master frame.
-**** x_exp, y_exp
+**** ps_x_exp, ps_y_exp
 x and y position for this particular exposure.
-**** phot, e_phot
+**** ps_phot, ps_phot_e
 Photometry and uncertainty.
-**** filter_id
+**** ps_filter_id
 The filter used for the exposure.
-**** exp_id
+**** ps_exp_id
 The exposure the point source was found in.
 *** Stamps table
 Stamp ID and data quality
@@ -46,14 +45,13 @@ ID of the point source in the center of the stamp
 ID of the astrophysical object in the center of the stamp (redundant)?
 **** stamp_file
 File name where the stamp is saved
-**** data quality flags?
-***** hot_pixels
-Number of hot pixels in the stamp?
-***** maybe 1 field for every data quality flag
-number of pixels in the stamp that match that DQ flag
-**** ref_flag
+**** good_ref_flag
 Formerly "good_ref"
-Flag for if this can be used as a reference for PSF subtraction.
+Flag for if this stamp can be used as a reference for PSF subtraction.
+**** stamp_dq_flags
+I think this should be its own subtable
+***** maybe 1 field for every data quality flag
+key is the name of the flag, and value is the number of pixels in the stamp that match that DQ flag
 *** Filters table
 This table keeps track of the name and ID of each filter in the observations
 **** filter_id
@@ -73,23 +71,35 @@ data quality headers. each pixel contains a bit word with data quality flags
 for IR data only, the number of samples used to derive the pixel values in the science image
 **** TIME
 for IR data only, effective integration time associated with each science image pixel
-*** Data quality table
+*** Stamp data quality table
 This table contains the flag value, the binary code, and a short description of the meaning
 *** Candidates table
-Basically same data as point sources, but for the candidates
-** Future tables
-   These tables don't need to be implemented until we start doing PSF subtraction
-*** Companions table
-    All the same info as the point sources table, but also:
-**** companion_id                                                     :PK:
+Basically same data as point sources, but for the candidates.
+**** comp_x_stamp, comp_y_stamp
+x and y position in the stamp in the stamp's native orientation
+This might need to be a subtable for multiple detections of the same companion
+**** comp_phot, comp_phot_e
+Photometry and uncertainty.
+**** companion_id
+unique identifier
+**** parent_star_id
+identifier for the parent star
+**** stamp_ids
+identifier for the stamps where the companion is found
 **** sep, pa
+separation and position angle with N up, E left
 *** Subtraction table
-    This table stores the parameters used for a PSF subtraction
+This table stores the parameters used for a PSF subtraction
 **** target_id
 id for the target stamp
 **** reference_id_i..n
-     ids for the reference stamps
-
+ids for the reference stamps
+**** psfsub_algo_name
+name for the algorithm - in our case, KLIP. Maybe in future NNMF. maybe more specific, like software version?
+**** psfsub_algo_params
+This should probably be a subtable. Each field is the name of a parameter, and each value is the value of the parameter.
+*** Reference matrix
+This table aggregates (Yes/No) whether or not any particular stamp can be used as a reference for another stamp.
 * Final Table List
 Options for table type: data, linking, subset, or validation
 ** stars
@@ -104,20 +114,20 @@ Data
 *** Description
 This table contains every point source detected in every exposure taken during the observations. 
 The point sources are important because they are the fundamental result of each *observation* and must be collected and combined for interpretation. Multiple point source detections of the same star can be combined for improved analysis. The master list of unique astrophysical objects is derived by transforming the list of point sources onto the plane of the sky and combining overlapping point sources.
-** candidaes
-*** Type
-Data
-*** Description
-This table contains the basic information for all candidates, such as the ID of the primary star, separation position angle. photometry, and the stamp(s) in which it was found.
 ** stamps
 *** Type
 Data
 *** Description
-This table keeps track of the data quality in each image stamp. 
+This table keeps track of the stamps and their data quality flags. 
 The image stamps are generated by selecting a stamp of pixels around each point source in the database. This table will contain summary statistics for all the data quality flags present in each pixel contained in the stamp, for help assessing if the information contained in the stamp is reliable.
-** filters
+** stamp_dq_flags
 *** Type
 Subset
+*** Description
+This is a subset table for stamps, that keeps track of all the data quality flags. This is important for selecting appropriate references/assessing data quality.
+** filters
+*** Type
+Subset (or linking?)
 *** Description
 This table stores the names of the HST filters that correspond to the filter IDs
 ** headers
@@ -147,17 +157,25 @@ sampling headers
 data
 **** Description
 exposure time headers
+** candidates
+*** Type
+Data
+*** Description
+This table contains the basic information for all candidates, such as the ID of the primary star, separation position angle. photometry, and the stamp(s) in which it was found.
+** psf_subtractions
+*** Type
+Data
+*** Description
+This table stores the parameters used for PSF subtraction, like Kklips and reference stamp IDs
+** reference_matrix
+*** Type
+Data
+*** Description
+This table keeps a list of which stamps meet the criteria to be PSF references for other stamps. Important quantities to consider are a stamp's own "good reference" flag, and the result of the image similarity computation between any two stamps.
 
 * Tables and fields
+Here we associate fields with each table
 ** stars
-| stars           |
-|-----------------+
-| star_id         |
-| u_mast          |
-| v_mast          |
-| star_phot_fi    |
-| star_phot_e_fi  |
-| star_clust_memb |
 *** TODO star_id
 **** General Elements
 ***** Field Name
@@ -849,24 +867,20 @@ exposure time headers
         - [ ] /
         - [ ] Concatenation
 ** point_sources
-| point_sources |
-+---------------+
-| ps_id         |
-| ps_exp_id     |
-| ps_filter_id  |
-| ps_phot       |
-| ps_e_phot     |
-| ps_y_exp      |
-| ps_x_exp      |
+*** TODO ps_id
+*** TODO ps_star_id
+*** TODO ps_exp_id
+*** TODO ps_filter_id
+*** TODO ps_phot
+*** TODO ps_phot_e
+*** TODO ps_y_exp
+*** TODO ps_x_exp
 
 ** candidates
-
 ** stamps
-| stamps         |
-|----------------|
-| stamp_id       |
-| stamp_file     |
-| stamp_ref_flag |
+*** stamp_id
+*** stamp_file
+*** stamp_ref_flag
 
 ** stamp_dq_flags
 | stamp_dq_flags      |
@@ -887,3 +901,5 @@ exposure time headers
 | hdr_dq   |
 | hdr_samp |
 | hdr_time |
+** psf_subtractions
+** allowed_references
