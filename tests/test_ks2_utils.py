@@ -25,15 +25,15 @@ def mast_cat_raw():
     return ks2_utils.get_master_catalog(raw=True)
 
 @pytest.fixture()
-def ps_cat_nodup():
+def ps_cat_clean():
     """
-    The duplicate-cleaned KS2 point source catalog
+    The cleaned KS2 point source catalog
     """
     return ks2_utils.get_point_source_catalog(raw=False)
 
 @pytest.fixture()
-def mast_cat_nodup():
-    """Return the duplicate-cleaned master catalog"""
+def mast_cat_clean():
+    """Return the cleaned master catalog"""
     return ks2_utils.get_master_catalog(raw=False)
 
 #####################
@@ -41,8 +41,8 @@ def mast_cat_nodup():
 #####################
 
 catalogs = [ # For some reason, the fixtures can't be used directly here
-    ks2_utils.get_point_source_catalog(raw=False),#ps_cat_nodup,
-    ks2_utils.get_master_catalog(raw=False),#mast_cat_nodup,
+    ks2_utils.get_point_source_catalog(raw=False),#ps_cat_clean,
+    ks2_utils.get_master_catalog(raw=False),#mast_cat_clean,
 ]
 drop_cols = [
     ['NMAST', 'ps_tile_id', 'tile_id', 'exp_id', 'filt_id', 'unk', 'chip_id'],
@@ -76,57 +76,28 @@ def test_remove_duplicates(cat, drop_cols):
 def test_remove_duplicates_raw(ps_cat_raw, mast_cat_raw):
     """
     Test that ks2_utils.remove_duplicates() works as billed
-    It's only necessary to run if you have to regenerate the `nodup.csv` files
+    It's only necessary to run if you have to regenerate the `clean.csv` files
     """
-    ps_cat_nodup, mast_cat_nodup = ks2_utils.remove_duplicates(ps_cat_raw,
+    ps_cat_clean, mast_cat_clean = ks2_utils.remove_duplicates(ps_cat_raw,
                                                                mast_cat_raw)
     # test point source catalog
-    cols_test = list(ps_cat_nodup.columns)
+    cols_test = list(ps_cat_clean.columns)
     for i in ['NMAST', 'ps_tile_id', 'tile_id', 'exp_id',
               'filt_id', 'unk', 'chip_id']:
         cols_test.pop(cols_test.index(i))
-    ps_dups = ps_cat_nodup[ps_cat_nodup.duplicated(subset=cols_test, keep=False)]
+    ps_dups = ps_cat_clean[ps_cat_clean.duplicated(subset=cols_test, keep=False)]
     assert ps_dups.empty == True
 
     # test master catalog
-    cols_test = list(mast_cat_nodup.columns)
+    cols_test = list(mast_cat_clean.columns)
     for i in ['NMAST']:
         cols_test.pop(cols_test.index(i))
-    mast_dups = mast_cat_nodup[mast_cat_nodup.duplicated(subset=cols_test,
+    mast_dups = mast_cat_clean[mast_cat_clean.duplicated(subset=cols_test,
                                                          keep=False)]
     assert mast_dups.size == 0
 
-@pytest.mark.clean
-def test_clean_point_source_catalog(ps_cat_nodup):
-    """
-    Test that the cleaned catalog doesn't contain any point sources with cut values.
-    Current cuts are:
-    1. q > 0 (for all the q's)
-    2. z > 0 (for all the z's)
-    This starts from the 'nodup' catalog that has been cleaned of duplicate entries
-    There should be a way to parameterize this
-    """
-    cut_cat = ks2_utils.clean_point_source_catalog(ps_cat_nodup)
-    # test q cuts
-    # get 'q' columns
-    qstr = '^q[0-9]+'
-    cols = [i for i in ps_cat_nodup.columns if ks2_utils.re.search(qstr, i) is not None]
-    # all test results should be empty
-    for col in cols:
-        cut = f"{col} <= 0"#"@col <= 0"
-        assert ps_cat_nodup.query(cut).empty == False
 
-    # test z cuts
-    # get 'z' columns
-    zstr = '^z[0-9]+'
-    cols = [i for i in ps_cat_nodup.columns if ks2_utils.re.search(zstr, i) is not None]
-    # all test results should be empty
-    for col in cols:
-        cut = f"{col} <= 0"
-        assert ps_cat_nodup.query(cut).empty == False
-
-
-def test_get_exposure_neighbors(ps_cat_nodup):
+def test_get_exposure_neighbors(ps_cat_clean):
     """
     get_exposure_neighbors retrieves all the point sources in a particular
     exposure that are within some distance from a specified point source,
@@ -137,18 +108,19 @@ def test_get_exposure_neighbors(ps_cat_nodup):
     pass
 
 @pytest.mark.parametrize("hdr", ['SCI','ERR','DQ','SAMP','TIME', 1, 2, 3, 4, 5])
-def test_get_img_from_ks2_file_id(ps_cat_nodup, hdr):
+def test_get_img_from_ks2_file_id(ps_cat_clean, hdr):
     """
     get_img_from_ks2_file_id should return a 2-D array
     """
-    exp_id = random.choice(ps_cat_nodup['exp_id'].values)
+    exp_id = random.choice(ps_cat_clean['exp_id'].values)
     img = ks2_utils.get_img_from_ks2_file_id(exp_id, hdr)
     assert ks2_utils.np.ndim(img) == 2
 
 ##########################
 # CATALOG CLEANING TESTS #
 ##########################
-def test_fix_catalog_dtypes(mast_cat_raw):
+@pytest.mark.clean
+def test_fix_catalog_dtypes_mast(mast_cat_raw):
     """
     Make sure all the entries in the catalog have the right dtype
     """
@@ -157,8 +129,51 @@ def test_fix_catalog_dtypes(mast_cat_raw):
     for col in cat_dtypes.index:
         assert(cat_dtypes[col] == ks2_utils.master_dtypes[col])
 
+@pytest.mark.clean
+def test_fix_catalog_dtypes_ps(ps_cat_raw):
+    """
+    Make sure all the entries in the catalog have the right dtype
+    """
+    cat = ks2_utils.fix_catalog_dtypes(ps_cat_raw, ks2_utils.nimfo_dtypes)
+    cat_dtypes = cat.dtypes
+    for col in cat_dtypes.index:
+        print(col, cat_dtypes[col], ks2_utils.nimfo_dtypes[col])
+        assert(cat_dtypes[col] == ks2_utils.nimfo_dtypes[col])
+
+
+@pytest.mark.clean
+def test_clean_point_source_catalog(ps_cat_clean):
+    """
+    Test that the cleaned catalog doesn't contain any point sources with cut values.
+    Current cuts are:
+    1. q > 0 (for all the q's)
+    2. z > 0 (for all the z's)
+    This starts from the 'clean' catalog that has been cleaned of duplicate entries
+    There should be a way to parameterize this
+    """
+    cut_cat = ks2_utils.clean_point_source_catalog(ps_cat_clean)
+    # test q cuts
+    # get 'q' columns
+    qstr = '^q[0-9]+'
+    cols = [i for i in ps_cat_clean.columns if ks2_utils.re.search(qstr, i) is not None]
+    # all test results should be empty
+    for col in cols:
+        cut = f"{col} <= 0"#"@col <= 0"
+        assert ps_cat_clean.query(cut).empty == False
+
+    # test z cuts
+    # get 'z' columns
+    zstr = '^z[0-9]+'
+    cols = [i for i in ps_cat_clean.columns if ks2_utils.re.search(zstr, i) is not None]
+    # all test results should be empty
+    for col in cols:
+        cut = f"{col} <= 0"
+        assert ps_cat_clean.query(cut).empty == False
+
+
+@pytest.mark.clean
 def test_clean_ks2_input_catalogs(mast_cat_raw, ps_cat_raw):
     """
     Test that after the cuts are applied, no sources remain in violation of the cuts
     """
-    # 
+    pass

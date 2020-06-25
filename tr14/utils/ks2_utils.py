@@ -157,7 +157,7 @@ master_dtypes = {
     "umast0": np.float,
     "vmast0": np.float,
     "mmast1": np.float,
-    "NMAST": str,
+    "NMAST": object,
     "zmast1": np.float,
     "szmast1": np.float,
     "q1": np.float,
@@ -194,11 +194,6 @@ def get_master_catalog(ks2_master_file=ks2_files[0], raw=False):
     """
     # get the columns
     ks2_master_file = Path(ks2_master_file).resolve().as_posix()
-
-    # if desired, return the cleaned catalog. else, return raw
-    if raw == False:
-        master_catalog_df = pd.read_csv(ks2_master_file + '-nodup.csv')
-        return master_catalog_df
 
     # otherwise, parse the original KS2 output file
     with open(ks2_master_file) as f:
@@ -237,24 +232,11 @@ def get_master_catalog(ks2_master_file=ks2_files[0], raw=False):
     for col in float_cols:
         mast_cat[col] = mast_cat[col].apply(col2float)
     """
-    
-    """
-    # remove this block for now
-    # ok, now pick the columns you care about and rename them
-    # this dictionary maps between the KS2 column names and mine,
-    # and accounts for the filter ID appended to the end of some
-    # columns
-    new_columns = {}
-    for i in master_catalog_df.columns:
-        for j in column_name_mapper.keys():
-            if i.find(j) >= 0:
-                new_columns[i] = i.replace(j, column_name_mapper[j])
-    master_catalog_df.rename(columns=new_columns, inplace=True)
-    # now, remove all the columns that you don't want to keep
-    for col in master_catalog_df.columns:
-        if col not in new_columns.values():
-            master_catalog_df.drop(col, axis=1, inplace=True)
-    """
+
+    # if desired, return the cleaned catalog. else, return raw
+    if raw == False:
+        master_catalog_df = clean_master_catalog(master_catalog_df)
+
     return master_catalog_df
 
 
@@ -331,7 +313,7 @@ nimfo_dtypes = {
     "q1": np.float64,
     "o1": np.float64,
     "f1": np.int64,
-    "g1": str,
+    "g1": object,
     "x0": np.float64,
     "y0": np.float64,
     "z2": np.float64,
@@ -339,19 +321,19 @@ nimfo_dtypes = {
     "q2": np.float64,
     "o2": np.float64,
     "f2": np.int64,
-    "g2": str,
+    "g2": object,
     "z3": np.float64,
     "sz3": np.float64,
     "q3": np.float64,
     "o3": np.float64,
     "f3": np.int64,
-    "g3": str,
-    "NMAST": str,
-    "ps_tile_id": str,
-    "tile_id": str,
-    "exp_id": str,
-    "filt_id": str,
-    "unk": str,
+    "g3": object,
+    "NMAST": object,
+    "ps_tile_id": object,
+    "tile_id": object,
+    "exp_id": object,
+    "filt_id": object,
+    "unk": object,
     "chip_id": np.int64,
 }
 
@@ -379,13 +361,6 @@ def get_point_source_catalog(ps_file=ks2_files[1], raw=False):
     """
     ps_file = Path(ps_file).resolve().as_posix()
 
-    # if desired, return the cleaned catalog. else, return raw
-    if raw == False:
-        point_sources_df = pd.read_csv(ps_file + '-nodup.csv')
-        point_sources_df.astype(nimfo_dtypes)
-        return point_sources_df
-
-    # otherwise, parse the original KS2 output file
     point_sources_df = pd.read_csv(ps_file,
                                    sep=' ',
                                    skipinitialspace=True, 
@@ -399,6 +374,10 @@ def get_point_source_catalog(ps_file=ks2_files[1], raw=False):
     point_sources_df['chip_id'] = point_sources_df['exp_id'].apply(lambda x: int(x.split('.')[1]))
     point_sources_df['exp_id'] = point_sources_df['exp_id'].apply(lambda x: x.split('.')[0])
     point_sources_df = point_sources_df.astype(nimfo_dtypes, copy=True)
+
+    # if desired, return the cleaned catalog. else, return raw
+    if raw == False:
+        point_sources_df = clean_point_source_catalog(point_sources_df)
 
     return point_sources_df
 
@@ -460,6 +439,7 @@ def remove_duplicates(ps_cat, master_cat, verbose=False):
 
     return ps_cat_nodup, master_cat_nodup
 
+
 """
 We only want to keep stars that are detected in at least N (probably 10) exposures,
 to remove spurious detections. This function cuts on that threshold
@@ -500,46 +480,6 @@ def catalog_cut_ndet(cat, ndet_thresh=10, mast_cat=None):
         mast_cat.drop(drop_ind, inplace=True)
 
     return cut_cat
-
-
-"""
-We also want to apply the following requirements to the catalog:
-1. all q > 0
-2. all z > 0
-3. an object must be detected in at least 10 different exposures
-"""
-def clean_point_source_catalog(cat):
-    """
-    This function, when called, cleans the point source catalog by applying the listed series of cuts:
-    1) q > 0
-    2) z > 0
-
-    Parameters
-    ----------
-    cat : pd.DataFrame
-      point source catalog
-
-    Returns
-    -------
-    cut_cat : pd.DataFrame
-      point source catalog with cuts applied
-    """
-
-    # don't keep any point sources that have any q = 0
-    q_gt_0 = ' and '.join([f"q{method_id} > 0" for method_id in phot_method_ids])
-    z_gt_0 = ' and '.join([f"z{method_id} > 0" for method_id in phot_method_ids])
-    #q_gt_95 = " and ".join([f"q{method_id} >= 0.95" for method_id in phot_method_ids])
-    # convert the g* columns to int
-    # g is 1 if the stamp is consistent with other stamps for this star, else 0
-    # leave as int for easy summation
-    #for col in cat.columns:
-    #    if re.search('^g[0-9]+', col) is not None:
-    #        g2bool = lambda x: True if (str(x) == '1') else False
-    #        cat[col] = cat[col].apply(g2bool)
-    #print(cut_q, cut_z)
-    full_query = q_gt_0 + ' and ' + z_gt_0 #+ ' and ' + q_gt_95
-    cut_df = cat.query(full_query)
-    return cut_df
 
 
 """
@@ -729,32 +669,111 @@ This all can be found in the notebook: ???
 
 # we also need some helper functions
 
-# this is the reference dictionary for null values
-dtype_nulls = {
-    np.float : np.nan,
-    np.int : np.nan,
-    str : '',
-    object : None
-}
 def fix_catalog_dtypes(cat, dtype_dict):
     """
     Make sure each entry in a catalog has the write data type.
-    If it doesn't, fill it with an appropriate null value
+    If it doesn't, assign None as the universal null value
     Parameters
     ----------
     cat : pd.Dataframe
       the catalog where each column has an appropriate data type
     dtype_dict : dict
       a dictionary whose keys are the column names and whose values are the dtypes
+
+    Output
+    ------
+    fixed : pd.DataFrame
+      dataframe identical to cat except the wrongly-typed values have been set to None
     """
-    return None
+    def col2dtype(x, dtype):
+        try:
+            return dtype(x)
+        except ValueError:
+            return None
+    fixed = cat.copy()
+    for col in cat.columns:
+        dtype = dtype_dict[col]
+        # pandas stores strings as objects
+        if dtype == object:
+            dtype = str
+        fixed[col] = cat[col].apply(col2dtype, args=[dtype])
+    del cat
+    return fixed
 
 
-def clean_ks2_input_catlaog(mast_cat, ps_cat):
+
+"""
+We also want to apply the following requirements to the catalog:
+1. all q > 0
+2. all z > 0
+3. an object must be detected in at least 10 different exposures
+"""
+def clean_point_source_catalog(cat):
+    """
+    This function, when called, cleans the point source catalog by applying the listed series of cuts:
+    1) q > 0
+    2) z > 0
+
+    Parameters
+    ----------
+    cat : pd.DataFrame
+      point source catalog
+
+    Returns
+    -------
+    cut_cat : pd.DataFrame
+      point source catalog with cuts applied
+    """
+
+    # don't keep any point sources that have any q = 0
+    q_gt_0 = ' and '.join([f"q{method_id} > 0" for method_id in phot_method_ids])
+    z_gt_0 = ' and '.join([f"z{method_id} > 0" for method_id in phot_method_ids])
+    #q_gt_95 = " and ".join([f"q{method_id} >= 0.95" for method_id in phot_method_ids])
+    # convert the g* columns to int
+    # g is 1 if the stamp is consistent with other stamps for this star, else 0
+    # leave as int for easy summation
+    #for col in cat.columns:
+    #    if re.search('^g[0-9]+', col) is not None:
+    #        g2bool = lambda x: True if (str(x) == '1') else False
+    #        cat[col] = cat[col].apply(g2bool)
+    #print(cut_q, cut_z)
+    full_query = q_gt_0 + ' and ' + z_gt_0 #+ ' and ' + q_gt_95
+    cut_df = cat.query(full_query)
+    return cut_df
+
+
+"""
+Clean the master catalog
+"""
+def clean_master_catalog(mast_cat, ps_cat=None):
+    """
+    Clean the master catalog. If no point source catalog is given, this just checks the types and assigns proper null values. If a point source catalog is provided, then it also makes sure that the list of objects present in each catalog are in agreement.
+
+    Parameters
+    ----------
+    mast_cat : pd.DataFrame
+      the master catalog
+    ps_cat : pd.DataFrame [None]
+      (optional) the point source catalog
+
+    Output
+    ------
+    mast_cat_clean : pd.DataFrame
+      the master catalog with dtypes fixed and all objects in agreement with the point source catalog
+    """
+    return mast_cat
+
+
+def process_ks2_input_catalogs(mast_cat, ps_cat):
     """
     This function reads the KS2 output files, applies the cleaning and cutting procedures, and writes them to tables in the data/tables directory
+    Clean each catalog independently, and then make them compatible
     """
-    
+    mast_cat_clean = clean_master_catalog(mast_cat)
+    ps_cat_clean = clean_point_source_catalog(ps_cat)
+
+    # sychronize
+    return mast_cat_clean, ps_cat_clean
 
 
 
