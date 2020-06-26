@@ -15,34 +15,34 @@ def ps_cat_raw():
     """
     The original KS2 point source catalog
     """
-    return ks2_utils.get_point_source_catalog(raw=True)
+    return ks2_utils.get_point_source_catalog(clean=False)
 
 @pytest.fixture()
 def mast_cat_raw():
     """
     The original KS2 master catalog
     """
-    return ks2_utils.get_master_catalog(raw=True)
+    return ks2_utils.get_master_catalog(clean=False)
 
 @pytest.fixture()
 def ps_cat_clean():
     """
     The cleaned KS2 point source catalog
     """
-    return ks2_utils.get_point_source_catalog(raw=False)
+    return ks2_utils.get_point_source_catalog(clean=True)
 
 @pytest.fixture()
 def mast_cat_clean():
     """Return the cleaned master catalog"""
-    return ks2_utils.get_master_catalog(raw=False)
+    return ks2_utils.get_master_catalog(clean=True)
 
 #####################
 # Duplicate entries #
 #####################
 
 catalogs = [ # For some reason, the fixtures can't be used directly here
-    ks2_utils.get_point_source_catalog(raw=False),#ps_cat_clean,
-    ks2_utils.get_master_catalog(raw=False),#mast_cat_clean,
+    ks2_utils.get_point_source_catalog(clean=True),#ps_cat_clean,
+    ks2_utils.get_master_catalog(clean=True),#mast_cat_clean,
 ]
 drop_cols = [
     ['NMAST', 'ps_tile_id', 'tile_id', 'exp_id', 'filt_id', 'unk', 'chip_id'],
@@ -120,21 +120,21 @@ def test_get_img_from_ks2_file_id(ps_cat_clean, hdr):
 # CATALOG CLEANING TESTS #
 ##########################
 @pytest.mark.clean
-def test_fix_catalog_dtypes_mast(mast_cat_raw):
+def test_clean_catalog_dtypes_mast(mast_cat_raw):
     """
     Make sure all the entries in the catalog have the right dtype
     """
-    cat = ks2_utils.fix_catalog_dtypes(mast_cat_raw, ks2_utils.master_dtypes)
+    cat = ks2_utils.clean_catalog_dtypes(mast_cat_raw, ks2_utils.master_dtypes)
     cat_dtypes = cat.dtypes
     for col in cat_dtypes.index:
         assert(cat_dtypes[col] == ks2_utils.master_dtypes[col])
 
 @pytest.mark.clean
-def test_fix_catalog_dtypes_ps(ps_cat_raw):
+def test_clean_catalog_dtypes_ps(ps_cat_raw):
     """
     Make sure all the entries in the catalog have the right dtype
     """
-    cat = ks2_utils.fix_catalog_dtypes(ps_cat_raw, ks2_utils.nimfo_dtypes)
+    cat = ks2_utils.clean_catalog_dtypes(ps_cat_raw, ks2_utils.nimfo_dtypes)
     cat_dtypes = cat.dtypes
     for col in cat_dtypes.index:
         print(col, cat_dtypes[col], ks2_utils.nimfo_dtypes[col])
@@ -149,27 +149,76 @@ def test_clean_point_source_catalog(ps_cat_clean):
     1. q > 0 (for all the q's)
     2. z > 0 (for all the z's)
     This starts from the 'clean' catalog that has been cleaned of duplicate entries
-    There should be a way to parameterize this
+    There should be a way to parameterize this.
+    The idea is that if you apply the *opposite* criterion, you should be left with an empty catalog in the end.
     """
     cut_cat = ks2_utils.clean_point_source_catalog(ps_cat_clean)
     # test q cuts
     # get 'q' columns
-    qstr = '^q[0-9]+'
-    cols = [i for i in ps_cat_clean.columns if ks2_utils.re.search(qstr, i) is not None]
+    qstr = '^q[1-9][0-9]*'
+    cols = [i for i in ps_cat_clean.columns
+            if ks2_utils.re.search(qstr, i) is not None]
     # all test results should be empty
     for col in cols:
         cut = f"{col} <= 0"#"@col <= 0"
-        assert ps_cat_clean.query(cut).empty == False
+        assert ps_cat_clean.query(cut).empty == True
 
     # test z cuts
     # get 'z' columns
-    zstr = '^z[0-9]+'
-    cols = [i for i in ps_cat_clean.columns if ks2_utils.re.search(zstr, i) is not None]
+    zstr = '^z[1-9][0-9]*'
+    cols = [i for i in ps_cat_clean.columns
+            if ks2_utils.re.search(zstr, i) is not None]
     # all test results should be empty
     for col in cols:
         cut = f"{col} <= 0"
-        assert ps_cat_clean.query(cut).empty == False
+        print(col)
+        assert ps_cat_clean.query(cut).empty == True
 
+
+def test_clean_master_catalog(mast_cat_raw, ps_cat_clean):
+    """
+    Check that the cleaned master catalog is consistent with the point source catalog.
+    Test: NMAST values, q range, z range
+
+    Parameters
+    ----------
+    mast_cat_raw : pd.DataFrame
+      raw master catalog
+    ps_cat_clean : pd.DataFrame
+      cleaned point source catalog
+
+    """
+    # given the master catalog
+    # when you apply the cleaning function
+    # then you should only have the same objects as in the point source catalog
+    mast_cat_clean = ks2_utils.clean_master_catalog(mast_cat_raw, ps_cat_clean)
+
+    # assert that the list of stars is the same
+    mast_names = set(mast_cat_clean['NMAST'])
+    ps_names = set(ps_cat_clean['NMAST'].unique())
+    assert mast_names == ps_names
+
+    """
+    # assert that the q-ranges are compatible
+    ps_cat_qrange = (ps_cat[['q1','q2','q3']].min().min(),
+                     ps_cat[['q1','q2','q3']].max().max())
+    mast_cat_qrange = (mast_cat[['q1','q2']].min().min(),
+                       mast_cat[['q1','q2']].max().max())
+    # ps min should be lower or equal to mast min
+    assert ps_cat_qrange[0] <= mast_cat_qrange[0]
+    # ps max should be lower or equal to mast max
+    assert ps_cat_qrange[1] >= mast_cat_qrange[1]
+
+    # assert that the z-ranges are compatible
+    ps_cat_zrange = (ps_cat[['z1','z2','z3']].min().min(),
+                     ps_cat[['z1','z2','z3']].max().max())
+    mast_cat_zrange = (mast_cat[['zmast1','zmast2']].min().min(),
+                       mast_cat[['zmast1','zmast2']].max().max())
+    # ps min should be lower or equal to mast min
+    assert ps_cat_zrange[0] <= mast_cat_zrange[0]
+    # ps max should be lower or equal to mast max
+    assert ps_cat_zrange[1] >= mast_cat_zrange[1]
+    """
 
 @pytest.mark.clean
 def test_clean_ks2_input_catalogs(mast_cat_raw, ps_cat_raw):

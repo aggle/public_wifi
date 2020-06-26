@@ -91,6 +91,9 @@ def get_filter_mapper(ks2_input_file=ks2_files[2]):
     filtermapper_df['filter_name'] = filtermapper_df['filter_name'].apply(lambda x: x.replace('"',''))
     return filtermapper_df
 
+ks2_filemapper = get_file_mapper()
+ks2_filtermapper = get_filter_mapper()
+
 """
 These helper functions keep you from having to duplicate code every time you want to pull a filter or file name from the above tables
 TODO: I think it's possible to build a template function for this so I don't have to make a new one for every table and field
@@ -171,7 +174,7 @@ master_dtypes = {
     "f2": np.int,
     "g2": np.int,
 }
-def get_master_catalog(ks2_master_file=ks2_files[0], raw=False):
+def get_master_catalog(ks2_master_file=ks2_files[0], clean=True):
     """
     From LOGR.XYVIQ1, pull out the master catalog of information about astrophysical objects
 
@@ -179,8 +182,8 @@ def get_master_catalog(ks2_master_file=ks2_files[0], raw=False):
     ----------
     ks2_master_file : str or pathlib.Path
      full path to the file
-    raw : bool (False)
-      if True, returns the raw version of the catalog (i.e. straight from KS2)
+    clean : bool (True)
+      if True, returns the cleaned version of the catalog (i.e. with cuts)
     Returns
     -------
     master_catalog_df : pd.DataFrame
@@ -234,7 +237,7 @@ def get_master_catalog(ks2_master_file=ks2_files[0], raw=False):
     """
 
     # if desired, return the cleaned catalog. else, return raw
-    if raw == False:
+    if clean == True:
         master_catalog_df = clean_master_catalog(master_catalog_df)
 
     return master_catalog_df
@@ -341,7 +344,8 @@ nimfo_dtypes = {
 # you can concatenate it with z, sz, q, o, f, and g
 phot_method_ids = ['1', '2', '3']
 
-def get_point_source_catalog(ps_file=ks2_files[1], raw=False):
+
+def get_point_source_catalog(ps_file=ks2_files[1], clean=True):
     """
     This function reads the KS2 FIND_NIMFO file that stores *every* point source
 
@@ -349,12 +353,12 @@ def get_point_source_catalog(ps_file=ks2_files[1], raw=False):
     ----------
     ps_file : pathlib.Path or string
       full path to the LOGR.FIND_NIMFO
-    raw : bool [False]
+    clean : bool [True]
       if False, return the cleaned point source catalog. If True, return the
       original KS2 catalog.
 
-    Returns
-    -------
+    Output
+    ------
     point_sources_df : pd.DataFrame
       catalog of all point sources detected and associated information.
       For documentation on the column names, see docs/database/ks2_output_definitions.org
@@ -376,7 +380,7 @@ def get_point_source_catalog(ps_file=ks2_files[1], raw=False):
     point_sources_df = point_sources_df.astype(nimfo_dtypes, copy=True)
 
     # if desired, return the cleaned catalog. else, return raw
-    if raw == False:
+    if clean == True:
         point_sources_df = clean_point_source_catalog(point_sources_df)
 
     return point_sources_df
@@ -669,7 +673,7 @@ This all can be found in the notebook: ???
 
 # we also need some helper functions
 
-def fix_catalog_dtypes(cat, dtype_dict):
+def clean_catalog_dtypes(cat, dtype_dict):
     """
     Make sure each entry in a catalog has the write data type.
     If it doesn't, assign None as the universal null value
@@ -700,8 +704,6 @@ def fix_catalog_dtypes(cat, dtype_dict):
     del cat
     return fixed
 
-
-
 """
 We also want to apply the following requirements to the catalog:
 1. all q > 0
@@ -724,7 +726,10 @@ def clean_point_source_catalog(cat):
     cut_cat : pd.DataFrame
       point source catalog with cuts applied
     """
+    # first, make sure all the dtypes are correct:
+    cat = clean_catalog_dtypes(cat, nimfo_dtypes)
 
+    # OK, now apply cuts
     # don't keep any point sources that have any q = 0
     q_gt_0 = ' and '.join([f"q{method_id} > 0" for method_id in phot_method_ids])
     z_gt_0 = ' and '.join([f"z{method_id} > 0" for method_id in phot_method_ids])
@@ -738,29 +743,102 @@ def clean_point_source_catalog(cat):
     #        cat[col] = cat[col].apply(g2bool)
     #print(cut_q, cut_z)
     full_query = q_gt_0 + ' and ' + z_gt_0 #+ ' and ' + q_gt_95
-    cut_df = cat.query(full_query)
+    cut_df = cat.query(full_query).copy()
     return cut_df
 
 
 """
 Clean the master catalog
 """
-def clean_master_catalog(mast_cat, ps_cat=None):
+def clean_master_catalog(mast_cat, ps_cat=None, verbose=False):
     """
     Clean the master catalog. If no point source catalog is given, this just checks the types and assigns proper null values. If a point source catalog is provided, then it also makes sure that the list of objects present in each catalog are in agreement.
-
+    If an object is out of range, it gets dropped from the catalog
     Parameters
     ----------
     mast_cat : pd.DataFrame
       the master catalog
     ps_cat : pd.DataFrame [None]
       (optional) the point source catalog
+    verbose : bool [False]
+      verbose output. If True, print the number of objects dropped at each cut
 
     Output
     ------
     mast_cat_clean : pd.DataFrame
       the master catalog with dtypes fixed and all objects in agreement with the point source catalog
     """
+    # fix any typing issues
+    mast_cat = clean_catalog_dtypes(mast_cat, master_dtypes)
+
+    # if no point source catalog is given, you're done
+    if ps_cat is None:
+        return mast_cat
+
+    # otherwise, make compatible with the point source catalog
+
+    # first, drop all the stars that are not in the ps catalog
+    ps_names = set(ps_cat['NMAST'].values)
+    if verbose == True:
+        print(f"# stars cut from PS catalog: {len(mast_cat) - len(ps_names)}")
+        mast_cat = mast_cat[mast_cat['NMAST'].isin(ps_names)].copy()
+    # if a star has no detections in a particular filter, set its z, q, o,
+    # f, and g properties to nan instead of the flag values KS2 uses
+    nan_cols = ['zmast','szmast','q','o','f','g']
+    # True if missing, False if present
+    ismissing = lambda x: ~ks2_filtermapper['filter_id'].isin(x)
+    ps_gb = ps_cat.groupby('NMAST')
+    missing_filters = ps_gb['filt_id'].aggregate('unique').apply(ismissing)
+    missing_filters.columns = ks2_filtermapper['filter_id']
+    # loop through the filters, select the stars that have no observations
+    # in that filter (either because they were cut or because they were
+    # never observed), and set the corresponding columns to nan
+    for filt in missing_filters.columns:
+        filt_num = str(filt[-1])
+        missing_ind = missing_filters.query(f"{filt} == True").index
+        mast_cat.loc[mast_cat['NMAST'].isin(missing_ind),
+                     [i+filt_num for i in nan_cols]] = np.nan
+
+
+    # recompute star properties (z, sz, q, and f) with remaining stars
+    #group the ps cat by star name and filter for easy and fast math
+    star_gb = ps_cat.groupby(['NMAST', 'filt_id'])
+    # compute the average flux
+    flux_cols = ['z'+i for i in phot_method_ids] + ['sz'+i for i in phot_method_ids]
+    def keep_flux_with_less_unc(row):
+        """keep whichever of z2 and z3 has smaller uncertainty"""
+        if row['sz2'] <= row['sz3']:
+            return pd.Series(row[['z2', 'sz2']].values, index=['zmast','szmast'])
+        else:
+            return pd.Series(row[['z3', 'sz3']].values, index=['zmast','szmast'])
+    fluxes = star_gb[flux_cols].aggregate(np.nanmean).apply(keep_flux_with_less_unc,
+                                                            axis=1)
+    # loop through and assign the new values
+    for ind, row in fluxes.iterrows():
+        filt_num = str(ind[1][-1])
+        mast_cols = [i+filt_num for i in row.index]
+        index = mast_cat.query(f'NMAST == @row.name[0]').index
+        mast_cat.loc[index, mast_cols] = row.values
+
+    # ok now do q
+    q_cols = ['q'+i for i in phot_method_ids]
+    q_mean = star_gb[q_cols].aggregate(np.nanmean).apply(np.nanmean, axis=1)
+    for ind, val in q_mean.iteritems():
+        filt_num = str(ind[1][-1])
+        mast_col = 'q'+filt_num
+        index = mast_cat.reset_index().set_index('NMAST').loc[ind[0], 'index']
+        mast_cat.loc[index, mast_col] = val
+
+    # ok now do f
+    # f is the number of exposures where the star was found
+    ndet = star_gb.size()
+    for ind, val in ndet.iteritems():
+        filt_num = str(ind[1][-1])
+        mast_col = 'f'+filt_num
+        index = mast_cat.reset_index().set_index('NMAST').loc[ind[0], 'index']
+        mast_cat.loc[index, mast_col] = val
+    
+
     return mast_cat
 
 
@@ -769,10 +847,12 @@ def process_ks2_input_catalogs(mast_cat, ps_cat):
     This function reads the KS2 output files, applies the cleaning and cutting procedures, and writes them to tables in the data/tables directory
     Clean each catalog independently, and then make them compatible
     """
-    mast_cat_clean = clean_master_catalog(mast_cat)
+    # apply cuts to the PS catalog
     ps_cat_clean = clean_point_source_catalog(ps_cat)
+    # bring the master catalog in compliance
+    mast_cat_clean = clean_master_catalog(mast_cat, ps_cat_clean)
 
-    # sychronize
+    # all done!
     return mast_cat_clean, ps_cat_clean
 
 
@@ -804,6 +884,10 @@ def ks2_cat_to_tr14(cat):
     ----------
     cat : pd.DataFrame
       a KS2 catalog
+
+    Output
+    ------
+
     """
     pass
 

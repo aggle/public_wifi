@@ -31,7 +31,7 @@
 |     5 | zmast1  | float | counts averaged over all detections in Filter 1                     |
 |     6 | szmast1 | float | counts stderr, averaged over all detections in Filter 1             |
 |     7 | q1      | float | Aggregate PSF fit quality in Filter 1                               |
-|     8 | o1      | float | Crowding parameter                                                 |
+|     8 | o1      | float | Crowding parameter                                                  |
 |     9 | f1      | int   | number of exposures where this star was found                       |
 |    10 | g1      | int   | # exp where star was measured consistent w/ other good measurements |
 |    11 | zmast2  | float | same as above, for Filter 2                                         |
