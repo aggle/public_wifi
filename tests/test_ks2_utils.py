@@ -142,6 +142,16 @@ def test_clean_catalog_dtypes_ps(ps_cat_raw):
 
 
 @pytest.mark.clean
+@pytest.mark.parametrize('ndet_min', [0, 5, 10, 15, 50])
+def test_catalog_cut_ndet(ps_cat_raw, ndet_min):
+    """Cut on the number of detections in the point source catalog"""
+
+    cut_cat = ks2_utils.catalog_cut_ndet(ps_cat_raw, ndet_min=ndet_min)
+    ndet = cut_cat.groupby("NMAST").size()
+    assert all(ndet >= ndet_min)
+
+
+@pytest.mark.clean
 def test_clean_point_source_catalog(ps_cat_clean):
     """
     Test that the cleaned catalog doesn't contain any point sources with cut values.
@@ -152,7 +162,8 @@ def test_clean_point_source_catalog(ps_cat_clean):
     There should be a way to parameterize this.
     The idea is that if you apply the *opposite* criterion, you should be left with an empty catalog in the end.
     """
-    cut_cat = ks2_utils.clean_point_source_catalog(ps_cat_clean)
+    cut_cat = ks2_utils.clean_point_source_catalog(ps_cat_clean,
+                                                   cut_ndet_args={'ndet_min': 5})
     # test q cuts
     # get 'q' columns
     qstr = '^q[1-9][0-9]*'
@@ -173,6 +184,7 @@ def test_clean_point_source_catalog(ps_cat_clean):
         cut = f"{col} <= 0"
         print(col)
         assert ps_cat_clean.query(cut).empty == True
+    # 
 
 
 def test_clean_master_catalog(mast_cat_raw, ps_cat_clean):
