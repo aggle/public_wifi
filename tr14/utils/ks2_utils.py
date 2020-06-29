@@ -343,6 +343,13 @@ nimfo_dtypes = {
 # this array is useful for looping over photometry methods
 # you can concatenate it with z, sz, q, o, f, and g
 phot_method_ids = ['1', '2', '3']
+# define these here so you don't have to define it every time
+z_cols = ['z' + i for i in phot_method_ids]
+sz_cols = ['sz' + i for i in phot_method_ids]
+q_cols = ['q' + i for i in phot_method_ids]
+o_cols = ['o' + i for i in phot_method_ids]
+f_cols = ['f' + i for i in phot_method_ids]
+g_cols = ['g' + i for i in phot_method_ids]
 
 
 def get_point_source_catalog(ps_file=ks2_files[1], clean=True):
@@ -443,47 +450,6 @@ def remove_duplicates(ps_cat, master_cat, verbose=False):
 
     return ps_cat_nodup, master_cat_nodup
 
-
-"""
-We only want to keep stars that are detected in at least N (probably 10) exposures,
-to remove spurious detections. This function cuts on that threshold
-"""
-def catalog_cut_ndet(cat, ndet_thresh=10, mast_cat=None):
-    """
-    This function only keeps stars that are detected more than ndet times in all exposures.
-
-    Parameters
-    ----------
-    cat : pd.DataFrame
-      a catalog of point source detections
-    ndet : int [10]
-      the lower threshold on the number of detections (>=)
-    mast_cat : None or pd.DataFrame
-      if a dataframe containing the master catalog is given, make sure the
-      entries in the master catalog are consistent with the new cuts in the
-      point source catalog
-
-    Returns
-    -------
-    cut_cat : pd.DataFrame
-      a catalog with the cuts applied. Note that the master catalog should also
-      be updated
-    """
-    # collect the number of detections per point source
-    ndet = cat.groupby('NMAST')['exp_id'].agg('count').reset_index()
-    ndet.rename(columns={'exp_id':'n'}, inplace=True)
-    # collect the object ids for those that satisfy the threshold
-    #keep_objs = (ndet.groupby('NMAST').sum() >= ndet_thresh).query("n == True").index
-    keep_objs = ndet.query('n >= @ndet_thresh')['NMAST']
-    # and finally use them to index the catalog
-    cut_cat = cat[cat['NMAST'].isin(keep_objs)]
-
-    if mast_cat is not None:
-        # update the master catalog in-place
-        drop_ind = mast_cat['NMAST'].isin(obj_ids).reset_index().query("NMAST == False")['index']
-        mast_cat.drop(drop_ind, inplace=True)
-
-    return cut_cat
 
 
 """
@@ -690,6 +656,7 @@ def clean_catalog_dtypes(cat, dtype_dict):
       dataframe identical to cat except the wrongly-typed values have been set to None
     """
     def col2dtype(x, dtype):
+        # do this as a function so you can put it in pd.DataFrame.apply()
         try:
             return dtype(x)
         except ValueError:
@@ -710,7 +677,43 @@ We also want to apply the following requirements to the catalog:
 2. all z > 0
 3. an object must be detected in at least 10 different exposures
 """
-def clean_point_source_catalog(cat):
+"""
+We only want to keep stars that are detected in at least N (probably 10) exposures,
+to remove spurious detections. This function cuts on that threshold
+"""
+def catalog_cut_ndet(cat, ndet_min=9, mast_cat=None):
+    """
+    This function only keeps stars that are detected more than ndet times in all exposures.
+
+    Parameters
+    ----------
+    cat : pd.DataFrame
+      a catalog of point source detections
+    ndet_min : int [10]
+      the lower threshold on the number of detections (>=)
+    mast_cat : None or pd.DataFrame
+      if a dataframe containing the master catalog is given, make sure the
+      entries in the master catalog are consistent with the new cuts in the
+      point source catalog
+      NOTE: this functionality is deprecated and has been moved to
+        clean_master_catalog(). Kept for backwards compatibility
+
+    Returns
+    -------
+    cut_cat : pd.DataFrame
+      a catalog containing only stars with >= ndet_min detections
+    """
+    # collect the number of detections per point source
+    ndet = cat.groupby('NMAST').size()
+    # collect the object ids for those that satisfy the threshold
+    keep_objs = pd.Series(ndet[ndet >= ndet_min].index)
+    # and finally use them to index the catalog
+    cut_cat = cat[cat['NMAST'].isin(keep_objs)].copy()
+
+    return cut_cat
+
+def clean_point_source_catalog(cat, q_min=0, z_min=0,
+                               cut_ndet_args={}):
     """
     This function, when called, cleans the point source catalog by applying the listed series of cuts:
     1) q > 0
@@ -720,36 +723,96 @@ def clean_point_source_catalog(cat):
     ----------
     cat : pd.DataFrame
       point source catalog
+    q_min : float [0]
+      lower bound on PSF fit parameter
+    z_min : float
+      lower bound on flux
+    cut_ndet_args : dict [{}]
+      arguments to pass to catalog_cut_ndet, e.g. {'ndet_min': 9}
 
-    Returns
+    Output
     -------
-    cut_cat : pd.DataFrame
+    clean_cat : pd.DataFrame
       point source catalog with cuts applied
     """
     # first, make sure all the dtypes are correct:
-    cat = clean_catalog_dtypes(cat, nimfo_dtypes)
+    clean_cat = clean_catalog_dtypes(cat, nimfo_dtypes)
 
     # OK, now apply cuts
-    # don't keep any point sources that have any q = 0
-    q_gt_0 = ' and '.join([f"q{method_id} > 0" for method_id in phot_method_ids])
-    z_gt_0 = ' and '.join([f"z{method_id} > 0" for method_id in phot_method_ids])
-    #q_gt_95 = " and ".join([f"q{method_id} >= 0.95" for method_id in phot_method_ids])
-    # convert the g* columns to int
-    # g is 1 if the stamp is consistent with other stamps for this star, else 0
-    # leave as int for easy summation
-    #for col in cat.columns:
-    #    if re.search('^g[0-9]+', col) is not None:
-    #        g2bool = lambda x: True if (str(x) == '1') else False
-    #        cat[col] = cat[col].apply(g2bool)
-    #print(cut_q, cut_z)
-    full_query = q_gt_0 + ' and ' + z_gt_0 #+ ' and ' + q_gt_95
-    cut_df = cat.query(full_query).copy()
-    return cut_df
+
+    # cut for q > 0 and z > 0 on *all* q and z
+    q_gt_0 = " and ".join([f"{i} > 0" for i in q_cols])
+    z_gt_0 = " and ".join([f"{i} > 0" for i in z_cols])
+    qz_gt_0 = f"{q_gt_0} and {z_gt_0}"
+    clean_cat = clean_cat.query(qz_gt_0).copy()
+
+    # cut for q2 > 0.85
+    q_min = 0.85
+    q2_gt_85 = f"q2 >= {q_min}"
+    clean_cat = clean_cat.query(q2_gt_85).copy()
+
+    # finally, cut on the number of detections
+    clean_cat = catalog_cut_ndet(clean_cat, **cut_ndet_args)
+
+    return clean_cat
 
 
 """
-Clean the master catalog
+Clean the master catalog:
+1. Any value that cannot be converted to the official column dtype set to nan
+2. Remove stars that are not in the point source catalog
+3. 
 """
+def recompute_master_catalog(mast_cat, ps_cat):
+    """
+    After making cuts on the point source catalog, recompute relevant
+    values in the master catalog
+    Parameters
+    ----------
+    mast_cat : pd.DataFrame
+      the master catalog
+    ps_cat : pd.DataFrame
+      the point source catalog
+
+    Output
+    ------
+    mast_cat_new : pd.DataFrame
+      the master catalog with updated values
+    """
+    # compute the new PS values
+    mean_cols = ['z2','sz2','q2']
+    # group the point source catalog by star and filter to make computing faster
+    ps_gb = ps_cat.groupby(["NMAST","filt_id"])
+    ps_mean = ps_gb[mean_cols].apply(np.mean)
+    ps_mean['f2'] = ps_gb.size()
+
+    # separate the ps_mean dataframe by filter
+    filt_mean_dfs = {}
+    for filt in ps_cat['filt_id'].unique():
+        # compute the new mean z2, sz2, and q2
+        filt_mean_dfs[filt] = ps_mean.loc[(slice(None), filt), :].copy()
+        # rename the columns to match the master catalog columns
+        filt_num = filt[-1]
+        filt_mean_dfs[filt].rename(columns = {'z2' : 'zmast'+filt_num,
+                                              'sz2': 'szmast'+filt_num,
+                                              'q2' : 'q'+filt_num,
+                                              'f2' : 'f'+filt_num},
+                                   inplace=True)
+
+    # Now, assign the recomputed values to the master catalog. Use a
+    # dataframe as a "linking table" between "NMAST" and the mast_cat_clean index
+    mast_cat_clean = mast_cat.copy()
+    index_mapper = pd.Series(index=mast_cat_clean['NMAST'],
+                             data=mast_cat_clean.index)
+    for filt_id, filt_df in filt_mean_dfs.items():
+        # OK, the big challenge isto align the catalogs
+        filt_nmast = filt_mean_dfs[filt_id].index.get_level_values('NMAST')
+        nmast_2_mastind = index_mapper.loc[filt_nmast]
+        mast_cat_clean.loc[nmast_2_mastind, filt_df.columns] = filt_df.values.copy()
+
+    return mast_cat_clean
+
+
 def clean_master_catalog(mast_cat, ps_cat=None, verbose=False):
     """
     Clean the master catalog. If no point source catalog is given, this just checks the types and assigns proper null values. If a point source catalog is provided, then it also makes sure that the list of objects present in each catalog are in agreement.
@@ -778,66 +841,32 @@ def clean_master_catalog(mast_cat, ps_cat=None, verbose=False):
     # otherwise, make compatible with the point source catalog
 
     # first, drop all the stars that are not in the ps catalog
-    ps_names = set(ps_cat['NMAST'].values)
+    nmast_list = ps_cat['NMAST'].unique()
+    mast_cat = mast_cat[mast_cat['NMAST'].isin(nmast_list)].copy()
     if verbose == True:
-        print(f"# stars cut from PS catalog: {len(mast_cat) - len(ps_names)}")
-        mast_cat = mast_cat[mast_cat['NMAST'].isin(ps_names)].copy()
-    # if a star has no detections in a particular filter, set its z, q, o,
-    # f, and g properties to nan instead of the flag values KS2 uses
-    nan_cols = ['zmast','szmast','q','o','f','g']
-    # True if missing, False if present
-    ismissing = lambda x: ~ks2_filtermapper['filter_id'].isin(x)
+        print(f"# stars cut from PS catalog: {len(mast_cat) - len(mast_cat_clean)}")
+    
+    # second, if a star has no detections in a particular filter, set
+    # that filter's z, q, o, f, and g properties to nan instead of the
+    # flag values KS2 uses
     ps_gb = ps_cat.groupby('NMAST')
+    # this function yields True if missing, False if present
+    ismissing = lambda x: ~ks2_filtermapper['filter_id'].isin(x)
     missing_filters = ps_gb['filt_id'].aggregate('unique').apply(ismissing)
     missing_filters.columns = ks2_filtermapper['filter_id']
     # loop through the filters, select the stars that have no observations
     # in that filter (either because they were cut or because they were
     # never observed), and set the corresponding columns to nan
+    nan_cols = ['zmast','szmast','q','o','f','g']
     for filt in missing_filters.columns:
         filt_num = str(filt[-1])
+        filt_nan_cols = [i+filt_num for i in nan_cols]
         missing_ind = missing_filters.query(f"{filt} == True").index
         mast_cat.loc[mast_cat['NMAST'].isin(missing_ind),
-                     [i+filt_num for i in nan_cols]] = np.nan
-
+                     filt_nan_cols] = np.nan
 
     # recompute star properties (z, sz, q, and f) with remaining stars
-    #group the ps cat by star name and filter for easy and fast math
-    star_gb = ps_cat.groupby(['NMAST', 'filt_id'])
-    # compute the average flux
-    flux_cols = ['z'+i for i in phot_method_ids] + ['sz'+i for i in phot_method_ids]
-    def keep_flux_with_less_unc(row):
-        """keep whichever of z2 and z3 has smaller uncertainty"""
-        if row['sz2'] <= row['sz3']:
-            return pd.Series(row[['z2', 'sz2']].values, index=['zmast','szmast'])
-        else:
-            return pd.Series(row[['z3', 'sz3']].values, index=['zmast','szmast'])
-    fluxes = star_gb[flux_cols].aggregate(np.nanmean).apply(keep_flux_with_less_unc,
-                                                            axis=1)
-    # loop through and assign the new values
-    for ind, row in fluxes.iterrows():
-        filt_num = str(ind[1][-1])
-        mast_cols = [i+filt_num for i in row.index]
-        index = mast_cat.query(f'NMAST == @row.name[0]').index
-        mast_cat.loc[index, mast_cols] = row.values
-
-    # ok now do q
-    q_cols = ['q'+i for i in phot_method_ids]
-    q_mean = star_gb[q_cols].aggregate(np.nanmean).apply(np.nanmean, axis=1)
-    for ind, val in q_mean.iteritems():
-        filt_num = str(ind[1][-1])
-        mast_col = 'q'+filt_num
-        index = mast_cat.reset_index().set_index('NMAST').loc[ind[0], 'index']
-        mast_cat.loc[index, mast_col] = val
-
-    # ok now do f
-    # f is the number of exposures where the star was found
-    ndet = star_gb.size()
-    for ind, val in ndet.iteritems():
-        filt_num = str(ind[1][-1])
-        mast_col = 'f'+filt_num
-        index = mast_cat.reset_index().set_index('NMAST').loc[ind[0], 'index']
-        mast_cat.loc[index, mast_col] = val
-    
+    mast_cat = recompute_master_catalog(mast_cat, ps_cat)
 
     return mast_cat
 
