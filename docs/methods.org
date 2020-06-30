@@ -1,0 +1,4 @@
+#+title: Tr14 methods
+#+author: Jonathan Aguilar
+* Assembling the catalog of point sources
+* Performing PSF subtraction
