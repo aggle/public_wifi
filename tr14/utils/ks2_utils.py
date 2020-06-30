@@ -351,7 +351,6 @@ o_cols = ['o' + i for i in phot_method_ids]
 f_cols = ['f' + i for i in phot_method_ids]
 g_cols = ['g' + i for i in phot_method_ids]
 
-
 def get_point_source_catalog(ps_file=ks2_files[1], clean=True):
     """
     This function reads the KS2 FIND_NIMFO file that stores *every* point source
@@ -712,18 +711,20 @@ def catalog_cut_ndet(cat, ndet_min=9, mast_cat=None):
 
     return cut_cat
 
-def clean_point_source_catalog(cat, q_min=0, z_min=0,
+def clean_point_source_catalog(cat, q_min=0.85, z_min=0,
                                cut_ndet_args={}):
     """
     This function, when called, cleans the point source catalog by applying the listed series of cuts:
-    1) q > 0
-    2) z > 0
+    1) q > 0 for q1, q2, q3
+    2) z > 0 for z1, z2, z3
+    3) q > some threshold
+    4) number of detections > some threshold
 
     Parameters
     ----------
     cat : pd.DataFrame
       point source catalog
-    q_min : float [0]
+    q_min : float [0.85]
       lower bound on PSF fit parameter
     z_min : float
       lower bound on flux
@@ -731,7 +732,7 @@ def clean_point_source_catalog(cat, q_min=0, z_min=0,
       arguments to pass to catalog_cut_ndet, e.g. {'ndet_min': 9}
 
     Output
-    -------
+    ------
     clean_cat : pd.DataFrame
       point source catalog with cuts applied
     """
@@ -744,12 +745,11 @@ def clean_point_source_catalog(cat, q_min=0, z_min=0,
     q_gt_0 = " and ".join([f"{i} > 0" for i in q_cols])
     z_gt_0 = " and ".join([f"{i} > 0" for i in z_cols])
     qz_gt_0 = f"{q_gt_0} and {z_gt_0}"
-    clean_cat = clean_cat.query(qz_gt_0).copy()
+    clean_cat = clean_cat.query(qz_gt_0, inplace=False)
 
-    # cut for q2 > 0.85
-    q_min = 0.85
-    q2_gt_85 = f"q2 >= {q_min}"
-    clean_cat = clean_cat.query(q2_gt_85).copy()
+    # cut on q2
+    q2_gt_qmin = f"q2 >= {q_min}"
+    clean_cat = clean_cat.query(q2_gt_qmin, inplace=False)
 
     # finally, cut on the number of detections
     clean_cat = catalog_cut_ndet(clean_cat, **cut_ndet_args)
@@ -761,7 +761,7 @@ def clean_point_source_catalog(cat, q_min=0, z_min=0,
 Clean the master catalog:
 1. Any value that cannot be converted to the official column dtype set to nan
 2. Remove stars that are not in the point source catalog
-3. 
+3. Recompute z, sz, q, and f using the point source catalog
 """
 def recompute_master_catalog(mast_cat, ps_cat):
     """
@@ -805,7 +805,7 @@ def recompute_master_catalog(mast_cat, ps_cat):
     index_mapper = pd.Series(index=mast_cat_clean['NMAST'],
                              data=mast_cat_clean.index)
     for filt_id, filt_df in filt_mean_dfs.items():
-        # OK, the big challenge isto align the catalogs
+        # OK, the big challenge is to align the catalogs
         filt_nmast = filt_mean_dfs[filt_id].index.get_level_values('NMAST')
         nmast_2_mastind = index_mapper.loc[filt_nmast]
         mast_cat_clean.loc[nmast_2_mastind, filt_df.columns] = filt_df.values.copy()
@@ -861,7 +861,7 @@ def clean_master_catalog(mast_cat, ps_cat=None, verbose=False):
     for filt in missing_filters.columns:
         filt_num = str(filt[-1])
         filt_nan_cols = [i+filt_num for i in nan_cols]
-        missing_ind = missing_filters.query(f"{filt} == True").index
+        missing_ind = missing_filters.query(f"{filt} == True", inplace=False).index
         mast_cat.loc[mast_cat['NMAST'].isin(missing_ind),
                      filt_nan_cols] = np.nan
 
