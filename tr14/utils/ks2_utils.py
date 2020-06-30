@@ -840,32 +840,19 @@ def clean_master_catalog(mast_cat, ps_cat=None, verbose=False):
 
     # otherwise, make compatible with the point source catalog
 
-    # first, drop all the stars that are not in the ps catalog
-    nmast_list = ps_cat['NMAST'].unique()
-    mast_cat = mast_cat[mast_cat['NMAST'].isin(nmast_list)].copy()
-    if verbose == True:
-        print(f"# stars cut from PS catalog: {len(mast_cat) - len(mast_cat_clean)}")
-    
-    # second, if a star has no detections in a particular filter, set
-    # that filter's z, q, o, f, and g properties to nan instead of the
-    # flag values KS2 uses
-    ps_gb = ps_cat.groupby('NMAST')
-    # this function yields True if missing, False if present
-    ismissing = lambda x: ~ks2_filtermapper['filter_id'].isin(x)
-    missing_filters = ps_gb['filt_id'].aggregate('unique').apply(ismissing)
-    missing_filters.columns = ks2_filtermapper['filter_id']
-    # loop through the filters, select the stars that have no observations
-    # in that filter (either because they were cut or because they were
-    # never observed), and set the corresponding columns to nan
-    nan_cols = ['zmast','szmast','q','o','f','g']
-    for filt in missing_filters.columns:
-        filt_num = str(filt[-1])
-        filt_nan_cols = [i+filt_num for i in nan_cols]
-        missing_ind = missing_filters.query(f"{filt} == True", inplace=False).index
-        mast_cat.loc[mast_cat['NMAST'].isin(missing_ind),
-                     filt_nan_cols] = np.nan
+    # first, only keep stars that are in the cleaned ps catalog
+    keep_stars = ps_cat['NMAST'].unique()
+    mast_cat = mast_cat[mast_cat['NMAST'].isin(keep_stars)].copy()
 
-    # recompute star properties (z, sz, q, and f) with remaining stars
+    # second, only keep stars that have detections in all filters
+    ps_gb = ps_tmp.groupby('NMAST')
+    # true if all filters present, else false
+    all_filters_check = lambda x: all(ks2_filtermapper['filter_id'].isin(x))
+    all_filters = ps_gb['filt_id'].apply(all_filters_check)
+    keep_stars = all_filters[all_filters = True].index
+    mast_cat = mast_cat[mast_cat['NMAST'].isin(keep_stars)].copy()
+
+    # finally, recompute star properties (z, sz, q, and f) with remaining stars
     mast_cat = recompute_master_catalog(mast_cat, ps_cat)
 
     return mast_cat
