@@ -1,0 +1,30 @@
+#+title: Tr14 methods
+#+author: Jonathan Aguilar
+
+#+OPTIONS: tex:t
+
+* Assembling the catalog of point sources
+...later...
+* Performing PSF subtraction
+** Steps from cite:Strampelli_2020 
+*** Stamp size selection
+For PSF subtraction, a stamp should contain a target star and no other /known/ point sources. All stamps must be the same size. To choose the proper size, we want to optimize between two quantities:
+1. increase the search region for companions
+2. decrease the number of stamps with a neighbor present.
+#1 has a natural limit - PSF subtraction is only useful in the regime where the background is dominated by the extended PSF of a bright star. It is irrelevant far from the star. Our experience with Orion suggests that we can achieve $\Delta~mag \sim 6-7$ at 0.5" separation. It is not useful to extend our stamps much beyond this region, so probably a radius of 5-6 pixels would do it.
+
+We can make a plot of the pairwise distances to see how many stars are closer to each other than this radius. We would have to eliminate all those stars, plus a few pixels of buffer to account for the PSF wings. cite:Strampelli_2020 places the cut at 1.5".
+*** Bad pixel removal
+Perform an independent search for bad pixels in the selected stamps using a 10-sigma threshold. Didn't find any, so not sure what we would have done with them.
+*** ACS catalog matching
+Matched with 
+ 
+
+   
+
+
+
+
+
+* Citations
+bibliography:manuscript.bib
