@@ -508,13 +508,22 @@ def generate_exposure_distance_matrix(df, same_nan=True):
       the NMAST identifiers, containing the pixelwise distance between sources
 
     """
+
+    dist_func = lambda x, df : np.linalg.norm(x[['xraw1','yraw1']]
+                                              - df[['xraw1', 'yraw1']],
+                                              axis=1)
+    dist_mat = df.set_index('NMAST')[['xraw1', 'yraw1']].apply(dist_func, args=[df],
+                                                               result_type='expand',
+                                                               axis=1)
+    dist_mat.columns = dist_mat.index
+    """
     obj_ids = df['NMAST'].values # all the object ids
     dist_mat = pd.DataFrame(data=np.nan,
                             index=obj_ids, columns=obj_ids,
                             dtype=np.float)
     for obj_id in dist_mat.columns:
         dist_mat[obj_id] = calc_exp_dist_from_obj(df, obj_id)
-
+    """
     # alternate algorithm:
     """
     dist_mat = df.apply(lambda x: calc_exp_dist_from_obj(df, x['NMAST']),
@@ -719,6 +728,7 @@ def clean_point_source_catalog(cat, q_min=0.85, z_min=0,
     2) z > 0 for z1, z2, z3
     3) q > some threshold
     4) number of detections > some threshold
+    5) after all cuts, stars must still have detections in all filters
 
     Parameters
     ----------
@@ -737,7 +747,7 @@ def clean_point_source_catalog(cat, q_min=0.85, z_min=0,
       point source catalog with cuts applied
     """
     # first, make sure all the dtypes are correct:
-    clean_cat = clean_catalog_dtypes(cat, nimfo_dtypes)
+    cat_0 = clean_catalog_dtypes(cat, nimfo_dtypes)
 
     # OK, now apply cuts
 
@@ -745,16 +755,25 @@ def clean_point_source_catalog(cat, q_min=0.85, z_min=0,
     q_gt_0 = " and ".join([f"{i} > 0" for i in q_cols])
     z_gt_0 = " and ".join([f"{i} > 0" for i in z_cols])
     qz_gt_0 = f"{q_gt_0} and {z_gt_0}"
-    clean_cat = clean_cat.query(qz_gt_0, inplace=False)
+    cat_1 = cat_0.query(qz_gt_0, inplace=False)
 
     # cut on q2
     q2_gt_qmin = f"q2 >= {q_min}"
-    clean_cat = clean_cat.query(q2_gt_qmin, inplace=False)
+    cat_2 = cat_1.query(q2_gt_qmin, inplace=False)
 
-    # finally, cut on the number of detections
-    clean_cat = catalog_cut_ndet(clean_cat, **cut_ndet_args)
+    # cut on the number of detections
+    cat_3 = catalog_cut_ndet(cat_2, **cut_ndet_args)
 
-    return clean_cat
+    # finally, require that all remaining stars have detections in both filters
+    star_gb = cat_3.groupby('NMAST')
+    # this function is True if a star is in both filters, else False
+    both_filters = star_gb['filt_id'].apply(lambda x:
+                                            all(ks2_filtermapper['filter_id'].isin(x)))
+    # use boolean indexing
+    both_filter_stars = both_filters[both_filters].index
+    cat_4 = cat_3[cat_3['NMAST'].isin(both_filter_stars)]
+
+    return cat_4
 
 
 """
@@ -766,7 +785,8 @@ Clean the master catalog:
 def recompute_master_catalog(mast_cat, ps_cat):
     """
     After making cuts on the point source catalog, recompute relevant
-    values in the master catalog
+    values in the master catalog.
+    Assumes the master catalog has the same stars as the point source catalog
     Parameters
     ----------
     mast_cat : pd.DataFrame
@@ -813,7 +833,7 @@ def recompute_master_catalog(mast_cat, ps_cat):
     return mast_cat_clean
 
 
-def clean_master_catalog(mast_cat, ps_cat=None, verbose=False):
+def clean_master_catalog(mast_cat, ps_cat=None, recompute=True, verbose=False):
     """
     Clean the master catalog. If no point source catalog is given, this just checks the types and assigns proper null values. If a point source catalog is provided, then it also makes sure that the list of objects present in each catalog are in agreement.
     If an object is out of range, it gets dropped from the catalog
@@ -823,6 +843,9 @@ def clean_master_catalog(mast_cat, ps_cat=None, verbose=False):
       the master catalog
     ps_cat : pd.DataFrame [None]
       (optional) the point source catalog
+    recompute : bool [True]
+      if True, use ps_cat to recompute the zmast, szmast, q, and g columns of the
+      master catalog
     verbose : bool [False]
       verbose output. If True, print the number of objects dropped at each cut
 
@@ -839,21 +862,23 @@ def clean_master_catalog(mast_cat, ps_cat=None, verbose=False):
         return mast_cat
 
     # otherwise, make compatible with the point source catalog
-
     # first, only keep stars that are in the cleaned ps catalog
     keep_stars = ps_cat['NMAST'].unique()
     mast_cat = mast_cat[mast_cat['NMAST'].isin(keep_stars)].copy()
 
+    """
     # second, only keep stars that have detections in all filters
-    ps_gb = ps_tmp.groupby('NMAST')
+    # n.b. this has been moved to clean_point_sources
+    ps_gb = ps_cat.groupby('NMAST')
     # true if all filters present, else false
     all_filters_check = lambda x: all(ks2_filtermapper['filter_id'].isin(x))
     all_filters = ps_gb['filt_id'].apply(all_filters_check)
-    keep_stars = all_filters[all_filters = True].index
+    keep_stars = all_filters[all_filters == True].index
     mast_cat = mast_cat[mast_cat['NMAST'].isin(keep_stars)].copy()
-
+     """
     # finally, recompute star properties (z, sz, q, and f) with remaining stars
-    mast_cat = recompute_master_catalog(mast_cat, ps_cat)
+    if recompute == True:
+        mast_cat = recompute_master_catalog(mast_cat, ps_cat)
 
     return mast_cat
 
