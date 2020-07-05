@@ -799,16 +799,22 @@ def recompute_master_catalog(mast_cat, ps_cat):
     mast_cat_new : pd.DataFrame
       the master catalog with updated values
     """
+    # the point source catalog can in principle have stars that are not in the
+    # master catalog. Thus, only use the stars that are in both or you get
+    # indexing errors
+    use_stars = mast_cat['NMAST'].unique()
+    ps_cat_recompute = ps_cat[ps_cat['NMAST'].isin(use_stars)]
+
     # compute the new PS values
     mean_cols = ['z2','sz2','q2']
     # group the point source catalog by star and filter to make computing faster
-    ps_gb = ps_cat.groupby(["NMAST","filt_id"])
+    ps_gb = ps_cat_recompute.groupby(["NMAST","filt_id"])
     ps_mean = ps_gb[mean_cols].apply(np.mean)
     ps_mean['f2'] = ps_gb.size()
 
     # separate the ps_mean dataframe by filter
     filt_mean_dfs = {}
-    for filt in ps_cat['filt_id'].unique():
+    for filt in ps_cat_recompute['filt_id'].unique():
         # compute the new mean z2, sz2, and q2
         filt_mean_dfs[filt] = ps_mean.loc[(slice(None), filt), :].copy()
         # rename the columns to match the master catalog columns
