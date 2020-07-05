@@ -728,7 +728,6 @@ def clean_point_source_catalog(cat, q_min=0.85, z_min=0,
     2) z > 0 for z1, z2, z3
     3) q > some threshold
     4) number of detections > some threshold
-    5) after all cuts, stars must still have detections in all filters
 
     Parameters
     ----------
@@ -764,16 +763,7 @@ def clean_point_source_catalog(cat, q_min=0.85, z_min=0,
     # cut on the number of detections
     cat_3 = catalog_cut_ndet(cat_2, **cut_ndet_args)
 
-    # finally, require that all remaining stars have detections in both filters
-    star_gb = cat_3.groupby('NMAST')
-    # this function is True if a star is in both filters, else False
-    both_filters = star_gb['filt_id'].apply(lambda x:
-                                            all(ks2_filtermapper['filter_id'].isin(x)))
-    # use boolean indexing
-    both_filter_stars = both_filters[both_filters].index
-    cat_4 = cat_3[cat_3['NMAST'].isin(both_filter_stars)]
-
-    return cat_4
+    return cat_3
 
 
 """
@@ -812,7 +802,7 @@ def recompute_master_catalog(mast_cat, ps_cat):
     ps_mean = ps_gb[mean_cols].apply(np.mean)
     ps_mean['f2'] = ps_gb.size()
 
-    # separate the ps_mean dataframe by filter
+    # to assign to mast_cat, group the ps_mean dataframe by filter
     filt_mean_dfs = {}
     for filt in ps_cat_recompute['filt_id'].unique():
         # compute the new mean z2, sz2, and q2
@@ -872,16 +862,15 @@ def clean_master_catalog(mast_cat, ps_cat=None, recompute=True, verbose=False):
     keep_stars = ps_cat['NMAST'].unique()
     mast_cat = mast_cat[mast_cat['NMAST'].isin(keep_stars)].copy()
 
-    """
     # second, only keep stars that have detections in all filters
-    # n.b. this has been moved to clean_point_sources
-    ps_gb = ps_cat.groupby('NMAST')
-    # true if all filters present, else false
-    all_filters_check = lambda x: all(ks2_filtermapper['filter_id'].isin(x))
-    all_filters = ps_gb['filt_id'].apply(all_filters_check)
-    keep_stars = all_filters[all_filters == True].index
-    mast_cat = mast_cat[mast_cat['NMAST'].isin(keep_stars)].copy()
-     """
+    ps_star_gb = ps_cat.groupby('NMAST')
+    # this function is True if a star is in both filters, else False
+    both_filters_func = lambda x: all(ks2_filtermapper['filter_id'].isin(x))
+    both_filters_bool = ps_star_gb['filt_id'].apply(both_filters_func)
+    # use boolean indexing
+    both_filters_stars = both_filters_bool[both_filters_bool].index
+    mast_cat = mast_cat[mast_cat['NMAST'].isin(both_filters_stars)].copy()
+
     # finally, recompute star properties (z, sz, q, and f) with remaining stars
     if recompute == True:
         mast_cat = recompute_master_catalog(mast_cat, ps_cat)
