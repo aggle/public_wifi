@@ -1,24 +1,27 @@
 #+title: Tr14 methods
 #+author: Jonathan Aguilar
 #+date: 
+#+startup: beamer
 
-#+options: tex:t
-#+options: toc:nil
+#+export_file_name: tr14_psf_subtraction.pdf
+#+options: tex:t toc:nil author:nil H:2
+
+
 
 * Assembling the catalog of point sources
 Here's what remains:
-** Finalize q-parameter for cluster/background separation
-** Finalize master and point source catalogs and write to disk
+- Finalize q-parameter cut for cluster/background separation
+- Finalize master and point source catalogs and write to disk
 * Performing PSF subtraction
 Based heavily on cite:Strampelli_2020 
 ** Catalog cleaning
 *** Stamp size selection
 For PSF subtraction, a stamp should contain a target star and no other /known/ point sources. All stamps must be the same size. To choose the proper size, we want to optimize between two quantities:
 1. increase the search region for companions
-f2. decrease the number of stamps with a neighbor present.
-#1 has a natural limit - PSF subtraction is only useful in the regime where the background is dominated by the extended PSF of a bright star. It is irrelevant far from the star. Our experience with Orion suggests that we can achieve $\Delta~mag \sim 6-7$ at 0.5" separation. It is not useful to extend our stamps much beyond this region, so probably a radius of 5-6 pixels would do it.
+2. decrease the number of stamps with a neighbor present.
+#1 has a natural limit - PSF subtraction is only useful in the regime where the background is dominated by the extended PSF of a bright star. It is irrelevant far from the star. Our experience with Orion suggests that we can achieve $\Delta\mathrm{mag} \sim 6-7$ at 0.5" separation. It is not useful to extend our stamps much beyond this region, so probably a stamp radius of 5-6 pixels would do it.
 
-We can make a plot of the pairwise distances to see how many stars are closer to each other than this radius. We would have to eliminate all those stars, plus a few pixels of buffer to account for the PSF wings. cite:Strampelli_2020 places the cut at 1.5".
+We can make a plot of the pairwise distances to see how many stars are closer to each other than this radius. We would have to eliminate all those stars, plus a few pixels of buffer to account for the PSF wings. cite:Strampelli_2020 places the cut at 1.5", or $11 \times 11$ pixels.
 *** Bad pixel removal
 Perform an independent search for bad pixels in the selected stamps using a 10-sigma threshold. cite:Strampelli_2020 didn't find any, so not sure what we would have done with them.
 *** ACS catalog matching
@@ -65,6 +68,10 @@ Parameters to tweak:
 - Ghosts of bright stars in previous exposures
 - Extended sources
 - Contamination from nearby stars
+* Steps
+** Next
+** Next next
+** Future
 
 * References
 bibliographystyle:plain
