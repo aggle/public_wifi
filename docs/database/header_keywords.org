@@ -1,0 +1,550 @@
+#+title: FITS header keywords
+
+This file contains a description of the keywords in the different FITS headers for the flt files
+
+* PRI
+Primary header - meta-information about the exposure
+| Keyword  | Data type | Description                                     |
+|----------+-----------+-------------------------------------------------|
+| SIMPLE   | bool    | file does conform to FITS standard              |
+| BITPIX   | int     | number of bits per data pixel                   |
+| NAXIS    | int     | number of data axes                             |
+| EXTEND   | bool    | FITS dataset may contain extensions             |
+| ORIGIN   | str     | FITS file originator                            |
+| DATE     | str     | date this file was written (yyyy-mm-dd)         |
+| NEXTEND  | int     | Number of standard extensions                   |
+| FILENAME | str     | name of file                                    |
+| FILETYPE | str     | type of data found in data file                 |
+| TELESCOP | str     | telescope used to acquire data                  |
+| INSTRUME | str     | identifier for instrument used to acquire data  |
+| EQUINOX  | float   | equinox of celestial coord. system              |
+| ROOTNAME | str     | rootname of the observation set                 |
+| IMAGETYP | str     | type of exposure identifier                     |
+| PRIMESI  | str     | instrument designated as prime                  |
+| TARGNAME | str     | proposer's target name                          |
+| RA_TARG  | float   | right ascension of the target (deg) (J2000)     |
+| DEC_TARG | float   | declination of the target (deg) (J2000)         |
+| PROPOSID | int     | PEP proposal identifier                         |
+| LINENUM  | str     | proposal logsheet line number                   |
+| PR_INV_L | str     | last name of principal investigator             |
+| PR_INV_F | str     | first name of principal investigator            |
+| PR_INV_M | str     | middle name / initial of principal investigat   |
+| SUNANGLE | float   | angle between sun and V1 axis                   |
+| MOONANGL | float   | angle between moon and V1 axis                  |
+| SUN_ALT  | float   | altitude of the sun above Earth's limb          |
+| FGSLOCK  | str     | commanded FGS lock (FINE,COARSE,GYROS,UNKNOWN)  |
+| GYROMODE | str     | number of gyros scheduled, T=3+OBAD             |
+| REFFRAME | str     | guide star catalog version                      |
+| MTFLAG   | str     | moving target flag; T if it is a moving target  |
+| DATE-OBS | str     | UT date of start of observation (yyyy-mm-dd)    |
+| TIME-OBS | str     | UT time of start of observation (hh:mm:ss)      |
+| EXPSTART | float   | exposure start time (Modified Julian Date)      |
+| EXPEND   | float   | exposure end time (Modified Julian Date)        |
+| EXPTIME  | float   | exposure duration (seconds)--calculated         |
+| EXPFLAG  | str     | Exposure interruption indicator                 |
+| QUALCOM1 | str     |                                                 |
+| QUALCOM2 | str     |                                                 |
+| QUALCOM3 | str     |                                                 |
+| QUALITY  | str     | PA_V3                                           |
+| POSTARG1 | float   | POSTARG in axis 1 direction                     |
+| POSTARG2 | float   | POSTARG in axis 2 direction                     |
+| OPUS_VER | str     | data processing software system version         |
+| CSYS_VER | str     | Calibration software system version id          |
+| CAL_VER  | str     | CALWF3 code version                             |
+| PROCTIME | float   | Pipeline processing time (MJD)                  |
+| OBSTYPE  | str     | observation type - imaging or spectroscopic     |
+| OBSMODE  | str     | operating mode                                  |
+| SCLAMP   | str     | lamp status, NONE or name of lamp which is on   |
+| NRPTEXP  | int     | number of repeat exposures in set: default 1    |
+| SUBARRAY | bool    | data from a subarray (T) or full frame (F)      |
+| SUBTYPE  | str     | Size/type of IR subarray                        |
+| DETECTOR | str     | detector in use: UVIS or IR                     |
+| FILTER   | str     | element selected from filter wheel              |
+| SAMP_SEQ | str     | MultiAccum exposure time sequence name          |
+| NSAMP    | int     | number of MULTIACCUM samples                    |
+| SAMPZERO | float   | sample time of the zeroth read (sec)            |
+| APERTURE | str     | aperture name                                   |
+| PROPAPER | str     | proposed aperture name                          |
+| DIRIMAGE | str     | direct image for grism or prism exposure        |
+| SAA_EXIT | str     | time of last exit from SAA contour level 23     |
+| SAA_TIME | int     | seconds since last exit from SAA contour 23     |
+| SAA_DARK | str     | association name for post-SAA dark exposures    |
+| SAACRMAP | str     | SAA cosmic ray map file                         |
+| SCAN_TYP | str     | C:bostrophidon; D:C with dwell; N:N/A           |
+| SCAN_WID | float   | scan width (arcsec)                             |
+| ANG_SIDE | float   | angle between sides of parallelogram (deg)      |
+| DWELL_LN | int     | dwell pts/line for scan pointing (1-99,0 if NA) |
+| DWELL_TM | float   | wait time (duration) at each dwell point (sec)  |
+| SCAN_ANG | float   | position angle of scan line (deg)               |
+| SCAN_RAT | float   | commanded rate of the line scan (arcsec/sec)    |
+| NO_LINES | int     | number of lines per scan (1-99,0 if NA)         |
+| SCAN_LEN | float   | scan length (arcsec)                            |
+| SCAN_COR | str     | scan coordinate frame of ref: celestial,vehicle |
+| CSMID    | str     | Channel Select Mechanism ID                     |
+| DQICORR  | str     | data quality initialization                     |
+| ZSIGCORR | str     | Zero read signal correction                     |
+| ZOFFCORR | str     | subtract MULTIACCUM zero read                   |
+| DARKCORR | str     | Subtract dark image                             |
+| BLEVCORR | str     | subtract bias level computed from ref pixels    |
+| NLINCORR | str     | correct for detector nonlinearities             |
+| FLATCORR | str     | flat field data                                 |
+| CRCORR   | str     | identify cosmic ray hits                        |
+| UNITCORR | str     | convert to count rates                          |
+| PHOTCORR | str     | populate photometric header keywords            |
+| RPTCORR  | str     | combine individual repeat observations          |
+| DRIZCORR | str     | drizzle processing                              |
+| BPIXTAB  | str     | bad pixel table                                 |
+| CCDTAB   | str     | detector calibration parameters                 |
+| OSCNTAB  | str     | detector overscan table                         |
+| CRREJTAB | str     | cosmic ray rejection parameters                 |
+| DARKFILE | str     | dark image file name                            |
+| NLINFILE | str     | detector nonlinearities file                    |
+| PFLTFILE | str     | pixel to pixel flat field file name             |
+| DFLTFILE | str     | delta flat field file name                      |
+| LFLTFILE | str     | low order flat                                  |
+| GRAPHTAB | str     | the HST graph table                             |
+| COMPTAB  | str     | the HST components table                        |
+| IMPHTTAB | str     | Image Photometry Table                          |
+| DGEOFILE | str     | Distortion correction image                     |
+| MDRIZTAB | str     | MultiDrizzle parameter table                    |
+| MEANEXP  | float   | reference exposure time for parameters          |
+| SCALENSE | float   | multiplicative scale factor applied to noise    |
+| INITGUES | str     | initial guess method (MIN or MED)               |
+| SKYSUB   | str     | sky value subtracted (MODE or NONE)             |
+| SKYSUM   | float   | sky level from the sum of all constituent image |
+| CRSIGMAS | str     | statistical rejection criteria                  |
+| CRRADIUS | float   | rejection propagation radius (pixels)           |
+| CRTHRESH | float   | rejection propagation threshold                 |
+| BADINPDQ | int     | data quality flag bits to reject                |
+| REJ_RATE | float   | rate at which pixels are affected by cosmic ray |
+| CRMASK   | bool    | flag CR-rejected pixels in input files (T/F)    |
+| PHOTMODE | str     | Obser                                           |
+| PHOTFLAM | float   | Inverse sensitivity, ergs/cm2/A/e-              |
+| PHOTFNU  | float   | Inverse sensitivity, Jy*sec/e-                  |
+| PHOTZPT  | float   | ST magnitude zero point                         |
+| PHOTPLAM | float   | Pivot wavelength (Angstroms)                    |
+| PHOTBW   | float   | RMS bandwidth of filter plus detector           |
+| T_SGSTAR | str     | OMS calculated guide star control               |
+| PATTERN1 | str     | primary pattern type                            |
+| P1_SHAPE | str     | primary pattern shape                           |
+| P1_PURPS | str     | primary pattern purpose                         |
+| P1_NPTS  | int     | number of points in primary pattern             |
+| P1_PSPAC | float   | point spacing for primary pattern (arc-sec)     |
+| P1_LSPAC | float   | line spacing for primary pattern (arc-sec)      |
+| P1_ANGLE | float   | angle between sides of parallelogram patt (deg) |
+| P1_FRAME | str     | coordinate frame of primary pattern             |
+| P1_ORINT | float   | orientation of pattern to coordinate frame (deg |
+| P1_CENTR | str     | center pattern relative to pointing (yes/no)    |
+| PATTSTEP | int     | position number of this point in the pattern    |
+| CCDAMP   | str     | CCD Amplifier Readout Configuration             |
+| CCDGAIN  | float   | commanded gain of CCD                           |
+| CCDOFSAB | int     | commanded CCD bias offset for amps A&B          |
+| CCDOFSCD | int     | commanded CCD bias offset for amps C&D          |
+| ATODGNA  | float   | calibrated gain for amplifier A                 |
+| ATODGNB  | float   | calibrated gain for amplifier B                 |
+| ATODGNC  | float   | calibrated gain for amplifier C                 |
+| ATODGND  | float   | calibrated gain for amplifier D                 |
+| READNSEA | float   | calibrated read noise for amplifier A           |
+| READNSEB | float   | calibrated read noise for amplifier B           |
+| READNSEC | float   | calibrated read noise for amplifier C           |
+| READNSED | float   | calibrated read noise for amplifier D           |
+| BIASLEVA | float   | bias level for amplifier A                      |
+| BIASLEVB | float   | bias level for amplifier B                      |
+| BIASLEVC | float   | bias level for amplifier C                      |
+| BIASLEVD | float   | bias level for amplifier D                      |
+| ASN_ID   | str     | unique identifier assigned to association       |
+| ASN_TAB  | str     | name of the association table                   |
+| ASN_MTYP | str     | Role of the Member in the Association           |
+| CRDS_CTX | str     |                                                 |
+| CRDS_VER | str     |                                                 |
+| ATODTAB  | str     |                                                 |
+| BIACFILE | str     |                                                 |
+| BIASFILE | str     |                                                 |
+| DRKCFILE | str     |                                                 |
+| FLSHFILE | str     |                                                 |
+| PCTETAB  | str     |                                                 |
+| SNKCFILE | str     |                                                 |
+| UPWCSVER | str     | Version of STWCS used to update the WCS         |
+| PYWCSVER | str     | Version of PYWCS used to update the WCS         |
+| NPOLFILE | str     | origin of non-polynmial distortion model        |
+| IDCTAB   | str     | origin of Polynomial Distortion                 |
+| D2IMFILE | str     | origin of detector to image correction          |
+| SIPNAME  | str     | origin of SIP polynomial distortion model       |
+| DISTNAME | str     | Distortion model name                           |
+
+
+
+* SCI
+Data from the focal plane array detectors
+| Keyword  | Data type | Description                                     |
+|----------+-----------+-------------------------------------------------|
+| XTENSION | str       | IMAGE extension                                 |
+| BITPIX   | int       | number of bits per data pixel                   |
+| NAXIS    | int       | number of data axes                             |
+| NAXIS1   | int       | length of data axis 1                           |
+| NAXIS2   | int       | length of data axis 2                           |
+| PCOUNT   | int       | required keyword; must = 0                      |
+| GCOUNT   | int       | required keyword; must = 1                      |
+| ORIGIN   | str       | FITS file originator                            |
+| DATE     | str       | date this file was written (yyyy-mm-dd)         |
+| INHERIT  | bool      | inherit the primary header                      |
+| EXTNAME  | str       | extension name                                  |
+| EXTVER   | int       | extension version number                        |
+| ROOTNAME | str       | rootname of the observation set                 |
+| EXPNAME  | str       | exposure identifier                             |
+| BUNIT    | str       | brightness units                                |
+| LTV1     | float     | offset in X to subsection start                 |
+| LTV2     | float     | offset in Y to subsection start                 |
+| LTM1_1   | float     | reciprocal of sampling rate in X                |
+| LTM2_2   | float     | reciprocal of sampling rate in Y                |
+| PA_APER  | float     | Position Angle of reference aperture center (de |
+| VAFACTOR | float     | velocity aberration plate scale factor          |
+| ORIENTAT | float     | position angle of image y axis (deg. e of n)    |
+| RA_APER  | float     | RA of aperture reference position               |
+| DEC_APER | float     | Declination of aperture reference position      |
+| NCOMBINE | int       | number of image sets combined during CR rejecti |
+| CENTERA1 | int       | subarray axis1 center pt in unbinned dect. pix  |
+| CENTERA2 | int       | subarray axis2 center pt in unbinned dect. pix  |
+| SIZAXIS1 | int       | subarray axis1 size in unbinned detector pixels |
+| SIZAXIS2 | int       | subarray axis2 size in unbinned detector pixels |
+| BINAXIS1 | int       | axis1 data bin size in unbinned detector pixels |
+| BINAXIS2 | int       | axis2 data bin size in unbinned detector pixels |
+| SAMPNUM  | int       | MULTIACCUM sample number                        |
+| SAMPTIME | float     | total integration time (sec)                    |
+| DELTATIM | float     | integration time of this sample (sec)           |
+| ROUTTIME | float     | UT time of array readout (MJD)                  |
+| TDFTRANS | int       | number of TDF transitions during current sample |
+| FILLCNT  | int       | number of segments containing fill              |
+| ERRCNT   | int       | number of segments containing errors            |
+| PODPSFF  | bool      | podps fill present (T/F)                        |
+| STDCFFF  | bool      | science telemetry fill data present (T=1/F=0)   |
+| STDCFFP  | str       | science telemetry fill pattern (hex)            |
+| NGOODPIX | int       | number of good pixels                           |
+| SDQFLAGS | int       | serious data quality flags                      |
+| GOODMIN  | float     | minimum value of good pixels                    |
+| GOODMAX  | float     | maximum value of good pixels                    |
+| GOODMEAN | float     | mean value of good pixels                       |
+| SNRMIN   | float     | minimum signal to noise of good pixels          |
+| SNRMAX   | float     | maximum signal to noise of good pixels          |
+| SNRMEAN  | float     | mean value of signal to noise of good pixels    |
+| SOFTERRS | int       | number of soft error pixels (DQF=1)             |
+| MEANDARK | float     | average of the dark values subtracted           |
+| MEANBLEV | float     | average of all bias levels subtracted           |
+| RADESYS  | str       |                                                 |
+| IDCTHETA | float     |                                                 |
+| IDCXREF  | float     |                                                 |
+| IDCYREF  | float     |                                                 |
+| IDCV2REF | float     |                                                 |
+| IDCV3REF | float     |                                                 |
+| WCSNAMEO | str       |                                                 |
+| WCSAXESO | int       |                                                 |
+| CRPIX1O  | float     |                                                 |
+| CRPIX2O  | float     |                                                 |
+| CDELT1O  | float     |                                                 |
+| CDELT2O  | float     |                                                 |
+| CUNIT1O  | str       |                                                 |
+| CUNIT2O  | str       |                                                 |
+| CTYPE1O  | str       |                                                 |
+| CTYPE2O  | str       |                                                 |
+| CRVAL1O  | float     |                                                 |
+| CRVAL2O  | float     |                                                 |
+| LONPOLEO | float     |                                                 |
+| LATPOLEO | float     |                                                 |
+| RADESYSO | str       |                                                 |
+| CD1_1O   | float     |                                                 |
+| CD1_2O   | float     |                                                 |
+| CD2_1O   | float     |                                                 |
+| CD2_2O   | float     |                                                 |
+| MDRIZSKY | float     | Sky value computed by AstroDrizzle              |
+| WCSNAMEA | str       |                                                 |
+| WCSAXESA | int       |                                                 |
+| CRPIX1A  | float     |                                                 |
+| CRPIX2A  | float     |                                                 |
+| CDELT1A  | float     |                                                 |
+| CDELT2A  | float     |                                                 |
+| CUNIT1A  | str       |                                                 |
+| CUNIT2A  | str       |                                                 |
+| CTYPE1A  | str       |                                                 |
+| CTYPE2A  | str       |                                                 |
+| CRVAL1A  | float     |                                                 |
+| CRVAL2A  | float     |                                                 |
+| LONPOLEA | float     |                                                 |
+| LATPOLEA | float     |                                                 |
+| RADESYSA | str       |                                                 |
+| CD1_1A   | float     |                                                 |
+| CD1_2A   | float     |                                                 |
+| CD2_1A   | float     |                                                 |
+| CD2_2A   | float     |                                                 |
+| WCSAXES  | int       |                                                 |
+| CRPIX1   | float     | Pixel coordinate of reference point             |
+| CRPIX2   | float     | Pixel coordinate of reference point             |
+| CDELT1   | float     | [deg] Coordinate increment at reference point   |
+| CDELT2   | float     | [deg] Coordinate increment at reference point   |
+| CUNIT1   | str       | Units of coordinate increment and value         |
+| CUNIT2   | str       | Units of coordinate increment and value         |
+| CTYPE1   | str       | TAN (gnomonic) projection + SIP distortions     |
+| CTYPE2   | str       | TAN (gnomonic) projection + SIP distortions     |
+| CRVAL1   | float     | [deg] Coordinate value at reference point       |
+| CRVAL2   | float     | [deg] Coordinate value at reference point       |
+| LONPOLE  | float     | [deg] Native longitude of celestial pole        |
+| LATPOLE  | float     | [deg] Native latitude of celestial pole         |
+| WCSNAME  | str       |                                                 |
+| RADESYS  | str       |                                                 |
+| A_ORDER  | int       |                                                 |
+| A_0_2    | float     |                                                 |
+| A_0_3    | float     |                                                 |
+| A_0_4    | float     |                                                 |
+| A_1_1    | float     |                                                 |
+| A_1_2    | float     |                                                 |
+| A_1_3    | float     |                                                 |
+| A_2_0    | float     |                                                 |
+| A_2_1    | float     |                                                 |
+| A_2_2    | float     |                                                 |
+| A_3_0    | float     |                                                 |
+| A_3_1    | float     |                                                 |
+| A_4_0    | float     |                                                 |
+| B_ORDER  | int       |                                                 |
+| B_0_2    | float     |                                                 |
+| B_0_3    | float     |                                                 |
+| B_0_4    | float     |                                                 |
+| B_1_1    | float     |                                                 |
+| B_1_2    | float     |                                                 |
+| B_1_3    | float     |                                                 |
+| B_2_0    | float     |                                                 |
+| B_2_1    | float     |                                                 |
+| B_2_2    | float     |                                                 |
+| B_3_0    | float     |                                                 |
+| B_3_1    | float     |                                                 |
+| B_4_0    | float     |                                                 |
+| CD1_1    | float     |                                                 |
+| CD1_2    | float     |                                                 |
+| CD2_1    | float     |                                                 |
+| CD2_2    | float     |                                                 |
+| OCX10    | float     |                                                 |
+| OCX11    | float     |                                                 |
+| OCY10    | float     |                                                 |
+| OCY11    | float     |                                                 |
+| IDCSCALE | float     |                                                 |
+| HDRNAME  | str       |                                                 |
+| WCSTYPE  | str       |                                                 |
+| WCSNAMEB | str       |                                                 |
+| WCSAXESB | int       |                                                 |
+| CRPIX1B  | float     |                                                 |
+| CRPIX2B  | float     |                                                 |
+| CDELT1B  | float     |                                                 |
+| CDELT2B  | float     |                                                 |
+| CUNIT1B  | str       |                                                 |
+| CUNIT2B  | str       |                                                 |
+| CTYPE1B  | str       |                                                 |
+| CTYPE2B  | str       |                                                 |
+| CRVAL1B  | float     |                                                 |
+| CRVAL2B  | float     |                                                 |
+| LONPOLEB | float     |                                                 |
+| LATPOLEB | float     |                                                 |
+| RADESYSB | str       |                                                 |
+| CD1_1B   | float     |                                                 |
+| CD1_2B   | float     |                                                 |
+| CD2_1B   | float     |                                                 |
+| CD2_2B   | float     |                                                 |
+| WCSTYPE  | str       |                                                 |
+
+
+* ERR
+Estimate of the /statistical/ uncertainty associated with each science pixel
+| Keyword  | Data type | Description                                     |
+|----------+-----------+-------------------------------------------------|
+| XTENSION | str       | IMAGE extension                                 |
+| BITPIX   | int       | number of bits per data pixel                   |
+| NAXIS    | int       | number of data axes                             |
+| NAXIS1   | int       | length of data axis 1                           |
+| NAXIS2   | int       | length of data axis 2                           |
+| PCOUNT   | int       | required keyword; must = 0                      |
+| GCOUNT   | int       | required keyword; must = 1                      |
+| ORIGIN   | str       | FITS file originator                            |
+| DATE     | str       | date this file was written (yyyy-mm-dd)         |
+| INHERIT  | bool      | inherit the primary header                      |
+| EXTNAME  | str       | extension name                                  |
+| EXTVER   | int       | extension version number                        |
+| ROOTNAME | str       | rootname of the observation set                 |
+| EXPNAME  | str       | exposure identifier                             |
+| BUNIT    | str       | brightness units                                |
+| WCSAXES  | int       | number of World Coordinate System axes          |
+| CRPIX1   | float     | x-coordinate of reference pixel                 |
+| CRPIX2   | float     | y-coordinate of reference pixel                 |
+| CRVAL1   | float     | first axis value at reference pixel             |
+| CRVAL2   | float     | second axis value at reference pixel            |
+| CTYPE1   | str       | the coordinate type for the first axis          |
+| CTYPE2   | str       | the coordinate type for the second axis         |
+| CD1_1    | float     | partial of first axis coordinate w.r.t. x       |
+| CD1_2    | float     | partial of first axis coordinate w.r.t. y       |
+| CD2_1    | float     | partial of second axis coordinate w.r.t. x      |
+| CD2_2    | float     | partial of second axis coordinate w.r.t. y      |
+| LTV1     | float     | offset in X to subsection start                 |
+| LTV2     | float     | offset in Y to subsection start                 |
+| LTM1_1   | float     | reciprocal of sampling rate in X                |
+| LTM2_2   | float     | reciprocal of sampling rate in Y                |
+| PA_APER  | float     | Position Angle of reference aperture center (de |
+| VAFACTOR | float     | velocity aberration plate scale factor          |
+| NGOODPIX | int       | number of good pixels                           |
+| SDQFLAGS | int       | serious data quality flags                      |
+| GOODMIN  | float     | minimum value of good pixels                    |
+| GOODMAX  | float     | maximum value of good pixels                    |
+| GOODMEAN | float     | mean value of good pixels                       |
+| CDELT1   | float     |                                                 |
+| CDELT2   | float     |                                                 |
+| CUNIT1   | str       |                                                 |
+| CUNIT2   | str       |                                                 |
+| LONPOLE  | float     |                                                 |
+| LATPOLE  | float     |                                                 |
+| WCSNAME  | str       |                                                 |
+| RADESYS  | str       |                                                 |
+
+
+* DQ
+Data quality flags - see [[https://hst-docs.stsci.edu/wfc3dhb/chapter-2-wfc3-data-structure/2-2-wfc3-file-structure#id-2.2WFC3FileStructure-2.2.2IRChannelFileStructure][WFC3 handbook for flag values]]
+| Keyword  | Data type | Description                                     |
+|----------+-----------+-------------------------------------------------|
+| XTENSION | str       | IMAGE extension                                 |
+| BITPIX   | int       | number of bits per data pixel                   |
+| NAXIS    | int       | number of data axes                             |
+| NAXIS1   | int       | length of data axis 1                           |
+| NAXIS2   | int       | length of data axis 2                           |
+| PCOUNT   | int       | required keyword; must = 0                      |
+| GCOUNT   | int       | required keyword; must = 1                      |
+| ORIGIN   | str       | FITS file originator                            |
+| DATE     | str       | date this file was written (yyyy-mm-dd)         |
+| INHERIT  | bool      | inherit the primary header                      |
+| EXTNAME  | str       | extension name                                  |
+| EXTVER   | int       | extension version number                        |
+| ROOTNAME | str       | rootname of the observation set                 |
+| EXPNAME  | str       | exposure identifier                             |
+| BUNIT    | str       | brightness units                                |
+| WCSAXES  | int       | number of World Coordinate System axes          |
+| CRPIX1   | float     | x-coordinate of reference pixel                 |
+| CRPIX2   | float     | y-coordinate of reference pixel                 |
+| CRVAL1   | float     | first axis value at reference pixel             |
+| CRVAL2   | float     | second axis value at reference pixel            |
+| CTYPE1   | str       | the coordinate type for the first axis          |
+| CTYPE2   | str       | the coordinate type for the second axis         |
+| CD1_1    | float     | partial of first axis coordinate w.r.t. x       |
+| CD1_2    | float     | partial of first axis coordinate w.r.t. y       |
+| CD2_1    | float     | partial of second axis coordinate w.r.t. x      |
+| CD2_2    | float     | partial of second axis coordinate w.r.t. y      |
+| LTV1     | float     | offset in X to subsection start                 |
+| LTV2     | float     | offset in Y to subsection start                 |
+| LTM1_1   | float     | reciprocal of sampling rate in X                |
+| LTM2_2   | float     | reciprocal of sampling rate in Y                |
+| PA_APER  | float     | Position Angle of reference aperture center (de |
+| VAFACTOR | float     | velocity aberration plate scale factor          |
+| CDELT1   | float     |                                                 |
+| CDELT2   | float     |                                                 |
+| CUNIT1   | str       |                                                 |
+| CUNIT2   | str       |                                                 |
+| LONPOLE  | float     |                                                 |
+| LATPOLE  | float     |                                                 |
+| WCSNAME  | str       |                                                 |
+| RADESYS  | str       |                                                 |
+
+
+* SAMP
+Number of samples used to derive the corresponding pixel values
+| Keyword  | Data type | Description                                |
+|----------+-----------+--------------------------------------------|
+| XTENSION | str       | IMAGE extension                            |
+| BITPIX   | int       | number of bits per data pixel              |
+| NAXIS    | int       | number of data axes                        |
+| NAXIS1   | int       | length of data axis 1                      |
+| NAXIS2   | int       | length of data axis 2                      |
+| PCOUNT   | int       | required keyword; must = 0                 |
+| GCOUNT   | int       | required keyword; must = 1                 |
+| ORIGIN   | str       | FITS file originator                       |
+| DATE     | str       | date this file was written (yyyy-mm-dd)    |
+| INHERIT  | bool      | inherit the primary header                 |
+| EXTNAME  | str       | extension name                             |
+| EXTVER   | int       | extension version number                   |
+| ROOTNAME | str       | rootname of the observation set            |
+| EXPNAME  | str       | exposure identifier                        |
+| BUNIT    | str       | brightness units                           |
+| WCSAXES  | int       | number of World Coordinate System axes     |
+| CRPIX1   | float     | x-coordinate of reference pixel            |
+| CRPIX2   | float     | y-coordinate of reference pixel            |
+| CRVAL1   | float     | first axis value at reference pixel        |
+| CRVAL2   | float     | second axis value at reference pixel       |
+| CTYPE1   | str       | the coordinate type for the first axis     |
+| CTYPE2   | str       | the coordinate type for the second axis    |
+| CD1_1    | float     | partial of first axis coordinate w.r.t. x  |
+| CD1_2    | float     | partial of first axis coordinate w.r.t. y  |
+| CD2_1    | float     | partial of second axis coordinate w.r.t. x |
+| CD2_2    | float     | partial of second axis coordinate w.r.t. y |
+| CDELT1   | float     |                                            |
+| CDELT2   | float     |                                            |
+| CUNIT1   | str       |                                            |
+| CUNIT2   | str       |                                            |
+| LONPOLE  | float     |                                            |
+| LATPOLE  | float     |                                            |
+| WCSNAME  | str       |                                            |
+| RADESYS  | str       |                                            |
+
+
+* TIME
+Effective integration time for each pixel
+| Keyword  | Data type | Description                                |
+|----------+-----------+--------------------------------------------|
+| XTENSION | str       | IMAGE extension                            |
+| BITPIX   | int       | number of bits per data pixel              |
+| NAXIS    | int       | number of data axes                        |
+| NAXIS1   | int       | length of data axis 1                      |
+| NAXIS2   | int       | length of data axis 2                      |
+| PCOUNT   | int       | required keyword; must = 0                 |
+| GCOUNT   | int       | required keyword; must = 1                 |
+| ORIGIN   | str       | FITS file originator                       |
+| DATE     | str       | date this file was written (yyyy-mm-dd)    |
+| INHERIT  | bool      | inherit the primary header                 |
+| EXTNAME  | str       | extension name                             |
+| EXTVER   | int       | extension version number                   |
+| ROOTNAME | str       | rootname of the observation set            |
+| EXPNAME  | str       | exposure identifier                        |
+| BUNIT    | str       | brightness units                           |
+| WCSAXES  | int       | number of World Coordinate System axes     |
+| CRPIX1   | float     | x-coordinate of reference pixel            |
+| CRPIX2   | float     | y-coordinate of reference pixel            |
+| CRVAL1   | float     | first axis value at reference pixel        |
+| CRVAL2   | float     | second axis value at reference pixel       |
+| CTYPE1   | str       | the coordinate type for the first axis     |
+| CTYPE2   | str       | the coordinate type for the second axis    |
+| CD1_1    | float     | partial of first axis coordinate w.r.t. x  |
+| CD1_2    | float     | partial of first axis coordinate w.r.t. y  |
+| CD2_1    | float     | partial of second axis coordinate w.r.t. x |
+| CD2_2    | float     | partial of second axis coordinate w.r.t. y |
+| CDELT1   | float     |                                            |
+| CDELT2   | float     |                                            |
+| CUNIT1   | str       |                                            |
+| CUNIT2   | str       |                                            |
+| LONPOLE  | float     |                                            |
+| LATPOLE  | float     |                                            |
+| WCSNAME  | str       |                                            |
+| RADESYS  | str       |                                            |
+
+
+* HDRLET
+Distortion maps
+| Keyword  | Data type | Description                              |
+|----------+-----------+------------------------------------------|
+| XTENSION | str       | FITS extension                           |
+| BITPIX   | int       | array data type                          |
+| NAXIS    | int       | number of array dimensions               |
+| NAXIS1   | int       | Axis length                              |
+| PCOUNT   | int       | number of parameters                     |
+| GCOUNT   | int       | number of groups                         |
+| XIND1    | int       | byte offset of extension 1               |
+| COMPRESS | bool      | Uses gzip compression                    |
+| HDRNAME  | str       | Headerlet name                           |
+| DATE     | str       | Date FITS file was generated             |
+| SIPNAME  | str       | SIP distortion model name                |
+| WCSNAME  | str       | WCS name                                 |
+| DISTNAME | str       | Distortion model name                    |
+| NPOLFILE | str       | origin of non-polynmial distortion model |
+| D2IMFILE | str       | origin of detector to image correction   |
+| EXTNAME  | str       | Extension name                           |
+| EXTVER   | int       |                                          |
+
