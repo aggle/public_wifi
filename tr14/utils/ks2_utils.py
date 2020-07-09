@@ -10,6 +10,14 @@ from configparser import ConfigParser
 
 from astropy.io import fits
 
+# for plotting
+import matplotlib as mpl
+import matplotlib.pyplot as plt
+#from __future__ import print_function
+from ipywidgets import interact, interactive, fixed, interact_manual
+import ipywidgets as widgets
+
+
 from . import shared_utils, image_utils, table_utils
 
 """
@@ -174,7 +182,7 @@ master_dtypes = {
     "f2": np.int,
     "g2": np.int,
 }
-def get_master_catalog(ks2_master_file=ks2_files[0], clean=True):
+def get_master_catalog(ks2_master_file=ks2_files[0], clean=True, ps_cat=None):
     """
     From LOGR.XYVIQ1, pull out the master catalog of information about astrophysical objects
 
@@ -184,6 +192,9 @@ def get_master_catalog(ks2_master_file=ks2_files[0], clean=True):
      full path to the file
     clean : bool (True)
       if True, returns the cleaned version of the catalog (i.e. with cuts)
+    ps_cat : pd.DataFrame [None]
+      point source catalog to use for cleaning the master catalog.
+      if None, just fixes dtypes
     Returns
     -------
     master_catalog_df : pd.DataFrame
@@ -222,23 +233,11 @@ def get_master_catalog(ks2_master_file=ks2_files[0], clean=True):
                                     engine='python',
                                     skipinitialspace=True,
                                     index_col=False)
-    """
-    # there may be some typing issues. make sure the floats are all float or nan
-    float_cols = ['umast0', 'vmast0',
-                  'mmast1', 'zmast1', 'szmast1', 'q1',
-                  'mmast2', 'zmast2', 'szmast2', 'q2']
-    def col2float(x):
-        try:
-            return np.float(x)
-        except ValueError:
-            return np.nan
-    for col in float_cols:
-        mast_cat[col] = mast_cat[col].apply(col2float)
-    """
+
 
     # if desired, return the cleaned catalog. else, return raw
     if clean == True:
-        master_catalog_df = clean_master_catalog(master_catalog_df)
+        master_catalog_df = clean_master_catalog(master_catalog_df, ps_cat)
 
     return master_catalog_df
 
@@ -926,6 +925,80 @@ def ks2_cat_to_tr14(cat):
 
     """
     pass
+
+
+
+
+
+
+
+
+
+
+"""
+I made a cubescroller that works in jupyterlab!
+"""
+def update_image1(img_ind, stamps, df, fig, ax):
+    fig, ax = plt.subplots(1, 1, **fig_args)
+    row_ind = list(stamps.keys())[img_ind]
+    row = df.loc[row_ind]
+    title = (f"{row['NMAST']} + {row['exp_id']}\nMag: {row['magu']}"
+             + "\nSNR: {row['z2']/row['sz2']:0.2f}")
+    img = stamps[row_ind]
+    imax = ax.imshow(img)
+    fig.colorbar(imax)
+    ax.set_title(title)
+
+def cube_scroller(df, stamp_args={}, fig_args={}):
+    """
+    Accept a dataframe and show the stamps in the dataframe
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+      filtered dataframe of stamps to show
+    stamp_args : dict
+      dict of arguments to pass to ks2_utils.get_stamp_from_ks2(row, **stamp_args)
+    fig_args : dict
+      dict of arguments to pass to plt.subplots(**fig_args)
+
+    Output
+    ------
+    interactive_plot : ipywidgets.interact
+      an widget that will run in the output of a notebook cell
+
+    Example:
+    plot_stamps_scroll(df.query("mag >= 10 and mag < 15"), fig_args=dict(figsize=(6,6)))
+    """
+    stamps = []
+    for i, row in df.iterrows():
+        stamps.append(get_stamp_from_ks2(row, **stamp_args))
+
+    def update_image(img_ind):
+        fig, ax = plt.subplots(1, 1, **fig_args)
+        row = df.iloc[img_ind]
+        title = (f"{row['NMAST']} + {row['exp_id']}\nMag: {row['magu']}"
+                 + f"\nSNR: {row['z2']/row['sz2']:0.2f}")
+        img = stamps[img_ind]
+        imax = ax.imshow(img)
+        fig.colorbar(imax, shrink=0.75)
+        ax.set_title(title)
+        #plt.show(fig)
+
+    slider = widgets.IntSlider(min=0, max=len(df)-1, step=1, value=0, description='stamp index')
+    interactive_plot = interactive(update_image, img_ind=slider)#, fig=fixed(fig), ax=fixed(ax))
+    output = interactive_plot.children[-1]
+    if 'figsize' in fig_args.keys():
+        width = f"{fig_args['figsize'][0]}in"
+        height = f"{fig_args['figsize'][1]}in"
+    else:
+        width = '350px'
+        height = '350px'
+    output.layout.width = width
+    output.layout.height = height
+    return interactive_plot
+
+
 
 
 
