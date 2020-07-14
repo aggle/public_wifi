@@ -43,7 +43,7 @@ def header2dict(header):
 def headers2dict(filenames):
     """
     Each file has the same keywords in the headers
-    Put them all into dictionaries
+    Put them *all* into dictionaries (loop header2dict over all the headers in all the files)
     """
     extdict = {k: [] for k in [i.lower() for i in all_headers]}
     for ff in filenames:
@@ -61,11 +61,11 @@ def headers2dict(filenames):
 
 def headerdict2dataframe(header_dicts):
     """
-    Convert a list of header dictionaries into a pandas dataframe
+    Convert a header dictionary into a pandas dataframe
 
     Parameters
     ----------
-      header_dicts: a list of header dicts
+      header_dict: the dictionary made from a fits header
 
     Returns
     -------

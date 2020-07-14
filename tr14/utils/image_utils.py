@@ -7,6 +7,7 @@ import numpy as np
 from astropy.io import fits
 from . import shared_utils
 
+
 """
 One handy tool is being able to cut a stamp out of an image. This function cuts out square stamps given the stamp center (can be floating point) and desired shape.
 """
@@ -110,3 +111,4 @@ def make_pcolor_index(indices):
     x = list(indices[1]) + [indices[1][-1] + 1]
     return (np.array(y)+0.5,
             np.array(x)+0.5)
+
