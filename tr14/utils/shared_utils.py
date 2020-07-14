@@ -75,3 +75,12 @@ def get_data_file(file_name):
     return file_path.resolve()
 
 
+###############
+# Save Figure #
+###############
+
+def savefig(fig, name, save=False):
+    print(name)
+    if save == True:
+        fig.savefig(name)
+        print("Saved!")
