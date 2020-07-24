@@ -18,7 +18,7 @@ from ipywidgets import interact, interactive, fixed, interact_manual
 import ipywidgets as widgets
 
 
-from . import shared_utils, image_utils, table_utils
+from . import shared_utils, image_utils, table_utils, header_utils
 
 """
 You only care about a few of the files:
@@ -145,6 +145,39 @@ def get_file_name_from_ks2id(file_id, file_mapper=get_file_mapper()):
     return file_name
 
 
+# EPOCHS
+# Getting the epochs is a little complicated because you have to
+# do it through the proposal ID numbers
+# load the primary headers. we will use proposid to associate files with an epoch
+prihdrs = header_utils.load_headers('pri')
+get_proposid = lambda x: prihdrs.query("filename == @x")['proposid'].squeeze()
+# label the epochs as EN, where N is an integer indexing from 1
+epoch_labels = [(f"E{i+1}", k) for i, k in
+                enumerate(prihdrs.groupby('proposid').groups)]
+epoch_labels = pd.DataFrame(epoch_labels, columns=['epoch_id', 'proposid'])
+# make a dataframe to serve as a linking table, and a function to access it
+def get_epoch_from_proposid(proposid):
+    """Given a proposal id, find the epoch label"""
+    proposid = np.int(proposid)
+    epoch_id = epoch_labels.query(f"proposid == {proposid}")['epoch_id'].squeeze()
+    return epoch_id
+
+ks2_epoch_mapper = pd.DataFrame(ks2_filemapper['file_id'], index=ks2_filemapper.index)
+ks2_epoch_mapper['proposid'] = ks2_filemapper['file_name'].apply(get_proposid)
+ks2_epoch_mapper['epoch_id'] = ks2_epoch_mapper['proposid'].apply(get_epoch_from_proposid)
+
+def get_epoch_from_ks2id(file_id):
+    index = ks2_epoch_mapper["file_id"] == file_id
+    try:
+        epoch_id = ks2_epoch_mapper.loc[index, 'epoch_id'].squeeze()
+    except ValueError:
+        return None
+    return epoch_id
+
+
+
+
+
 """
 The following code block parses the master info for each *star* - that is, each astrophysical object.
 Reminder: LOGR.XYVIQ1 gives the average position for each source on the master frame (cols 1 and 2), the average flux (cols 5 and 11), the flux sigma (cols 6 and 12), and fit quality (cols 7 and 13) in each filter)
@@ -182,7 +215,7 @@ master_dtypes = {
     "f2": np.int,
     "g2": np.int,
 }
-def get_master_catalog(ks2_master_file=ks2_files[0], clean=True, ps_cat=None):
+def get_master_catalog(ks2_master_file=ks2_files[0], clean=True, ps_cat=None, clean_args={}):
     """
     From LOGR.XYVIQ1, pull out the master catalog of information about astrophysical objects
 
@@ -195,6 +228,8 @@ def get_master_catalog(ks2_master_file=ks2_files[0], clean=True, ps_cat=None):
     ps_cat : pd.DataFrame [None]
       point source catalog to use for cleaning the master catalog.
       if None, just fixes dtypes
+    clean_args : dict [{}]
+      arguments to pass to clean_master_catalog
     Returns
     -------
     master_catalog_df : pd.DataFrame
@@ -237,7 +272,7 @@ def get_master_catalog(ks2_master_file=ks2_files[0], clean=True, ps_cat=None):
 
     # if desired, return the cleaned catalog. else, return raw
     if clean == True:
-        master_catalog_df = clean_master_catalog(master_catalog_df, ps_cat)
+        master_catalog_df = clean_master_catalog(master_catalog_df, ps_cat, **clean_args)
 
     return master_catalog_df
 
@@ -337,6 +372,7 @@ nimfo_dtypes = {
     "filt_id": object,
     "unk": object,
     "chip_id": np.int64,
+    "epoch_id": object,
 }
 
 # this array is useful for looping over photometry methods
@@ -350,7 +386,7 @@ o_cols = ['o' + i for i in phot_method_ids]
 f_cols = ['f' + i for i in phot_method_ids]
 g_cols = ['g' + i for i in phot_method_ids]
 
-def get_point_source_catalog(ps_file=ks2_files[1], clean=True):
+def get_point_source_catalog(ps_file=ks2_files[1], clean=True, clean_args={}):
     """
     This function reads the KS2 FIND_NIMFO file that stores *every* point source
 
@@ -361,6 +397,8 @@ def get_point_source_catalog(ps_file=ks2_files[1], clean=True):
     clean : bool [True]
       if False, return the cleaned point source catalog. If True, return the
       original KS2 catalog.
+    clean_args : dict {}
+      arguments to pass to clean_point_source_catalog()
 
     Output
     ------
@@ -370,25 +408,30 @@ def get_point_source_catalog(ps_file=ks2_files[1], clean=True):
     """
     ps_file = Path(ps_file).resolve().as_posix()
 
-    point_sources_df = pd.read_csv(ps_file,
-                                   sep=' ',
-                                   skipinitialspace=True, 
-                                   index_col=False, 
-                                   skiprows=5, 
-                                   header=None,
-                                   usecols=nimfo_cols.keys(),
+    ps_df = pd.read_csv(ps_file,
+                        sep=' ',
+                        skipinitialspace=True, 
+                        index_col=False, 
+                        skiprows=5, 
+                        header=None,
+                        usecols=nimfo_cols.keys(),
     )
-    point_sources_df.rename(columns=nimfo_cols, inplace=True)
+    ps_df.rename(columns=nimfo_cols, inplace=True)
     # split the file identifier into the file number and extension number
-    point_sources_df['chip_id'] = point_sources_df['exp_id'].apply(lambda x: int(x.split('.')[1]))
-    point_sources_df['exp_id'] = point_sources_df['exp_id'].apply(lambda x: x.split('.')[0])
-    point_sources_df = point_sources_df.astype(nimfo_dtypes, copy=True)
+    ps_df['chip_id'] = ps_df['exp_id'].apply(lambda x: int(x.split('.')[1]))
+    ps_df['exp_id'] = ps_df['exp_id'].apply(lambda x: x.split('.')[0])
+    # add the observation epoch to the table
+    ps_df['epoch_id'] = ps_df['exp_id'].apply(get_epoch_from_ks2id)
+
+
+    # make sure the dtypes are correct
+    ps_df = ps_df.astype(nimfo_dtypes, copy=True)
 
     # if desired, return the cleaned catalog. else, return raw
     if clean == True:
-        point_sources_df = clean_point_source_catalog(point_sources_df)
+        ps_df = clean_point_source_catalog(ps_df, **clean_args)
 
-    return point_sources_df
+    return ps_df
 
 """
 It turns out there are a bunch of duplicated entries in both the FIND_NIMFO and master catalogs. Fortunately, they appear to be duplicated for every detection. We need to remove them.
@@ -719,7 +762,7 @@ def catalog_cut_ndet(cat, ndet_min=9, mast_cat=None):
 
     return cut_cat
 
-def clean_point_source_catalog(cat, q_min=0.85, z_min=0,
+def clean_point_source_catalog(cat, q_min=0.95,
                                cut_ndet_args={}):
     """
     This function, when called, cleans the point source catalog by applying the listed series of cuts:
@@ -732,10 +775,8 @@ def clean_point_source_catalog(cat, q_min=0.85, z_min=0,
     ----------
     cat : pd.DataFrame
       point source catalog
-    q_min : float [0.85]
+    q_min : float [0.99]
       lower bound on PSF fit parameter
-    z_min : float
-      lower bound on flux
     cut_ndet_args : dict [{}]
       arguments to pass to catalog_cut_ndet, e.g. {'ndet_min': 9}
 
@@ -755,13 +796,21 @@ def clean_point_source_catalog(cat, q_min=0.85, z_min=0,
     qz_gt_0 = f"{q_gt_0} and {z_gt_0}"
     cat_1 = cat_0.query(qz_gt_0, inplace=False)
 
-    # cut on q2
-    q2_gt_qmin = f"q2 >= {q_min}"
-    cat_2 = cat_1.query(q2_gt_qmin, inplace=False)
-
     # cut on the number of detections
-    cat_3 = catalog_cut_ndet(cat_2, **cut_ndet_args)
+    cat_2 = catalog_cut_ndet(cat_1, **cut_ndet_args)
 
+    # cut on q2
+    q2_ge_qmin = f"q2 >= {q_min}"
+    cat_3 = cat_2.query(q2_ge_qmin, inplace=False)
+
+    """
+    This happens in clean_master_catalog now
+    # cut on magnitude / z2 but only in the continuum filter ('F1')
+    z2_min = 10**(-mag_min/2.5)
+    z2_lt_zmin = f"filt_id == 'F1' and z2 < {z2_min}"
+    drop_ind = cat_3.query(z2_lt_zmin, inplace=False).index
+    cat_4 = cat_3.drop(index=drop_ind, inplace=False)
+    """
     return cat_3
 
 
@@ -824,11 +873,14 @@ def recompute_master_catalog(mast_cat, ps_cat):
         filt_nmast = filt_mean_dfs[filt_id].index.get_level_values('NMAST')
         nmast_2_mastind = index_mapper.loc[filt_nmast]
         mast_cat_clean.loc[nmast_2_mastind, filt_df.columns] = filt_df.values.copy()
-
+    # now do the magnitudes
+    for filt in ks2_filtermapper['filter_id']:
+        filt_num = filt[-1]
+        mast_cat_clean['mmast'+filt_num] = -2.5*np.log10(mast_cat_clean['zmast'+filt_num])
     return mast_cat_clean
 
 
-def clean_master_catalog(mast_cat, ps_cat=None, recompute=True, verbose=False):
+def clean_master_catalog(mast_cat, ps_cat=None, recompute=True, mag_cut=None):
     """
     Clean the master catalog. If no point source catalog is given, this just checks the types and assigns proper null values. If a point source catalog is provided, then it also makes sure that the list of objects present in each catalog are in agreement.
     If an object is out of range, it gets dropped from the catalog
@@ -841,8 +893,8 @@ def clean_master_catalog(mast_cat, ps_cat=None, recompute=True, verbose=False):
     recompute : bool [True]
       if True, use ps_cat to recompute the zmast, szmast, q, and g columns of the
       master catalog
-    verbose : bool [False]
-      verbose output. If True, print the number of objects dropped at each cut
+    mag_cut : float
+      magnitude faint limit (inclusive) for the continuum filter
 
     Output
     ------
@@ -870,25 +922,72 @@ def clean_master_catalog(mast_cat, ps_cat=None, recompute=True, verbose=False):
     both_filters_stars = both_filters_bool[both_filters_bool].index
     mast_cat = mast_cat[mast_cat['NMAST'].isin(both_filters_stars)].copy()
 
-    # finally, recompute star properties (z, sz, q, and f) with remaining stars
+    # third, recompute star properties (z, sz, q, and f) with remaining stars
     if recompute == True:
         mast_cat = recompute_master_catalog(mast_cat, ps_cat)
+    # compute magnitudes and colors
+    mast_cat['mmast1'] = -2.5 * np.log10(mast_cat['zmast1'])
+    mast_cat['mmast2'] = -2.5 * np.log10(mast_cat['zmast2'])
+    mast_cat['mmast1-mmast2'] = mast_cat['mmast1'] - mast_cat['mmast2']
+
+
+    # fourth, reject stars that do not appear in both epochs
+    #nepochs = ps_star_gb['epoch_id'].unique().apply(len)
+    #two_epoch_sources = nepochs[nepochs==2].index
+    #mast_cat = mast_cat[mast_cat['NMAST'].isin(two_epoch_sources)]
+
+    # finally, apply the magnitude cut to F1
+    if mag_cut is not None:
+        mag_str = f"mmast1 <= {mag_cut}"
+        mast_cat = mast_cat.query(mag_str).copy()
 
     return mast_cat
 
 
-def process_ks2_input_catalogs(mast_cat, ps_cat):
+def get_ks2_catalogs(mast_file=ks2_files[0], ps_file=ks2_files[1],
+                           raw=False,
+                           q_min=0.95, mag_min=-3.0):
     """
-    This function reads the KS2 output files, applies the cleaning and cutting procedures, and writes them to tables in the data/tables directory
-    Clean each catalog independently, and then make them compatible
-    """
-    # apply cuts to the PS catalog
-    ps_cat_clean = clean_point_source_catalog(ps_cat)
-    # bring the master catalog in compliance
-    mast_cat_clean = clean_master_catalog(mast_cat, ps_cat_clean)
+    This function reads the KS2 output files, applies the cleaning and cutting procedures, and returns the dataframes.
+    Cuts:
+    First, the columns are forced into the proper datatypes, and entries with conflicting data types are set to None. Second, a cut on q is applied to the point source catalog. The master catalog is then brought into agreement with the cleaned point source catalog (i.e. stars no longer in the point source catalog are rejected), and the following columns are recomputed: z, sz, q, f, and mmast1. mmast2 is newly computed, as is the color mmast1-mmast2. Finally, a magnitude cut is applied for mag1 (F127M, the continuum filter).
+
+    Parameters
+    ----------
+    mast_file : string or path [{mf}]
+      full path to the KS2 master catalog file. If None, use default
+    ps_file : string or path [{pf}]
+      full path to the KS2 point source catalog file. If None, use default
+    raw : bool [False]
+      if True, do not apply cleaning
+    q_min : float [0.95]
+      lower bound on q.
+    mag_min : float [-3.0]
+      lower bound on the instrumental magnitude.
+
+    Output
+    ------
+    tuple (mast_cat, ps_cat)
+    """.format(mf=ks2_files[0], pf=ks2_files[1])
+
+    # if raw catalogs are requested, do not apply any cuts
+    if raw == True:
+        print("Returning raw catalogs")
+        ps_cat = get_point_source_catalog(ps_file=ps_file, clean=False)
+        mast_cat = get_master_catalog(ks2_master_file=mast_file, clean=False)
+    else:
+        # apply cuts to the PS catalog
+        print("Returning cleaned catalogs")
+        ps_cat = get_point_source_catalog(ps_file=ps_file,
+                                          clean=True,
+                                          clean_args=dict(q_min=q_min))
+        mast_cat = get_master_catalog(ks2_master_file=mast_file,
+                                      clean=True,
+                                      ps_cat=ps_cat,
+                                      clean_args=dict(mag_cut=mag_min))
 
     # all done!
-    return mast_cat_clean, ps_cat_clean
+    return mast_cat, ps_cat
 
 
 
@@ -949,7 +1048,8 @@ def update_image1(img_ind, stamps, df, fig, ax):
     fig.colorbar(imax)
     ax.set_title(title)
 
-def cube_scroller(df, stamp_args={}, fig_args={}):
+def cube_scroller(df, stamp_args={}, fig_args={}, imshow_args={},
+                  norm_func=mpl.colors.Normalize, norm_args=()):
     """
     Accept a dataframe and show the stamps in the dataframe
 
@@ -961,6 +1061,12 @@ def cube_scroller(df, stamp_args={}, fig_args={}):
       dict of arguments to pass to ks2_utils.get_stamp_from_ks2(row, **stamp_args)
     fig_args : dict
       dict of arguments to pass to plt.subplots(**fig_args)
+    imshow_args : dict
+      dict of arguments to pass to ax.imshow(img, **imshow_args)
+    norm_func : mpl.colors.Normalize function / child function
+      this is separated from imshow_args now because if you pass an instance then it doens't get reset; you need to pass the function
+    norm_args : list [()]
+      arguments to pass to the normalization function (e.g. for PowerNorm(0.5))
 
     Output
     ------
@@ -970,6 +1076,10 @@ def cube_scroller(df, stamp_args={}, fig_args={}):
     Example:
     plot_stamps_scroll(df.query("mag >= 10 and mag < 15"), fig_args=dict(figsize=(6,6)))
     """
+    # default arguments
+    stamp_args.setdefault("stamp_size", 11)
+    #imshow_args.setdefault("norm", mpl.colors.Normalize())
+
     stamps = []
     for i, row in df.iterrows():
         stamps.append(get_stamp_from_ks2(row, **stamp_args))
@@ -977,10 +1087,9 @@ def cube_scroller(df, stamp_args={}, fig_args={}):
     def update_image(img_ind):
         fig, ax = plt.subplots(1, 1, **fig_args)
         row = df.iloc[img_ind]
-        title = (f"{row['NMAST']} + {row['exp_id']}\nMag: {row['magu']}"
-                 + f"\nSNR: {row['z2']/row['sz2']:0.2f}")
         img = stamps[img_ind]
-        imax = ax.imshow(img)
+        title = f"{row['NMAST']} + {row['exp_id']}\nMag: {row['magu']:0.2f}"
+        imax = ax.imshow(img, **imshow_args, norm=norm_func())
         fig.colorbar(imax, shrink=0.75)
         ax.set_title(title)
         #plt.show(fig)

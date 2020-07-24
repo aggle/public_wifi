@@ -187,6 +187,11 @@ def test_clean_point_source_catalog(ps_cat_clean):
     # 
 
 
+@pytest.mark.clean
+def test_recompute_master_catalog(mast_cat_clean, ps_cat_clean):
+    pass
+
+@pytest.mark.clean
 def test_clean_master_catalog(mast_cat_raw, ps_cat_clean):
     """
     Check that the cleaned master catalog is consistent with the point source catalog.
@@ -205,10 +210,10 @@ def test_clean_master_catalog(mast_cat_raw, ps_cat_clean):
     # then you should only have the same objects as in the point source catalog
     mast_cat_clean = ks2_utils.clean_master_catalog(mast_cat_raw, ps_cat_clean)
 
-    # assert that the list of stars is the same
+    # assert that all the stars in mast_cat_clean are also in ps_cat_clean
     mast_names = set(mast_cat_clean['NMAST'])
     ps_names = set(ps_cat_clean['NMAST'].unique())
-    assert mast_names == ps_names
+    assert mast_names.issubset(ps_names)
 
     """
     # assert that the q-ranges are compatible
