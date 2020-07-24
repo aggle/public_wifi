@@ -78,9 +78,25 @@ def get_data_file(file_name):
 ###############
 # Save Figure #
 ###############
+def savefig(fig, name, save=False, fig_args={}):
+    """
+    Wrapper for fig.savefig that handles enabling/disabling and printing
 
-def savefig(fig, name, save=False):
+    Parameters
+    ----------
+    fig : mpl.Figure
+    name : str or pathlib.Path
+      full path for file
+    save : bool [False]
+      True: save figure. False: only print information
+    fig_args : dict {}
+      (optional) args to pass to fig.savefig()
+
+    Output
+    ------
+    No output; saves to disk
+    """
     print(name)
-    if save == True:
-        fig.savefig(name)
+    if save != False:
+        fig.savefig(name, **fig_args)
         print("Saved!")

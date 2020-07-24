@@ -347,7 +347,7 @@
 ## Following are default face and edge colors, default tick sizes,
 ## default fontsizes for ticklabels, and so on.  See
 ## https://matplotlib.org/api/axes_api.html#module-matplotlib.axes
-#axes.facecolor     : white   ## axes background color
+axes.facecolor     : white   ## axes background color
 #axes.edgecolor     : black   ## axes edge color
 #axes.linewidth     : 0.8     ## edge linewidth
 #axes.grid          : False   ## display grid or not
@@ -438,8 +438,8 @@ axes.labelsize     : large  ## fontsize of the x any y labels
 ## * TICKS                                                                   *
 ## ***************************************************************************
 ## See https://matplotlib.org/api/axis_api.html#matplotlib.axis.Tick
-#xtick.top           : False   ## draw ticks on the top side
-#xtick.bottom        : True    ## draw ticks on the bottom side
+xtick.top           : True   ## draw ticks on the top side
+xtick.bottom        : True    ## draw ticks on the bottom side
 #xtick.labeltop      : False   ## draw label on the top
 #xtick.labelbottom   : True    ## draw label on the bottom
 #xtick.major.size    : 3.5     ## major tick size in points
@@ -450,7 +450,7 @@ axes.labelsize     : large  ## fontsize of the x any y labels
 #xtick.minor.pad     : 3.4     ## distance to the minor tick label in points
 #xtick.color         : black   ## color of the tick labels
 #xtick.labelsize     : medium  ## fontsize of the tick labels
-#xtick.direction     : out     ## direction: {in, out, inout}
+xtick.direction     : in     ## direction: {in, out, inout}
 #xtick.minor.visible : False   ## visibility of minor ticks on x-axis
 #xtick.major.top     : True    ## draw x axis top major ticks
 #xtick.major.bottom  : True    ## draw x axis bottom major ticks
@@ -458,8 +458,8 @@ axes.labelsize     : large  ## fontsize of the x any y labels
 #xtick.minor.bottom  : True    ## draw x axis bottom minor ticks
 #xtick.alignment     : center  ## alignment of xticks
 
-#ytick.left          : True    ## draw ticks on the left side
-#ytick.right         : False   ## draw ticks on the right side
+ytick.left          : True    ## draw ticks on the left side
+ytick.right         : True   ## draw ticks on the right side
 #ytick.labelleft     : True    ## draw tick labels on the left side
 #ytick.labelright    : False   ## draw tick labels on the right side
 #ytick.major.size    : 3.5     ## major tick size in points
@@ -470,7 +470,7 @@ axes.labelsize     : large  ## fontsize of the x any y labels
 #ytick.minor.pad     : 3.4     ## distance to the minor tick label in points
 #ytick.color         : black   ## color of the tick labels
 #ytick.labelsize     : medium  ## fontsize of the tick labels
-#ytick.direction     : out     ## direction: {in, out, inout}
+ytick.direction     : in     ## direction: {in, out, inout}
 #ytick.minor.visible : False   ## visibility of minor ticks on y-axis
 #ytick.major.left    : True    ## draw y axis left major ticks
 #ytick.major.right   : True    ## draw y axis right major ticks
