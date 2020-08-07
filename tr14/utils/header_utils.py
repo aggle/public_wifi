@@ -29,6 +29,7 @@ def clean_header_dict(hdr_dict):
             pass
 
 
+
 def header2dict(header):
     """
     Convert header to a dict and do cleanup
@@ -126,7 +127,9 @@ def load_headers(extname='pri'):
     # special case
     if extname == 'all':
         # return all the headers
-        dfs = {e.lower(): pd.read_csv(filepath, **read_args)
+        print("Returning all headers.")
+        dfs = {e.lower(): pd.read_csv(header_path / f'{e.lower()}_hdrs.csv',
+                                      **read_args)
                for e in all_headers}
         return dfs
     # otherwise, check that the input is OK

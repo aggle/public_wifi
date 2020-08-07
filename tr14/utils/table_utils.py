@@ -2,11 +2,14 @@
 This module contains the API for interacting with data tables
 """
 
-from pathlib import Path
-import pandas as pd
 import csv
+from pathlib import Path
+import h5py
+import pandas as pd
 
-from . import shared_utils
+from astropy.io import fits
+
+from . import shared_utils, image_utils, header_utils
 
 
 table_list_path = shared_utils.table_path / "list_of_tables.csv"
@@ -18,7 +21,7 @@ csv_args  = {'sep': ',',
              'index': False,
              'header': True,
 }
-def write_table(table, name, descr):
+def write_table_csv(table, name, descr):
     """
     Write a table to file in ../data/tables
 
@@ -49,48 +52,56 @@ def write_table(table, name, descr):
         table_list.query
     """
 
-def write_table_hdf(table, name, descr):
+def write_table(table, key):
     """
-    Write a table to an HDF file in ../data/tables/.
-    Keys are TABLE, NAME, and DESCR
+    Add a table to the DB file {0}. Really just a simple wrapper so I don't have
+    to keep typing shared_utils.db_file
 
     Parameters
     ----------
     table : pd.DataFrame
       pandas DataFrame (or Series) containing the data you want to store
-    name : str
-      name for the table. File name will be {0}
-    descr : str
-      short description of the contents
+    key : str
+      key for the table in the HSF file
 
-    Returns
+    Output
     -------
     Nothing; writes to file
-    """.format(shared_tils.table_path / (name + '.hdf5'))
+    """.format(shared_utils.db_file)
 
-    fname = shared_tils.table_path / (name + 'hdf5')
-    # Step 1: Write the table part
-    table.to_hdf(fname.as_posix(), key='TABLE', mode='w')
-    # Step 2: Add the NAME and DESCR keys
-    with open(fname, 'w') as ff:
-        # this clobbers the file if it already exists
-        ff.write(f"# {name}\n")
-        ff.write(f"# {descr}\n")
+    table.to_hdf(shared_utils.db_file, key=key, mode='a')
+    
 
-
-
-def load_table(name):
+def load_table(key):
     """
     Load a table
     """
-    pass
+    # df = None
+    try:
+        df = pd.read_hdf(shared_utils.db_file, key)
+    except KeyError:
+        print(f"Error: Key `{key}` not found in {str(shared_utils.db_file)}")
+        df = None
+    
+    return df
 
 
 def list_available_tables():
     """
     Print a list of tables and their descriptions
+    TODO print the subtables, too
+    Parameters
+    ----------
+    None
+
+    Output
+    ------
+    prints out a list of tables
     """
-    pass
+    with pd.HDFStore(shared_utils.db_file, mode='r') as store:
+        print(f"Available tables in {shared_utils.db_file}:")
+        print('\n'.join(sorted(store.keys())))
+        store.close()
 
 
 def query_table(table, query, return_column=None):
@@ -174,3 +185,160 @@ def get_file_from_file_id(file_id):
     filename = shared_tils.data_path.absolute() / (file_id + suffix)
     return filename.absolute()
 
+
+"""
+Helpers for getting file and filter names.
+Since these queries are run often, this simplifies the process.
+"""
+file_mapper = load_table("lookup_files")
+filter_mapper = load_table("lookup_filters")
+
+def get_file_name_from_exp_id(exp_id):
+    """
+    Given a KS2 file identifier, get the name of the FLT file
+
+    Parameters
+    ----------
+    exp_id : str
+      The identifier assigned to each exposure file. Typically E followed by a number.
+    file_mapper : pd.DataFrame (default: result of table_utils.get_file_mapper())
+      The dataframe that tracks the file IDs and the corresponding file names
+
+    Returns
+    -------
+    file_name : the HST identifier for the file
+    """
+    exp_id = exp_id.upper()
+    querystr = f"file_id == '{exp_id}'"
+    file_name = file_mapper.query(querystr)['file_name'].values[0]
+    return file_name
+
+
+def get_filter_name_from_filter_id(filter_id):
+    """
+    Given a filter identifier, get the name of the HST filter
+
+    Parameters
+    ----------
+    filter_id : str
+      The identifier assigned to each filter by the database. Typically F followed by a number, like F1 or F2.
+    filter_mapper : pd.DataFrame (default: result of ks2_utils.get_filter_mapper())
+      The dataframe that tracks the filter IDs and the corresponding filter names
+
+    Returns
+    -------
+    filter_name : the HST name of the filter
+    """
+    filter_id = filter_id.upper()
+    querystr = f"filter_id == '{filter_id}'"
+    filter_name = filter_mapper.query(querystr)['filter_name'].values[0]
+    return filter_name
+
+
+
+"""
+Helpers for getting exposures/images and stamps
+"""
+def get_img_from_file_id(exp_id, hdr='SCI'):
+    """
+    Pull out an image from the fits file, given the exposure identifier.
+
+    Parameters
+    ----------
+    ks2_exp_id : str
+      the exposure identifier assigned by KS2
+    hdr : str or int ['SCI']
+      which header? allowed values: ['SCI','ERR','DQ','SAMP','TIME']
+
+    Returns:
+    img : numpy.array
+      2-D image from the fits file
+    """
+    flt_name = get_file_name_from_expid(exp_id)
+    flt_path = shared_utils.get_data_file(flt_name)
+    img = fits.getdata(flt_path, hdr)
+    return img
+
+def get_stamp_from_ps_row(row, stamp_size=11, return_img_ind=False, hdr='SCI'):
+    """
+    Given a row of the FIND_NIMFO dataframe, this gets a stamp of the specified
+    size of the given point source
+    TODO: accept multiple rows
+
+    Parameters
+    ----------
+    row : pd.DataFrame row
+      a row containing the position and file information for the source
+    stamp_size : int or tuple [11]
+      (row, col) size of the stamp [(int, int) if only int given]
+    return_img_ind : bool (False)
+      if True, return the row and col indices of the stamp in the image
+    hdr : str or int ('SCI')
+      each HDU in the flt Duelist has a different kind of image - specify
+      which one you want here
+
+    Returns
+    -------
+    stamp_size-sized stamp
+    """
+    img = get_img_from_file_id(row['ps_exp_id'], hdr=hdr)
+    # location of the point source in the image
+    xy = row[['ps_x_exp','ps_y_exp']].values
+    # finally, get the stamp (and indices, if requested)
+    return_vals = image_utils.get_stamp(img, xy, stamp_size, return_img_ind)
+    return return_vals
+
+
+def get_stamp_coords_from_center(x, y, stamp_size):
+    """
+    Docstring goes here
+
+    Parameters
+    ----------
+    x : int
+      x/col index
+    y : int
+      y/row index
+    stamp_size : int or tuple [11]
+
+    Output
+    ------
+    stamp_ind : np.array
+      2xN array of (row, col) coordinates
+
+    """
+    pass
+
+
+"""
+Shortcut for loading the FITS headers
+"""
+def load_header(extname='pri'):
+    """
+    Helper function to load the right header file
+
+    Parameters
+    ----------
+    extname : str [pri]
+      shorthand name for the extension whose dataframe you want
+      options are: pri, sci, err, dq, samp, and time
+    Returns
+    -------
+    df : pd.DataFrame
+      a dataframe with the right header selected
+    """
+    # special case
+    if extname == 'all':
+        # return all the headers
+        print("Returning all headers.")
+        dfs = {e.lower(): load_table(f"hdr_{e.lower()}")
+               for e in header_utils.all_headers}
+        return dfs
+    # otherwise, check that the input is OK
+    try:
+        assert(extname.upper() in header_utils.all_headers)
+    except AssertionError:
+        print(f"{extname} not one of {all_headers}, please try again.")
+        return None
+    df = load_table(f"hdr_{extname.lower()}")
+    return df

@@ -25,7 +25,7 @@ def load_config_path(key):
     Returns
     -------
     path : pathlib.Path or None
-      absolute path to the target in the config file. Returns None if path does not exist.
+      absolute path to the target in the config file. Prints warning if the path does not exist.
     """
     key = key.upper()
     path = Path(config['PATHS'][key]).resolve()
@@ -34,13 +34,13 @@ def load_config_path(key):
         assert(path.exists())
     except AssertionError:
         print(f"Error: {path} not found.")
-        return None
     return path
 
 # HST data files for manipulation
 data_path = load_config_path("data_path")
 # Database tables
 table_path = load_config_path("table_path")
+db_file = load_config_path("db_file")
 # Gaia catalog and source matches
 align_path = load_config_path("align_path")
 # KS2 output files

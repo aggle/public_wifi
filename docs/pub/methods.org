@@ -4,7 +4,10 @@
 #+OPTIONS: tex:t
 
 * Assembling the catalog of point sources
-...later...
+We assemble the catalog of point sources using KS2 (cite). Finds sources by fitting a model PSF. 
+
+** Catalog cleaning
+The PSF fit is characterized by the parameter q. We apply the cut $q \ge 0.95$ and $\mathrm{instr. mag} \le -3$.
 * Performing PSF subtraction
 ** Steps from cite:Strampelli_2020 
 *** Stamp size selection

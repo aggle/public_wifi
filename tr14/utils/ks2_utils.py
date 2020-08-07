@@ -18,7 +18,7 @@ from ipywidgets import interact, interactive, fixed, interact_manual
 import ipywidgets as widgets
 
 
-from . import shared_utils, image_utils, table_utils, header_utils
+from . import shared_utils, image_utils, header_utils
 
 """
 You only care about a few of the files:
@@ -95,8 +95,10 @@ def get_filter_mapper(ks2_input_file=ks2_files[2]):
         results = [i.split(' ')[-1] for i in results]
         results = list(zip(results[::2], results[1::2]))
     filtermapper_df = pd.DataFrame(results, columns=['filter_id','filter_name'])
-    filtermapper_df['filter_id'] = filtermapper_df['filter_id'].apply(lambda x: "F"+x)
     filtermapper_df['filter_name'] = filtermapper_df['filter_name'].apply(lambda x: x.replace('"',''))
+    # make a column for both filter_id and filt_id, for backwards compatibility
+    filtermapper_df['filter_id'] = filtermapper_df['filter_id'].apply(lambda x: "F"+x)
+    filtermapper_df['filt_id'] = filtermapper_df['filter_id'].values[:]
     return filtermapper_df
 
 ks2_filemapper = get_file_mapper()
@@ -215,7 +217,10 @@ master_dtypes = {
     "f2": np.int,
     "g2": np.int,
 }
-def get_master_catalog(ks2_master_file=ks2_files[0], clean=True, ps_cat=None, clean_args={}):
+def get_master_catalog(ks2_master_file=ks2_files[0],
+                       clean=True,
+                       ps_cat=None,
+                       clean_args={}):
     """
     From LOGR.XYVIQ1, pull out the master catalog of information about astrophysical objects
 
@@ -272,7 +277,8 @@ def get_master_catalog(ks2_master_file=ks2_files[0], clean=True, ps_cat=None, cl
 
     # if desired, return the cleaned catalog. else, return raw
     if clean == True:
-        master_catalog_df = clean_master_catalog(master_catalog_df, ps_cat, **clean_args)
+        master_catalog_df = clean_master_catalog(master_catalog_df, ps_cat,
+                                                 **clean_args)
 
     return master_catalog_df
 
@@ -988,49 +994,6 @@ def get_ks2_catalogs(mast_file=ks2_files[0], ps_file=ks2_files[1],
 
     # all done!
     return mast_cat, ps_cat
-
-
-
-#####################################
-# CONVERTING TO TR14 CATALOG TABLES #
-#####################################
-"""
-This dictionary stores the conversion between the Tr14 table fields and the KS2 fields
-"""
-field_conversion_dict = {
-    "star_id"        : "NMAST",
-    "u_mast"         : "umast0",
-    "v_mast"         : "vmast0",
-    "star_phot_f"    : "zmast",
-    "star_phot_e_f"  : "szmast",
-    "ps_exp_id"      : "exp_id",
-    "ps_filter_id"   : "filt_id",
-    "ps_phot"        : "z2",
-    "ps_phot_e"      : "sz2",
-    "ps_x_exp"       : "xraw1",
-    "ps_y_exp"       : "yraw1",
-}
-
-def ks2_cat_to_tr14(cat):
-    """
-    Take the KS2 catalog and put it in the right format for the Tr14 database
-    Parameters
-    ----------
-    cat : pd.DataFrame
-      a KS2 catalog
-
-    Output
-    ------
-
-    """
-    pass
-
-
-
-
-
-
-
 
 
 
