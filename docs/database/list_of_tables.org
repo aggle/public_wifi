@@ -157,11 +157,20 @@ sampling headers
 data
 **** Description
 exposure time headers
+** companions
+*** Type
+Data
+*** Description
+This table is an analogue of the star_master table, but for companions. It is keyed by the primary star. 
+Columns:
+- companion_flag column that stores the kind of companion (0 = none, 1 = visual binary, 2 = faint binary),
+- companion_id column that stores the name of the companion (star ID or cand_id)
+- maybe sep, PA, and magnitude
 ** candidates_master
 *** Type
 Data
 *** Description
-This table is an analogue of the star_master table, but for candidates. It contains the name of the primary star, and maybe the average positions and magnitudes
+This table is an analogue of the stars table, but for candidates. It is keyed by the candidate ID. 
 ** candidates_detections
 *** Type
 Data
@@ -181,7 +190,7 @@ This table keeps a list of which stamps meet the criteria to be PSF references f
 
 * Tables and fields
 Here we associate fields with each table
-** stars [8/8]
+** stars [9/9]
 *** DONE star_id
 CLOSED: [2020-07-27 Mon 23:31]
 **** General Elements
@@ -3553,6 +3562,247 @@ Enter range of allowed values here
 | stamp_id            |
 | stamp_dq_flag       |
 | stamp_dq_flag_value |
+** companion_status [2/2]
+This table records whether or not companions have been found around a primary.
+Companions includes visual binaries/spatial coincidences.
+*** DONE comp_star_id
+CLOSED: [2020-08-18 Tue 11:20]
+**** General Elements
+***** Field Name
+comp_star_id
+***** Parent Table
+companions
+***** Label
+None
+***** Specification Type
+- [ ] Unique
+- [ ] Generic
+- [X] Replica
+***** Source Specification
+stars/star_id
+***** Shared By
+stars
+***** Aliases
+star_id
+***** Description
+Identifier for the primary star
+**** Physical Elements
+See stars/star_id
+***** Data Type
+Enter data type here (alphanumeric, numeric, datetime)
+***** Length
+Number of characters the field will hold
+***** Decimal Places
+Enter number of decimal places here (can be all)
+***** Character Support
+- [ ] Letters (A-Z)
+- [ ] Numbers (0-9)
+- [ ] Keyboard (.,/$#%)
+- [ ] Special
+***** Input Mask
+Enter input mask here (the manner in which a user should enter the data)
+***** Display Format
+Enter display format here
+
+**** Logical Elements
+***** Key Type
+- [ ] Non
+- [ ] Foreign
+- [X] Primary
+- [ ] Alternate
+***** Key Structure
+- [X] Simple
+- [ ] Composite
+***** Uniqueness
+- [ ] Non-unique
+- [X] Unique
+***** Null Support
+- [ ] Nulls Allowed
+- [X] No Nulls
+***** Values Entered By
+- [ ] User
+- [X] System
+***** Required Value
+- [ ] No
+- [X] Yes
+***** Default Value
+Enter default value here
+***** Range of Values
+S000000-S999999
+***** Edit Rule
+- [ ] Enter Now, Edits Allowed
+- [X] Enter Now, Edits Not Allowed
+- [ ] Enter Later, Edits Allowed
+- [ ] Enter Later, Edits Not Allowed
+- [ ] Not Determined At This Time
+***** Comparisons Allowed
+- Same Field
+  - [ ] All
+  - [X] =
+  - [ ] >
+  - [ ] >=
+  - [ ] !=
+  - [ ] <
+  - [ ] <=
+- Other Fields
+  - [ ] All
+  - [X] =
+  - [ ] >
+  - [ ] >=
+  - [ ] !=
+  - [ ] <
+  - [ ] <=
+- Value Expression
+  - [ ] All
+  - [X] =
+  - [ ] >
+  - [ ] >=
+  - [ ] !=
+  - [ ] <
+  - [ ] <=
+***** Operations Allowed
+- Same Field
+  - [ ] All
+  - [ ] +
+  - [ ] -
+  - [ ] *
+  - [ ] /
+  - [ ] Concatenation
+- Other Fields
+  - [ ] All
+  - [ ] +
+  - [ ] -
+  - [ ] *
+  - [ ] /
+  - [ ] Concatenation
+- Value Expression
+  - [ ] All
+  - [ ] +
+  - [ ] -
+  - [ ] *
+  - [ ] /
+  - [ ] Concatenation
+
+*** DONE companion_flag
+CLOSED: [2020-08-18 Tue 11:14]
+**** General Elements
+***** Field Name
+companion_flag
+***** Parent Table
+stars
+***** Label
+None
+***** Specification Type
+- [X] Unique
+- [ ] Generic
+- [ ] Replica
+***** Source Specification
+None
+***** Shared By
+None
+***** Aliases
+None
+***** Description
+Flag if this star has a companion or not
+0 - no companions
+1 - visual binary (i.e. no KLIP)
+2 - KLIP companion (revealed after PSF subtraction)
+**** Physical Elements
+***** Data Type
+Numeric
+***** Length
+1
+***** Decimal Places
+0
+***** Character Support
+- [ ] Letters (A-Z)
+- [X] Numbers (0-9)
+- [ ] Keyboard (.,/$#%)
+- [ ] Special
+***** Input Mask
+None
+***** Display Format
+0
+**** Logical Elements
+***** Key Type
+- [X] Non
+- [ ] Foreign
+- [ ] Primary
+- [ ] Alternate
+***** Key Structure
+- [ ] Simple
+- [ ] Composite
+***** Uniqueness
+- [X] Non-unique
+- [ ] Unique
+***** Null Support
+- [ ] Nulls Allowed
+- [X] No Nulls
+***** Values Entered By
+- [ ] User
+- [X] System
+***** Required Value
+- [ ] No
+- [X] Yes
+***** Default Value
+0
+***** Range of Values
+0-2
+***** Edit Rule
+- [X] Enter Now, Edits Allowed
+- [ ] Enter Now, Edits Not Allowed
+- [ ] Enter Later, Edits Allowed
+- [ ] Enter Later, Edits Not Allowed
+- [ ] Not Determined At This Time
+***** Comparisons Allowed
+- Same Field
+  - [ ] All
+  - [X] =
+  - [ ] >
+  - [ ] >=
+  - [ ] !=
+  - [ ] <
+  - [ ] <=
+- Other Fields
+  - [ ] All
+  - [X] =
+  - [ ] >
+  - [ ] >=
+  - [ ] !=
+  - [ ] <
+  - [ ] <=
+- Value Expression
+  - [ ] All
+  - [X] =
+  - [ ] >
+  - [ ] >=
+  - [ ] !=
+  - [ ] <
+  - [ ] <=
+***** Operations Allowed
+- Same Field
+  - [ ] All
+  - [ ] +
+  - [ ] -
+  - [ ] *
+  - [ ] /
+  - [ ] Concatenation
+- Other Fields
+  - [ ] All
+  - [ ] +
+  - [ ] -
+  - [ ] *
+  - [ ] /
+  - [ ] Concatenation
+- Value Expression
+  - [ ] All
+  - [ ] +
+  - [ ] -
+  - [ ] *
+  - [ ] /
+  - [ ] Concatenation
+
+*
 ** candidate_detections
 
 ** candidate_master [0/0]
@@ -3571,7 +3821,7 @@ Enter range of allowed values here
 | hdr_samp |
 | hdr_time |
 ** psf_subtractions [0/0]
-** allowed_references [0/0]
+** reference_matrix [0/0]
 * Linking tables
 Make sure to define these linking and lookup tables!
 ** TODO lookup_nmast
@@ -3583,4 +3833,125 @@ same as KS2 exp_id lookup but with a different leading letter (G -> E)
 ** TODO lookup_filter
 filter_name to filter_id
 same as ks2_filtermapper
+** TODO lookup_companion_flag
+0 - no companions
+1 - visual companion (seen without PSF subtraction)
+2 - companion found with PSF subtraction
 
+
+* Template
+*** field template
+**** General Elements
+***** Field Name
+Enter field name here
+***** Parent Table
+Enter parent table here
+***** Label
+Enter label or shorter name here
+***** Specification Type
+- [ ] Unique
+- [ ] Generic
+- [ ] Replica
+***** Source Specification
+If /Specification Type/ is /Replica/, enter source field here
+***** Shared By
+List other tables that share this field here
+***** Aliases
+List other names for this field here
+***** Description
+Describe the field here
+**** Physical Elements
+***** Data Type
+Enter data type here (alphanumeric, numeric, datetime)
+***** Length
+Number of characters the field will hold
+***** Decimal Places
+Enter number of decimal places here (can be all)
+***** Character Support
+- [ ] Letters (A-Z)
+- [ ] Numbers (0-9)
+- [ ] Keyboard (.,/$#%)
+- [ ] Special
+***** Input Mask
+Enter input mask here (the manner in which a user should enter the data)
+***** Display Format
+Enter display format here
+
+**** Logical Elements
+***** Key Type
+- [ ] Non
+- [ ] Foreign
+- [ ] Primary
+- [ ] Alternate
+***** Key Structure
+- [ ] Simple
+- [ ] Composite
+***** Uniqueness
+- [ ] Non-unique
+- [ ] Unique
+***** Null Support
+- [ ] Nulls Allowed
+- [ ] No Nulls
+***** Values Entered By
+- [ ] User
+- [ ] System
+***** Required Value
+- [ ] No
+- [ ] Yes
+***** Default Value
+Enter default value here
+***** Range of Values
+Enter range of allowed values here
+***** Edit Rule
+- [ ] Enter Now, Edits Allowed
+- [ ] Enter Now, Edits Not Allowed
+- [ ] Enter Later, Edits Allowed
+- [ ] Enter Later, Edits Not Allowed
+- [ ] Not Determined At This Time
+***** Comparisons Allowed
+- Same Field
+  - [ ] All
+  - [ ] =
+  - [ ] >
+  - [ ] >=
+  - [ ] !=
+  - [ ] <
+  - [ ] <=
+- Other Fields
+  - [ ] All
+  - [ ] =
+  - [ ] >
+  - [ ] >=
+  - [ ] !=
+  - [ ] <
+  - [ ] <=
+- Value Expression
+  - [ ] All
+  - [ ] =
+  - [ ] >
+  - [ ] >=
+  - [ ] !=
+  - [ ] <
+  - [ ] <=
+***** Operations Allowed
+- Same Field
+  - [ ] All
+  - [ ] +
+  - [ ] -
+  - [ ] *
+  - [ ] /
+  - [ ] Concatenation
+- Other Fields
+  - [ ] All
+  - [ ] +
+  - [ ] -
+  - [ ] *
+  - [ ] /
+  - [ ] Concatenation
+- Value Expression
+  - [ ] All
+  - [ ] +
+  - [ ] -
+  - [ ] *
+  - [ ] /
+  - [ ] Concatenation

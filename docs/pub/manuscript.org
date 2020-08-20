@@ -1,7 +1,7 @@
 #+TITLE: Tr14 paper
 #+AUTHOR: J Aguilar
 * Introduction
-
+i'm just writing to test the connection
 * Observations
 
 * Methods
@@ -11,7 +11,6 @@
    The initial catalog of point sources was created using KS2 (cite:2013AJ....146...53S and cite:anderson08_acs_survey_globul_clust), so describe whatever that does here.
    The KS2 catalog was checked for duplicates. We also required that any source have at least 10 detections in both filters. Bright stars were treated specially by adding an extra subtraction.
 
-   
 * Results
 
 * Conclusions

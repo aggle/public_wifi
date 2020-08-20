@@ -2,6 +2,7 @@
 Includes shared useful stuff, like path definitions and file formats
 """
 
+import re
 from pathlib import Path
 import configparser
 
@@ -75,28 +76,51 @@ def get_data_file(file_name):
     return file_path.resolve()
 
 
-###############
-# Save Figure #
-###############
-def savefig(fig, name, save=False, fig_args={}):
+
+def find_star_id_col(columns):
     """
-    Wrapper for fig.savefig that handles enabling/disabling and printing
+    Given a list of columns, this function returns the name of the column that
+    contains the star_id identifier (e.g. star_id, ps_star_id, stamp_star_id)
 
     Parameters
     ----------
-    fig : mpl.Figure
-    name : str or pathlib.Path
-      full path for file
-    save : bool [False]
-      True: save figure. False: only print information
-    fig_args : dict {}
-      (optional) args to pass to fig.savefig()
+    columns : list-like
+      list of columns
 
     Output
     ------
-    No output; saves to disk
+    star_col : str
+      name of the column with the star_id
+
     """
-    print(name)
-    if save != False:
-        fig.savefig(name, **fig_args)
-        print("Saved!")
+    qstr = 'star_id'
+    regex = re.compile(qstr)
+    matches = [i for i in columns if regex.search(i) is not None]
+    if len(matches) > 0:
+        return matches[0]
+    else:
+        return None
+
+def find_column(columns, qstr):
+    """
+    Given a list of columns, this function returns the name of the column that
+    contains the string in qstr
+
+    Parameters
+    ----------
+    columns : list-like
+      list of columns
+    qstr : string to search for (e.g. star_id, u_mast, v_mast)
+
+    Output
+    ------
+    col : str
+      name of the desired column
+
+    """
+    regex = re.compile(qstr)
+    matches = [i for i in columns if regex.search(i) is not None]
+    if len(matches) > 0:
+        return matches[0]
+    else:
+        return None

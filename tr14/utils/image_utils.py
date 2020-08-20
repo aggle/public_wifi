@@ -14,12 +14,38 @@ from astropy.io import fits
 from . import shared_utils, table_utils
 
 
+###############
+# Save Figure #
+###############
+def savefig(fig, name, save=False, fig_args={}):
+    """
+    Wrapper for fig.savefig that handles enabling/disabling and printing
+
+    Parameters
+    ----------
+    fig : mpl.Figure
+    name : str or pathlib.Path
+      full path for file
+    save : bool [False]
+      True: save figure. False: only print information
+    fig_args : dict {}
+      (optional) args to pass to fig.savefig()
+
+    Output
+    ------
+    No output; saves to disk
+    """
+    print(name)
+    if save != False:
+        fig.savefig(name, **fig_args)
+        print("Saved!")
+
 """
 One handy tool is being able to cut a stamp out of an image. This function cuts
 out square stamps given the stamp center (can be floating point) and desired
 shape.
 """
-def get_stamp_ind(xy, stamp_shape):
+def get_stamp_ind(xy_cent, stamp_shape):
     """
     Return the indices corresponding to the stamp. Does not contain any
     information about the image size; i.e. indices may not be valid near
@@ -27,7 +53,7 @@ def get_stamp_ind(xy, stamp_shape):
 
     Parameters
     ----------
-    xy : 2x1 array-like of ints
+    xy_cent : 2x1 array-like of ints of the xy (col, row) center
     stamp_shape: 2x1 tuple or int
 
     Output
@@ -38,8 +64,8 @@ def get_stamp_ind(xy, stamp_shape):
     """
     if isinstance(stamp_shape, np.int):
         stamp_shape = np.tile(stamp_shape, 2)
-    xy = np.array(xy)
-    center = xy[::-1] # now in row, col order
+    xy_cent = np.array(xy_cent)
+    center = xy_cent[::-1] # now in row, col order
     # set up the stamp so that negative is below center and positive is above center
     stamp_range = np.outer(np.array(stamp_shape)/2,
                            np.array((-1, 1))).T
@@ -48,6 +74,56 @@ def get_stamp_ind(xy, stamp_shape):
     index_range = np.floor(np.transpose(center + stamp_range)).astype(np.int)
     stamp_ind = np.mgrid[index_range[0,0]:index_range[0,1],
                          index_range[1,0]:index_range[1,1]]
+    return stamp_ind
+
+
+def get_master_stamp_ind(star_id, stamp_shape, df=None, extra_row=True):
+    """
+    Same as get_stamp_ind, but using the master reference frame instead of the
+    exposure frame.
+
+    Parameters
+    ----------
+    star_id : identifier for the star (e.g. S000000)
+    stamp_shape : 2x1 tuple or int
+    df : pd.DataFrame [None]
+      optional : supply the dataframe. If None, uses the `stars` table
+    extra_row : bool [True]
+      If True, add an extra index on the end. This is needed for plotting with
+      plt.pcolor(x, y, img), where x and y need 1 more row and column than img
+
+    Output
+    ------
+    stamp_ind : np.array
+      2xN array of (row, col) coordinates
+
+    """
+
+
+    if df is None:
+        df = table_utils.load_table("stars")
+
+    if isinstance(stamp_shape, np.int):
+        stamp_shape = np.tile(stamp_shape, 2)
+
+    id_col = shared_utils.find_column(df.columns, 'star_id')
+    u_col =  shared_utils.find_column(df.columns, 'u_mast')
+    v_col =  shared_utils.find_column(df.columns, 'v_mast')
+
+    xy_cent = df.set_index(id_col).loc[star_id, [u_col, v_col]]
+    xy_cent = np.floor(np.array(xy_cent))
+    center = xy_cent[::-1] # now in row, col order
+    # set up the stamp so that negative is below center and positive is above center
+    stamp_range = np.outer(np.array(stamp_shape)/2,
+                           np.array((-1, 1))).T
+    # on the following line np.floor is necessary to index the proper pixels;
+    # astype(np.int) just makes it compatible with an index
+    index_range = np.floor(np.transpose(center + stamp_range)).astype(np.int)
+    shift = 0
+    if extra_row == True:
+        shift = 1
+    stamp_ind = np.mgrid[index_range[0,0]:index_range[0,1]+shift,
+                         index_range[1,0]:index_range[1,1]+shift]
     return stamp_ind
 
 
@@ -63,7 +139,7 @@ def get_stamp(image, xy, stamp_shape, return_img_ind=False):
     ----------
     image : np.array
       2-D source image
-    xy : np.array
+    xy : list-like (list, tuple, np.array, etc)
       the xy (col, row) center of the stamp
     stamp_shape : int or tuple of ints
       the dimensions of the stamp
@@ -140,7 +216,7 @@ def get_stamp_from_ps_table(row, stamp_size=11, return_img_ind=False):
     stamp_size-sized stamp
     """
     # get the file name where the point source is located and pull the exposure
-    flt_file = table_utils.get_file_name_from_expid(row['ps_exp_id'])
+    flt_file = table_utils.get_file_name_from_exp_id(row['ps_exp_id'])
     img = fits.getdata(shared_utils.get_data_file(flt_file), 1)
     # location of the point source in the image
     xy = row[['ps_x_exp', 'ps_y_exp']].values
@@ -292,3 +368,5 @@ def cube_scroller(df,
     output.layout.width = width
     output.layout.height = height
     return interactive_plot
+
+

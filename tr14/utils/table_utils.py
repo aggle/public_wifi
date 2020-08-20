@@ -6,56 +6,19 @@ import csv
 from pathlib import Path
 import h5py
 import pandas as pd
+import re
+import numpy as np
 
 from astropy.io import fits
 
 from . import shared_utils, image_utils, header_utils
 
 
-table_list_path = shared_utils.table_path / "list_of_tables.csv"
-table_definitions = shared_utils.table_path / "table_definitions.ini"
-
-
-# TABLE CSV FORMAT
-csv_args  = {'sep': ',',
-             'index': False,
-             'header': True,
-}
-def write_table_csv(table, name, descr):
+def write_table(table, key, kwargs={}):
     """
-    Write a table to file in ../data/tables
-
-    Parameters
-    ----------
-    table : pd.DataFrame
-      a pandas Dataframe containing the data
-    name : str
-      name for the table. File name will be {0}
-    descr : str
-      short description of the contents, prended as the header
-
-    Returns
-    -------
-    Nothing; writes to file
-    """.format(shared_tils.table_path / ('_name_.csv'))
-    fname = shared_tils.table_path / (name + '.csv')
-    # prepend comments that contain the file name and description
-    with open(fname, 'w') as ff:
-        # this clobbers the file if it already exists
-        ff.write(f"# {name}\n")
-        ff.write(f"# {descr}\n")
-    table.to_csv(fname.as_posix(), mode='a', **csv_args) 
-    """
-    # update the file that keeps track of the list of tables
-    table_list = pd.read_csv(table_list_path)
-    if table_list.query(f"name == {name}"):
-        table_list.query
-    """
-
-def write_table(table, key):
-    """
-    Add a table to the DB file {0}. Really just a simple wrapper so I don't have
-    to keep typing shared_utils.db_file
+    Add a table to the DB file `shared_utils.db_file`. Really just a simple
+    wrapper so I don't have to keep typing shared_utils.db_file every time
+    I need to write something
 
     Parameters
     ----------
@@ -63,13 +26,28 @@ def write_table(table, key):
       pandas DataFrame (or Series) containing the data you want to store
     key : str
       key for the table in the HSF file
+    kwargs : dict [{}]
+      any keyword arguments to pass to pd.DataFrame.to_hdf for DataFrames and
+      Series, or to h5py.File for non-pandas objects
 
     Output
     -------
     Nothing; writes to file
-    """.format(shared_utils.db_file)
+    """
 
-    table.to_hdf(shared_utils.db_file, key=key, mode='a')
+    kwargs['mode'] = kwargs.get("mode", 'a')
+    if hasattr(table, 'to_hdf'):
+        table.to_hdf(shared_utils.db_file, key=key, **kwargs)
+    else:
+        print("Error: cannot currently store non-pandas types")
+        """
+        with h5py.File(shared_utils.db_file, **kwargs) as store:
+            try:
+                store[key] = table
+            except KeyError:
+                grp = store.create_group(key)
+            store.close()
+        """
     
 
 def load_table(key):
@@ -86,84 +64,29 @@ def load_table(key):
     return df
 
 
-def list_available_tables():
+def list_available_tables(return_list=False):
     """
-    Print a list of tables and their descriptions
+    Print a list of tables and their descriptions. Alternately, return a list of the tables.
     TODO print the subtables, too
     Parameters
     ----------
-    None
+    return_list: bool [False]
+      if True, instead of printing out the table names, return a list.
 
     Output
     ------
-    prints out a list of tables
+    table_names : list [optional]
+      a list of available keys
     """
     with pd.HDFStore(shared_utils.db_file, mode='r') as store:
-        print(f"Available tables in {shared_utils.db_file}:")
-        print('\n'.join(sorted(store.keys())))
+        table_names = sorted(store.keys())
+        if return_list == False:
+            print(f"Available tables in {shared_utils.db_file}:")
+            print('\n'.join(table_names))
         store.close()
+    if return_list == True:
+        return table_names
 
-
-def query_table(table, query, return_column=None):
-    """
-    Pass a query to the given table.
-    Parameters
-    ----------
-    table : pd.DataFrame
-      the table to query
-    query : string
-      a string with proper query syntax
-    return_column : string (optional, default is None)
-      the column whose value you want to return. If left as default (None),
-      returns the full (queried) dataframe
-
-    Returns
-    -------
-    return_value : a series (or dataframe) of all the values that match the query
-    """
-    return_value = table.query(query)
-    if return_column is not None:
-        return_column = return_column.lower()
-        return_value = return_value[return_column]
-    return return_value
-
-
-def get_value(table, query_column, value, return_column=None):
-    """
-    Retrieve a value from a table. Assumes the equality operator ('==')
-    Remember to cast any field names into lower case
-    Parameters
-    ----------
-    table : pd.DataFrame
-      the table to query
-    query_column: string
-      the name of the column to query
-    value: type(query_column)
-      the value to match in the query column
-    return_column : string (optional, default is None)
-      the column whose value you want to return. If left as default (None),
-      returns the full (queried) dataframe
-
-    Returns
-    -------
-    return_value : a series (or dataframe) of all the values that match the query
-
-    """
-    # all columns are in lowercase
-    query_column = query_column.lower()
-    return_value = table.query(f"{query_column} == {value}")
-    if return_column is not None:
-        return_column = return_column.lower()
-        return_value = return_value[return_column]
-    return return_value
-
-
-
-def set_value():
-    """
-    Set table value
-    """
-    pass
 
 
 def get_file_from_file_id(file_id):
@@ -254,7 +177,7 @@ def get_img_from_file_id(exp_id, hdr='SCI'):
     img : numpy.array
       2-D image from the fits file
     """
-    flt_name = get_file_name_from_expid(exp_id)
+    flt_name = get_file_name_from_exp_id(exp_id)
     flt_path = shared_utils.get_data_file(flt_name)
     img = fits.getdata(flt_path, hdr)
     return img
@@ -287,6 +210,35 @@ def get_stamp_from_ps_row(row, stamp_size=11, return_img_ind=False, hdr='SCI'):
     # finally, get the stamp (and indices, if requested)
     return_vals = image_utils.get_stamp(img, xy, stamp_size, return_img_ind)
     return return_vals
+
+"""
+If the stamps are written to file, you can just find them using the ps_id or stamp_id
+"""
+def get_stamp_from_id(ident, stamp_df=None):
+    """
+    Given a stamp or point source identifier, pull the corresponding stamp from
+    the database file /stamp_arrays/ group
+
+    Parameters
+    ----------
+    ident: str
+      stamp or point source identifier ([S/T]000000)
+
+    Output
+    ------
+    stamp_array: np.array
+      array corresponding to the requested stamp
+
+    """
+    # force the identifier to the stamp format, i.e. first letter "T"
+    if ident[0] == 'S':
+        ident.replace("S","T")
+
+    if stamp_df == None:
+        stamp_df = load_table('stamps')
+    stamp_array = stamp_df.set_index('stamp_id').loc[ident, 'stamp_array']
+    return stamp_array
+
 
 
 def get_stamp_coords_from_center(x, y, stamp_size):
@@ -342,3 +294,127 @@ def load_header(extname='pri'):
         return None
     df = load_table(f"hdr_{extname.lower()}")
     return df
+
+
+######################
+# Table manipulation #
+######################
+
+def query_table(table, query, return_column=None):
+    """
+    Pass a query to the given table.
+    Parameters
+    ----------
+    table : pd.DataFrame
+      the table to query
+    query : string
+      a string with proper query syntax
+    return_column : string (optional, default is None)
+      the column whose value you want to return. If left as default (None),
+      returns the full (queried) dataframe
+
+    Returns
+    -------
+    return_value : a series (or dataframe) of all the values that match the query
+    """
+    return_value = table.query(query)
+    if return_column is not None:
+        return_column = return_column.lower()
+        return_value = return_value[return_column]
+    return return_value
+
+
+def match_value_in_table(table, query_col, match_val, return_col=None):
+    """
+    Retrieve a value from a table. Assumes the equality operator ('==')
+    Remember to cast any field names into lower case
+    Parameters
+    ----------
+    table : pd.DataFrame
+      the table to query
+    query_col: string
+      the name of the column to query
+    match_val: type(query_column)
+      the value to match in the query column
+    return_col : string (optional, default is None)
+      the column whose value you want to return. If left as default (None),
+      returns the full matching dataframe/row
+
+    Returns
+    -------
+    return_value : a series (or dataframe) of all the values that match the
+      query. If only one item matches the query, returns the item itself (i.e.
+      not in a dataframe/series.)
+
+    """
+    # all columns are in lowercase
+    #query_column = query_column.lower()
+    return_val = table.query(f"{query_col} == @match_val")
+    if return_col is not None:
+        #return_col = return_column.lower()
+        return_val = return_val[return_col]
+    return return_val.squeeze()
+
+
+
+def set_value():
+    """
+    Set table value
+    """
+    pass
+
+def index_into_table(table, index_col, values):
+    """
+    Shortcut for pulling out a table subset of `values` matching entries in the
+    `index_col` of `table`.
+    Basically a wrapper for table.set_index(index_col).loc[values]
+
+    Parameters
+    ----------
+    table : pd.DataFrame
+      a table you want a subset of
+    index_col : str
+      the table column you want to filter
+    values : the values in index_col you want to match
+
+    Output
+    ------
+    table_subset : pd.DataFrame
+      subset of the input table containing only rows whose entry in the
+      index_col are in `values`
+
+    """
+    table_subset = table.set_index(index_col).loc[list(values)]
+    table_subset = table_subset.reset_index()
+    return table_subset
+
+
+def create_database_subset(list_of_stars, table_names=None):
+    """
+    Load a subset of the database: pick a subset of stars to work on, and make
+    sure you have a set of tables that are self-consistent
+
+    Parameters
+    ----------
+    list_of_stars: list (or iterable)
+      a list of star_ids to use for generating a new database
+    table_names : list [None]
+      list of tables to include in the subset parsing. must have the star_id
+      stored in a column. If None is ['stars', 'point_sources'] is used
+
+    Output
+    ------
+    table_dict : dict
+      a dictionary of tables - one entry for each table in the database file.
+      The table key is the same as the file key
+
+    """
+    if table_names is None:
+        table_names = ['stars', 'point_sources']
+    table_dict = {}
+    for t in table_names:
+        table = load_table(t)
+        star_col = shared_utils.find_star_id_col(table.columns)
+        table_dict[t] = index_into_table(table, star_col, list_of_stars)
+        del table
+    return table_dict

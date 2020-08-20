@@ -443,7 +443,7 @@ def get_point_source_catalog(ps_file=ks2_files[1], clean=True, clean_args={}):
 It turns out there are a bunch of duplicated entries in both the FIND_NIMFO and master catalogs. Fortunately, they appear to be duplicated for every detection. We need to remove them.
 """
 
-def remove_duplicates(ps_cat, master_cat, verbose=False):
+def remove_duplicates_old(ps_cat, master_cat, verbose=False):
     """
     Remove duplicate entries from the point source catalog and master catalogs.
     For all duplicate entries with different NMAST designations, a primary
@@ -498,130 +498,35 @@ def remove_duplicates(ps_cat, master_cat, verbose=False):
     return ps_cat_nodup, master_cat_nodup
 
 
-
-"""
-It is useful to quickly calculate the distances of objects from each other,
-in a particular exposure. The following methods do that:
-calc_exp_dist_from_obj efficiently gets the distances from a particular object, and
-generate_exposure_distance_matrix uses this to get the distances of all objects
-from each other
-"""
-def calc_exp_dist_from_obj(df, obj_id, set_nan=True):
+def remove_duplicates(ps_cat, verbose=False):
     """
-    Given a KS2 dataframe of a single exposure and a particular object,
-    calculate the pixelwise distance of every other point source in that
-    exposure from the specified object.
+    Remove duplicate entries from the point source catalog and master catalogs.
+    For all duplicate entries with different NMAST designations, a primary
+    designation is chosen ("primary id"), and the alternative NMAST
+    designations are referred to as "aliases".
 
     Parameters
     ----------
-    df : pd.DataFrame
-      pandas dataframe for a single exposure with only one entry per astrophysical object
-    obj_id : str
-      identifier for the astrophysical object
-    set_nan : bool [True]
-      if True, set the distance of the object from itself to nan instead of 0
-    """
-    obj_row = df.query('NMAST == @obj_id').squeeze()
-    obj_pos = obj_row[['xraw1', 'yraw1']]
-    diff = df[['xraw1','yraw1']] - obj_row[['xraw1','yraw1']]
-    # now set the index to be the obj_id
-    # this is a little convoluted but it uses pandas' automatic
-    # index matching to make sure the distances line up with the right
-    # objects
-    diff['NMAST'] = df['NMAST']
-    diff.set_index('NMAST', inplace=True)
-    dist = diff.apply(np.linalg.norm, axis=1)
-
-    if set_nan == True:
-        dist.loc[obj_id] = np.nan
-    return dist
-
-def generate_exposure_distance_matrix(df, same_nan=True):
-    """
-    Given a KS2 dataframe, compute a symmetric matrix of pixelwise distances.
-    The dataframe should only contain point sources from the same exposure.
-    this goes really slowly as the size of the dataframe increases; I'm not sure why
-
-    Parameters
-    ----------
-    df : pd.DataFrame
-      dataframe that at least contains the columns [NMAST, xraw1, and yraw1]
-    same_nan : bool (False)
-      if True, set the diagonal to nan instead of 0
+    ps_cat : pd.DataFrame
+      pandas dataframe containing the point source catalog
+    verbose : bool [False]
+      if True, print out the number of duplicates found
 
     Returns
     -------
-    dist_mat : pd.DataFrame
-      N sources x N sources dataframe, where the index and columns are
-      the NMAST identifiers, containing the pixelwise distance between sources
-
+    ps_cat_nodup : pd.DataFrame
+      pandas dataframe of the point source catalog with duplicate entries removed
+    master_cat_nodup : pd.DataFrame
+      pandas dataframe of the master catalog that matches the remaining point sources
     """
+    # use these columns to find duplicates
+    dup_cols = ['NMAST', 'ps_tile_id']
+    dup_ps = ps_cat.drop(dup_cols, axis=1).duplicated()
+    if verbose == True:
+        print(f"Number of duplicates found: {len(dup_ps)}")
+    ps_cat_nodup = ps_cat[~dup_ps]
+    return ps_cat_nodup
 
-    dist_func = lambda x, df : np.linalg.norm(x[['xraw1','yraw1']]
-                                              - df[['xraw1', 'yraw1']],
-                                              axis=1)
-    dist_mat = df.set_index('NMAST')[['xraw1', 'yraw1']].apply(dist_func, args=[df],
-                                                               result_type='expand',
-                                                               axis=1)
-    dist_mat.columns = dist_mat.index
-    """
-    obj_ids = df['NMAST'].values # all the object ids
-    dist_mat = pd.DataFrame(data=np.nan,
-                            index=obj_ids, columns=obj_ids,
-                            dtype=np.float)
-    for obj_id in dist_mat.columns:
-        dist_mat[obj_id] = calc_exp_dist_from_obj(df, obj_id)
-    """
-    # alternate algorithm:
-    """
-    dist_mat = df.apply(lambda x: calc_exp_dist_from_obj(df, x['NMAST']),
-                        axis=1)
-    dist_mat.set_index(dist_mat.columns)
-    """
-
-    # if desired, set the diagonal to nan instead of 0
-    if same_nan == True:
-        for col in dist_mat.columns:
-            dist_mat.loc[col, col] = np.nan
-
-    return dist_mat
-
-
-"""
-I have found it helpful to collect all the neighbors of an a star -- in a
-particular exposure -- within some radius. This helps with plotting to see
-if the nearby point sources are real or spurious.
-"""
-def get_exposure_neighbors(catalog, obj_id, exp_id, radius):
-    """
-    Get all the point sources within a certain radius of an object in a
-    particular exposure. This tests the selected obj_id's xraw1 and yraw1
-    against those of the rest of the objects in that exposure.
-    Returns a dataframe of the neighbors.
-
-    Parameters
-    ----------
-    catalog : pd.DataFrame
-      a catalog of point sources
-    obj_id : str
-      the stellar object identifier. Only one should be present in any exposure
-    exp_id : str
-      identifier for the exposure
-    radius : int
-      distance in pixels from the object to keep
-
-    Returns
-    -------
-    neighbor_df : pd.DataFrame
-      catalog entries for the neighbors
-    """
-    # untested
-    # first, make sure the catalog is a single exposure
-    exp_df = catalog.query("exp_id == @exp_id")
-    dist = calc_exp_dist_from_obj(exp_df, obj_id)
-    neighbors = dist[dist <= radius].index
-    neighbor_df = exp_df[exp_df['NMAST'].isin(neighbors)]
-    return neighbor_df
 
 
 """
@@ -792,22 +697,24 @@ def clean_point_source_catalog(cat, q_min=0.95,
       point source catalog with cuts applied
     """
     # first, make sure all the dtypes are correct:
-    cat_0 = clean_catalog_dtypes(cat, nimfo_dtypes)
+    cat_dtypes = clean_catalog_dtypes(cat, nimfo_dtypes)
+
+    # then, remove duplicates
+    cat_0 = remove_duplicates(cat_dtypes)
 
     # OK, now apply cuts
-
     # cut for q > 0 and z > 0 on *all* q and z
     q_gt_0 = " and ".join([f"{i} > 0" for i in q_cols])
     z_gt_0 = " and ".join([f"{i} > 0" for i in z_cols])
     qz_gt_0 = f"{q_gt_0} and {z_gt_0}"
     cat_1 = cat_0.query(qz_gt_0, inplace=False)
 
-    # cut on the number of detections
-    cat_2 = catalog_cut_ndet(cat_1, **cut_ndet_args)
-
     # cut on q2
     q2_ge_qmin = f"q2 >= {q_min}"
-    cat_3 = cat_2.query(q2_ge_qmin, inplace=False)
+    cat_2 = cat_1.query(q2_ge_qmin, inplace=False)
+
+    # cut on the number of detections
+    cat_3 = catalog_cut_ndet(cat_2, **cut_ndet_args)
 
     """
     This happens in clean_master_catalog now
@@ -994,83 +901,6 @@ def get_ks2_catalogs(mast_file=ks2_files[0], ps_file=ks2_files[1],
 
     # all done!
     return mast_cat, ps_cat
-
-
-
-"""
-I made a cubescroller that works in jupyterlab!
-"""
-def update_image1(img_ind, stamps, df, fig, ax):
-    fig, ax = plt.subplots(1, 1, **fig_args)
-    row_ind = list(stamps.keys())[img_ind]
-    row = df.loc[row_ind]
-    title = (f"{row['NMAST']} + {row['exp_id']}\nMag: {row['magu']}"
-             + "\nSNR: {row['z2']/row['sz2']:0.2f}")
-    img = stamps[row_ind]
-    imax = ax.imshow(img)
-    fig.colorbar(imax)
-    ax.set_title(title)
-
-def cube_scroller(df, stamp_args={}, fig_args={}, imshow_args={},
-                  norm_func=mpl.colors.Normalize, norm_args=()):
-    """
-    Accept a dataframe and show the stamps in the dataframe
-
-    Parameters
-    ----------
-    df : pd.DataFrame
-      filtered dataframe of stamps to show
-    stamp_args : dict
-      dict of arguments to pass to ks2_utils.get_stamp_from_ks2(row, **stamp_args)
-    fig_args : dict
-      dict of arguments to pass to plt.subplots(**fig_args)
-    imshow_args : dict
-      dict of arguments to pass to ax.imshow(img, **imshow_args)
-    norm_func : mpl.colors.Normalize function / child function
-      this is separated from imshow_args now because if you pass an instance then it doens't get reset; you need to pass the function
-    norm_args : list [()]
-      arguments to pass to the normalization function (e.g. for PowerNorm(0.5))
-
-    Output
-    ------
-    interactive_plot : ipywidgets.interact
-      an widget that will run in the output of a notebook cell
-
-    Example:
-    plot_stamps_scroll(df.query("mag >= 10 and mag < 15"), fig_args=dict(figsize=(6,6)))
-    """
-    # default arguments
-    stamp_args.setdefault("stamp_size", 11)
-    #imshow_args.setdefault("norm", mpl.colors.Normalize())
-
-    stamps = []
-    for i, row in df.iterrows():
-        stamps.append(get_stamp_from_ks2(row, **stamp_args))
-
-    def update_image(img_ind):
-        fig, ax = plt.subplots(1, 1, **fig_args)
-        row = df.iloc[img_ind]
-        img = stamps[img_ind]
-        title = f"{row['NMAST']} + {row['exp_id']}\nMag: {row['magu']:0.2f}"
-        imax = ax.imshow(img, **imshow_args, norm=norm_func())
-        fig.colorbar(imax, shrink=0.75)
-        ax.set_title(title)
-        #plt.show(fig)
-
-    slider = widgets.IntSlider(min=0, max=len(df)-1, step=1, value=0, description='stamp index')
-    interactive_plot = interactive(update_image, img_ind=slider)#, fig=fixed(fig), ax=fixed(ax))
-    output = interactive_plot.children[-1]
-    if 'figsize' in fig_args.keys():
-        width = f"{fig_args['figsize'][0]}in"
-        height = f"{fig_args['figsize'][1]}in"
-    else:
-        width = '350px'
-        height = '350px'
-    output.layout.width = width
-    output.layout.height = height
-    return interactive_plot
-
-
 
 
 
