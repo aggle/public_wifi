@@ -42,7 +42,9 @@ data_path = load_config_path("data_path")
 # Database tables
 table_path = load_config_path("table_path")
 db_file = load_config_path("db_file")
-# Gaia catalog and source matches
+db_subcat_file = load_config_path("db_subcat_file")
+
+# gaia catalog and source matches
 align_path = load_config_path("align_path")
 # KS2 output files
 ks2_path = load_config_path("ks2_path")

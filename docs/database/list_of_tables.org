@@ -3745,7 +3745,7 @@ None
 - [ ] No
 - [X] Yes
 ***** Default Value
-0
+None (until set)
 ***** Range of Values
 0-2
 ***** Edit Rule
@@ -3837,7 +3837,26 @@ same as ks2_filtermapper
 0 - no companions
 1 - visual companion (seen without PSF subtraction)
 2 - companion found with PSF subtraction
-
+** TODO lookup_dq_flag
+Table copied from https://hst-docs.stsci.edu/wfc3dhb/chapter-2-wfc3-data-structure/2-2-wfc3-file-structure
+| FLAG value | Bit setting         | DQ Condition                               |
+|------------+---------------------+--------------------------------------------|
+|          0 | 0000 0000 0000 0000 | OK                                         |
+|          1 | 0000 0000 0000 0001 | Reed Solomon decoding error                |
+|          2 | 0000 0000 0000 0010 | Data missing, replaced by fill value       |
+|          4 | 0000 0000 0000 0100 | Bad detector pixel                         |
+|          8 | 0000 0000 0000 1000 | Deviant zero read value                    |
+|         16 | 0000 0000 0001 0000 | Hot pixel                                  |
+|         32 | 0000 0000 0010 0000 | Unstable response                          |
+|         64 | 0000 0000 0100 0000 | Warm pixel                                 |
+|        128 | 0000 0000 1000 0000 | Bad reference pixel                        |
+|        256 | 0000 0001 0000 0000 | Full well saturation                       |
+|        512 | 0000 0010 0000 0000 | Bad or uncertain flat value                |
+|       1024 | 0000 0100 0000 0000 | (Reserved)                                 |
+|       2048 | 0000 1000 0000 0000 | Signal in zero read                        |
+|       4096 | 0001 0000 0000 0000 | Cosmic detected by AstroDrizzle            |
+|       8192 | 0010 0000 0000 0000 | Cosmic detected during calwfc3 UTR fitting |
+|      16384 | 0100 0000 0000 0000 | Pixel affected by ghost/crosstalk          |
 
 * Template
 *** field template

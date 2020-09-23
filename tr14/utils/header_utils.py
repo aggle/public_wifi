@@ -4,8 +4,12 @@ For now, the filenames and directories will be hard-coded in
 """
 
 from pathlib import Path
+import re
+
+import numpy as np
 import pandas as pd
 from astropy.io import fits
+
 from . import shared_utils as sutils
 from . import table_utils as tutils
 
@@ -158,6 +162,86 @@ def print_columns(df):
     columns = sorted(df.columns)
     for i in columns:
         print(i)
+
+########################
+# Data Quality parsers #
+########################
+
+# compile this regex once
+dq_find1 = re.compile('1')
+def parse_dq_binword(pix_val):
+    """
+    This function is designed to be applied to a pandas Series. It returns the
+    flags found at each pixel
+    See https://hst-docs.stsci.edu/wfc3dhb/chapter-2-wfc3-data-structure/2-2-wfc3-file-structure
+
+    Parameters
+    ----------
+    dq_array : np.array of type int16
+
+    Output
+    ------
+    pix_flags: list of ints, or 0
+      A list of all the non-zero flags present for a pixel (e.g. [1, 16, 32, 256])
+      If pixel value is 0, return 0
+    """
+    # first, quick check to see if you have to do any work
+    if pix_val == 0:
+        return 0
+    pix_bin = bin(pix_val)[2:] # convert to bin string and drop the 0b prefix
+    #pix_flags = [2**i.span()[0] for i in dq_find1.finditer(pix_bin[::-1])]
+    pix_flags = [2**i for i, j in enumerate(list(pix_bin[::-1])) if j == '1']
+    return pix_flags
+
+
+def parse_dq_array(dq_array):
+    """
+    This should return a dictionary, where each key is a flag value, and each
+    value is the y,x coordinates of the pixels that have that value
+
+    Parameters
+    ----------
+    dq_array : np.array
+      array of DQ binary words
+
+    Output
+    ------
+    dq_flag_dict : dict or None
+      a dictionary whose keys are the flags and whose entries are the 2xN
+      row, col pixel coordinates of pixels that have those flags
+      If there are no error flags, return None
+    """
+    # first, check if there are no errors
+    # convert the stamp to a series. the index holds the raveled pixel order
+    dq_series = pd.Series(dq_array.ravel())
+    # but you only care about the non-zero pixels
+    dq_series = dq_series[dq_series != 0]
+
+    # If there are no error flags, return None
+    if dq_series.empty == True:
+        return None
+    # otherwise, get the flags for each remaining pixel
+    dq_pix_flags = dq_series.apply(parse_dq_binword)
+
+    # convert this to a dataframe, and then a dictionary for each flag
+    dq_columns = [2**i for i in range(15)]
+    # set up a dataframe to store the value for each flag
+    dq_flags_full = pd.DataFrame(False,
+                                 index=dq_pix_flags.index,
+                                 columns=dq_columns)
+    # set found flags to True
+    for i in dq_pix_flags.index:
+        dq_flags_full.loc[i, dq_pix_flags[i]] = True
+
+    # cut the df down to only the flags that actually appear
+    dq_flags = dq_flags_full.loc[:, dq_flags_full.any(axis=0)]
+    # finally, use boolean indexing to get the valid flags in each pixel
+    dq_flag_dict = {col: dq_flags[dq_flags[col]][col].index.values 
+                    for col in dq_flags.columns}
+    # finally, unravel the coordinates
+    for k, v in dq_flag_dict.items():
+        dq_flag_dict[k] = np.vstack(np.unravel_index(v, dq_array.shape)).T
+    return dq_flag_dict
 
 
 if __name__ == "__main__":

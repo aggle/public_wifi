@@ -159,7 +159,7 @@ def get_stamp(image, xy, stamp_shape, return_img_ind=False):
     xy = np.array(xy)
     center = xy[::-1] # now in row, col order
     # set up the stamp so that negative is below center and positive is above center
-    stamp_range = np.outer(np.array(stamp_shape)/2,
+    stamp_range = np.outer(np.array(stamp_shape)/2.,
                            np.array((-1, 1))).T
     # on the following line np.floor is necessary to index the proper pixels;
     # astype(np.int) just makes it compatible with an index
@@ -196,10 +196,33 @@ This is a wrapper for get_stamp, which is a little clunky to use by itself.
 This takes in a row of the point sources catalog and pulls out a stamp for that
 point source, in that file, of the specified size
 """
-def get_stamp_from_ps_table(row, stamp_size=11, return_img_ind=False):
+def get_stamps_from_ps_table(df, kwargs={}):
     """
-    Given a row of the point sources table, this gets a stamp of the specified
-    size of the given point source
+    pass in a point source table and get the stamp for the object of each row
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+      a subset of the point sources table (or the whole thing)
+    kwargs : dict [{}]
+      keyword args to pass to get_stamp_from_ps_row
+
+    Output
+    ------
+    stamps : pd.DataFrame
+      dataframe of stamps indexed by the point source ID
+
+    """
+    stamps = df.set_index('ps_id', drop=False).apply(lambda x:
+                                                     get_stamp_from_ps_row(x,
+                                                                           **kwargs),
+                                                     axis=1)
+    return stamps
+
+def get_stamp_from_ps_row(row, stamp_size=11, return_img_ind=False, hdr='SCI'):
+    """
+    Given a table, or a row of the point sources table, this gets a stamp of
+    the specified size of the given point source
     TODO: accept multiple rows
 
     Parameters
@@ -210,6 +233,8 @@ def get_stamp_from_ps_table(row, stamp_size=11, return_img_ind=False):
       (row, col) size of the stamp [(int, int) if only int given]
     return_img_ind : bool (False)
       if True, return the row and col indices of the stamp in the image
+    hdr : str or int ['SCI']
+      which header? allowed values: ['SCI','ERR','DQ','SAMP','TIME']
 
     Returns
     -------
@@ -217,7 +242,7 @@ def get_stamp_from_ps_table(row, stamp_size=11, return_img_ind=False):
     """
     # get the file name where the point source is located and pull the exposure
     flt_file = table_utils.get_file_name_from_exp_id(row['ps_exp_id'])
-    img = fits.getdata(shared_utils.get_data_file(flt_file), 1)
+    img = fits.getdata(shared_utils.get_data_file(flt_file), hdr)
     # location of the point source in the image
     xy = row[['ps_x_exp', 'ps_y_exp']].values
     # finally, get the stamp (and indices, if requested)

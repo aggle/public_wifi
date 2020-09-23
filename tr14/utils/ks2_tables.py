@@ -10,7 +10,7 @@ import warnings
 import numpy as np
 import pandas as pd
 
-from . import shared_utils, header_utils, ks2_utils, table_utils
+from . import shared_utils, header_utils, ks2_utils, table_utils, image_utils
 
 def frtn2py_ind(ind):
     """
@@ -18,8 +18,11 @@ def frtn2py_ind(ind):
     be indexed from 0 instead of 1
     Returns the same object with all the values subtracted by 1
     """
+    """
     new_coords = ind - 1
     return new_coords
+    """
+    return ind
 
 def make_stars_table(mast_cat):
     """
@@ -172,7 +175,7 @@ def generate_stamp_table(ps_table):
 
     """
     print("Generating stamps... go get some coffee, this can take a while.")
-    stamps = ps_table.set_index('ps_id').apply(table_utils.get_stamp_from_ps_row,
+    stamps = ps_table.set_index('ps_id').apply(image_utils.get_stamp_from_ps_row,
                                                return_img_ind=False,
                                                axis=1)
     stamps.index.name = 'ps_id'

@@ -8,13 +8,14 @@ import h5py
 import pandas as pd
 import re
 import numpy as np
+import warnings
 
 from astropy.io import fits
 
-from . import shared_utils, image_utils, header_utils
+from . import shared_utils, header_utils
 
 
-def write_table(table, key, kwargs={}):
+def write_table(table, key, kwargs={}, db_file=shared_utils.db_file, verbose=True):
     """
     Add a table to the DB file `shared_utils.db_file`. Really just a simple
     wrapper so I don't have to keep typing shared_utils.db_file every time
@@ -29,42 +30,70 @@ def write_table(table, key, kwargs={}):
     kwargs : dict [{}]
       any keyword arguments to pass to pd.DataFrame.to_hdf for DataFrames and
       Series, or to h5py.File for non-pandas objects
-
+    db_file : str or Path [shared_utils.db_file]
+      path to the database file
+    verbose : bool [True]
+      print some output
     Output
     -------
     Nothing; writes to file
     """
-
-    kwargs['mode'] = kwargs.get("mode", 'a')
-    if hasattr(table, 'to_hdf'):
-        table.to_hdf(shared_utils.db_file, key=key, **kwargs)
-    else:
-        print("Error: cannot currently store non-pandas types")
-        """
-        with h5py.File(shared_utils.db_file, **kwargs) as store:
-            try:
-                store[key] = table
-            except KeyError:
-                grp = store.create_group(key)
-            store.close()
-        """
+    # this throws a performance warning when you store python objects with
+    # mixed or complex types in an HDF file, but I want to ignore those
+    with warnings.catch_warnings() as w:
+        kwargs['mode'] = kwargs.get("mode", 'a')
+        if hasattr(table, 'to_hdf'):
+            table.to_hdf(db_file, key=key, **kwargs)
+            if verbose == True:
+                print(f"Table {key} written to {str(db_file)}")
+        else:
+            print("Error: cannot currently store non-pandas types")
+            """
+            with h5py.File(db_file, **kwargs) as store:
+                try:
+                    store[key] = table
+                except KeyError:
+                    grp = store.create_group(key)
+                store.close()
+            """
     
 
-def load_table(key):
+def load_table(key, db_file=shared_utils.db_file):
     """
-    Load a table
+    Load a table.
+
+    Parameters
+    ----------
+    key : string or list
+    db_file : path to the database file that holds the table
+
+    Output
+    ------
+    df : pd.DataFrame or dict of dataframes
+      the table (or, if `key` is a list, then a dict of dataframes)
     """
     # df = None
-    try:
-        df = pd.read_hdf(shared_utils.db_file, key)
-    except KeyError:
-        print(f"Error: Key `{key}` not found in {str(shared_utils.db_file)}")
-        df = None
-    
+    if isinstance(key, list):
+        df = {}
+        for k in key:
+            # drop the leading /, if relevant
+            if k[0] == '/': k = k[1:]
+            try:
+                df[k] = pd.read_hdf(db_file, k)
+            except KeyError:
+                print(f"Error: Key `{key}` not found in {str(db_file)}")
+                df[k] = None
+    else:
+        try:
+            df = pd.read_hdf(db_file, key)
+        except KeyError:
+            print(f"Error: Key `{key}` not found in {str(db_file)}")
+            df = None
+
     return df
 
 
-def list_available_tables(return_list=False):
+def list_available_tables(return_list=False, db_file=shared_utils.db_file):
     """
     Print a list of tables and their descriptions. Alternately, return a list of the tables.
     TODO print the subtables, too
@@ -78,10 +107,10 @@ def list_available_tables(return_list=False):
     table_names : list [optional]
       a list of available keys
     """
-    with pd.HDFStore(shared_utils.db_file, mode='r') as store:
+    with pd.HDFStore(db_file, mode='r') as store:
         table_names = sorted(store.keys())
         if return_list == False:
-            print(f"Available tables in {shared_utils.db_file}:")
+            print(f"Available tables in {db_file}:")
             print('\n'.join(table_names))
         store.close()
     if return_list == True:
@@ -162,14 +191,14 @@ def get_filter_name_from_filter_id(filter_id):
 """
 Helpers for getting exposures/images and stamps
 """
-def get_img_from_file_id(exp_id, hdr='SCI'):
+def get_img_from_file_id(file_id, hdr='SCI'):
     """
     Pull out an image from the fits file, given the exposure identifier.
 
     Parameters
     ----------
-    ks2_exp_id : str
-      the exposure identifier assigned by KS2
+    file_id : str
+      the identifier for the file/exposure
     hdr : str or int ['SCI']
       which header? allowed values: ['SCI','ERR','DQ','SAMP','TIME']
 
@@ -177,39 +206,40 @@ def get_img_from_file_id(exp_id, hdr='SCI'):
     img : numpy.array
       2-D image from the fits file
     """
-    flt_name = get_file_name_from_exp_id(exp_id)
+    flt_name = get_file_name_from_file_id(file_id)
     flt_path = shared_utils.get_data_file(flt_name)
     img = fits.getdata(flt_path, hdr)
     return img
 
-def get_stamp_from_ps_row(row, stamp_size=11, return_img_ind=False, hdr='SCI'):
-    """
-    Given a row of the FIND_NIMFO dataframe, this gets a stamp of the specified
-    size of the given point source
-    TODO: accept multiple rows
 
-    Parameters
-    ----------
-    row : pd.DataFrame row
-      a row containing the position and file information for the source
-    stamp_size : int or tuple [11]
-      (row, col) size of the stamp [(int, int) if only int given]
-    return_img_ind : bool (False)
-      if True, return the row and col indices of the stamp in the image
-    hdr : str or int ('SCI')
-      each HDU in the flt Duelist has a different kind of image - specify
-      which one you want here
+# def get_stamp_from_ps_row(row, stamp_size=11, return_img_ind=False, hdr='SCI'):
+#     """
+#     Given a row of the FIND_NIMFO dataframe, this gets a stamp of the specified
+#     size of the given point source
+#     TODO: accept multiple rows
 
-    Returns
-    -------
-    stamp_size-sized stamp
-    """
-    img = get_img_from_file_id(row['ps_exp_id'], hdr=hdr)
-    # location of the point source in the image
-    xy = row[['ps_x_exp','ps_y_exp']].values
-    # finally, get the stamp (and indices, if requested)
-    return_vals = image_utils.get_stamp(img, xy, stamp_size, return_img_ind)
-    return return_vals
+#     Parameters
+#     ----------
+#     row : pd.DataFrame row
+#       a row containing the position and file information for the source
+#     stamp_size : int or tuple [11]
+#       (row, col) size of the stamp [(int, int) if only int given]
+#     return_img_ind : bool (False)
+#       if True, return the row and col indices of the stamp in the image
+#     hdr : str or int ('SCI')
+#       each HDU in the flt Duelist has a different kind of image - specify
+#       which one you want here
+
+#     Returns
+#     -------
+#     stamp_size-sized stamp
+#     """
+#     img = get_img_from_file_id(row['ps_exp_id'], hdr=hdr)
+#     # location of the point source in the image
+#     xy = row[['ps_x_exp','ps_y_exp']].values
+#     # finally, get the stamp (and indices, if requested)
+#     return_vals = image_utils.get_stamp(img, xy, stamp_size, return_img_ind)
+#     return return_vals
 
 """
 If the stamps are written to file, you can just find them using the ps_id or stamp_id
@@ -418,3 +448,34 @@ def create_database_subset(list_of_stars, table_names=None):
         table_dict[t] = index_into_table(table, star_col, list_of_stars)
         del table
     return table_dict
+
+
+def get_working_catalog_subset():
+    """
+    This is the canonical working catalog subset. It is defined as all stars
+    between u=[600, 1000] and v=[800, 1200] in the master frame of reference.
+    There are 228 unique stars and 9807 point sources, about 10% of the total
+    catalog. This function accepts no arguments because it shouldn't change
+
+    Parameters
+    ----------
+    none
+
+    Output
+    ------
+    subset_tables : dict
+      dictionary of tables with the stars, point_sources, and stamps subsets
+    """
+    # load the master catalog
+    stars_table = load_table("stars")
+    # select subset
+    u_range = (600, 1000)
+    v_range = (800, 1200)
+    # generate the query string
+    qstr = (f"u_mast >= @u_range[0] and u_mast <= @u_range[1]"
+            "and v_mast >= @v_range[0] and v_mast <= @v_range[1]")
+    subset_tables = create_database_subset(stars_table.query(qstr)['star_id'],
+                                           ['stars','point_sources','stamps'])
+    return subset_tables
+
+
