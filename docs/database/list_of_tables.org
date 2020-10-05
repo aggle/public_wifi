@@ -3565,11 +3565,11 @@ Enter range of allowed values here
 ** companion_status [2/2]
 This table records whether or not companions have been found around a primary.
 Companions includes visual binaries/spatial coincidences.
-*** DONE comp_star_id
+*** DONE comp_prim_id
 CLOSED: [2020-08-18 Tue 11:20]
 **** General Elements
 ***** Field Name
-comp_star_id
+comp_prim_id
 ***** Parent Table
 companions
 ***** Label
@@ -3706,7 +3706,7 @@ None
 Flag if this star has a companion or not
 0 - no companions
 1 - visual binary (i.e. no KLIP)
-2 - KLIP companion (revealed after PSF subtraction)
+2 - high-contrast companion (revealed after PSF subtraction)
 **** Physical Elements
 ***** Data Type
 Numeric
@@ -3857,6 +3857,7 @@ Table copied from https://hst-docs.stsci.edu/wfc3dhb/chapter-2-wfc3-data-structu
 |       4096 | 0001 0000 0000 0000 | Cosmic detected by AstroDrizzle            |
 |       8192 | 0010 0000 0000 0000 | Cosmic detected during calwfc3 UTR fitting |
 |      16384 | 0100 0000 0000 0000 | Pixel affected by ghost/crosstalk          |
+
 
 * Template
 *** field template

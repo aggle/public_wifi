@@ -118,7 +118,7 @@ def list_available_tables(return_list=False, db_file=shared_utils.db_file):
 
 
 
-def get_file_from_file_id(file_id):
+def get_file_name_from_file_id(file_id):
     """
     The header files don't store the whole filename, so this function fills in
     the rest of the name as well as the path.
@@ -134,7 +134,7 @@ def get_file_from_file_id(file_id):
       the full absolute path to the fits file
     """
     suffix = "_flt.fits"
-    filename = shared_tils.data_path.absolute() / (file_id + suffix)
+    filename = shared_utils.data_path.absolute() / (file_id + suffix)
     return filename.absolute()
 
 
@@ -191,6 +191,26 @@ def get_filter_name_from_filter_id(filter_id):
 """
 Helpers for getting exposures/images and stamps
 """
+def get_img_from_exp_id(exp_id, hdr='SCI'):
+    """
+    Pull out an image from the fits file, given the exposure identifier.
+
+    Parameters
+    ----------
+    exp_id : str
+      the identifier for the exposure (usu something like 'E001')
+    hdr : str or int ['SCI']
+      which header? allowed values: ['SCI','ERR','DQ','SAMP','TIME']
+
+    Returns:
+    img : numpy.array
+      2-D image from the fits file
+    """
+    flt_name = get_file_name_from_exp_id(exp_id)
+    flt_path = shared_utils.get_data_file(flt_name)
+    img = fits.getdata(flt_path, hdr)
+    return img
+
 def get_img_from_file_id(file_id, hdr='SCI'):
     """
     Pull out an image from the fits file, given the exposure identifier.
@@ -198,7 +218,7 @@ def get_img_from_file_id(file_id, hdr='SCI'):
     Parameters
     ----------
     file_id : str
-      the identifier for the file/exposure
+      the identifier for the file/exposure (usu something like 'E001')
     hdr : str or int ['SCI']
       which header? allowed values: ['SCI','ERR','DQ','SAMP','TIME']
 
