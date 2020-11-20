@@ -34,15 +34,17 @@ def load_config_path(key):
     try:
         assert(path.exists())
     except AssertionError:
-        print(f"Error: {path} not found.")
+        print(f"Warning: {path} not found.")
     return path
 
 # HST data files for manipulation
 data_path = load_config_path("data_path")
 # Database tables
 table_path = load_config_path("table_path")
+db_raw_file = load_config_path("db_raw_file")
 db_file = load_config_path("db_file")
 db_subcat_file = load_config_path("db_subcat_file")
+db_clean_file =  load_config_path("db_clean_file")
 
 # gaia catalog and source matches
 align_path = load_config_path("align_path")

@@ -1,7 +1,9 @@
 #+TITLE: Tr14 paper
 #+AUTHOR: J Aguilar
+bibliography:manuscript.bib
+
 * Introduction
-i'm just writing to test the connection
+Trumpler 14 is a very young star-forming region, about $3-5 \times 10^5$ years old, located at a distance of 2.7 kpc in the Carina Nebula 
 * Observations
 
 * Methods

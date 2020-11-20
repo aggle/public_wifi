@@ -50,3 +50,17 @@ def calc_corr_mat(stamps, corr_func, corr_func_args={}):
     corr_mat = corr_mat.add(corr_mat.T, fill_value=0)
 
     return corr_mat
+
+
+class StarTarget:
+    """
+    Collect all the stamps and PSF references for a unique star
+    """
+
+    def __init__(self, star_id, stamp_df, psf_corr_mat=None):
+        """
+        Initialize the object with a list of targets and references
+        """
+        self.target_stamps = stamp_df.set_index('stamp_id').query('stamp_star_id == @star_id')['stamp_array']
+        self.ref_stamps = stamp_df.set_index('stamp_id').query('stamp_star_id != @star_id')['stamp_array']
+        self.psf_corr_mat = psf_corr_mat.dropna( axis=1, how='all')

@@ -9,6 +9,7 @@ import pandas as pd
 import re
 import numpy as np
 import warnings
+import configparser
 
 from astropy.io import fits
 
@@ -145,7 +146,8 @@ Since these queries are run often, this simplifies the process.
 file_mapper = load_table("lookup_files")
 filter_mapper = load_table("lookup_filters")
 
-def get_file_name_from_exp_id(exp_id):
+
+def get_file_name_from_exp_id(exp_id, root=False):
     """
     Given a KS2 file identifier, get the name of the FLT file
 
@@ -155,6 +157,8 @@ def get_file_name_from_exp_id(exp_id):
       The identifier assigned to each exposure file. Typically E followed by a number.
     file_mapper : pd.DataFrame (default: result of table_utils.get_file_mapper())
       The dataframe that tracks the file IDs and the corresponding file names
+    root : bool [False]
+      if True, return the root name (i.e. filename without the _flt.fits extension)
 
     Returns
     -------
@@ -163,6 +167,8 @@ def get_file_name_from_exp_id(exp_id):
     exp_id = exp_id.upper()
     querystr = f"file_id == '{exp_id}'"
     file_name = file_mapper.query(querystr)['file_name'].values[0]
+    if root == True:
+        file_name = file_name.split("_flt.fits")[0]
     return file_name
 
 
@@ -439,7 +445,7 @@ def index_into_table(table, index_col, values):
     return table_subset
 
 
-def create_database_subset(list_of_stars, table_names=None):
+def create_database_subset(list_of_stars, tables=None):
     """
     Load a subset of the database: pick a subset of stars to work on, and make
     sure you have a set of tables that are self-consistent
@@ -448,26 +454,25 @@ def create_database_subset(list_of_stars, table_names=None):
     ----------
     list_of_stars: list (or iterable)
       a list of star_ids to use for generating a new database
-    table_names : list [None]
-      list of tables to include in the subset parsing. must have the star_id
-      stored in a column. If None is ['stars', 'point_sources'] is used
+    tables : list [None]
+      list of tables (as dataframes) to include in the subset parsing.
+      Must have the star_id stored in a column. If None, then
+      ['stars', 'point_sources'] is used and tables are read from file.
 
     Output
     ------
-    table_dict : dict
-      a dictionary of tables - one entry for each table in the database file.
-      The table key is the same as the file key
+    subset_tables : list
+      a list of tables - one for each that was passed in, and in the same order
 
     """
-    if table_names is None:
-        table_names = ['stars', 'point_sources']
-    table_dict = {}
-    for t in table_names:
-        table = load_table(t)
+    if tables is None:
+        tables = [load_table(t) for t in ['stars', 'point_sources']]
+    subset_tables = []
+    for table in tables:
         star_col = shared_utils.find_star_id_col(table.columns)
-        table_dict[t] = index_into_table(table, star_col, list_of_stars)
-        del table
-    return table_dict
+        #subset_tables.append(index_into_table(table, star_col, list_of_stars))
+        subset_tables.append(table.query(f"{star_col} in @list_of_stars"))
+    return subset_tables
 
 
 def get_working_catalog_subset():
@@ -497,5 +502,74 @@ def get_working_catalog_subset():
     subset_tables = create_database_subset(stars_table.query(qstr)['star_id'],
                                            ['stars','point_sources','stamps'])
     return subset_tables
+
+
+
+def get_header_kw_for_exp(exp_id, kw, hdr_id='pri'):
+    """
+    Shortcut to get the value of a particular header keyword for an exposure
+
+    Parameters
+    ----------
+    exp_id : str
+      exposure identifier (e.g. E123)
+    kw : str
+      header keyword whose value you want
+    hdr: str [pri]
+      which header to search for the keyword
+
+    Output
+    ------
+    kw_val : the value stored at the header keyword
+    """
+
+    hdr = load_header(hdr_id)
+    filename = get_file_name_from_exp_id(exp_id, root=True)
+    try:
+        kw_val = hdr.query('rootname == @filename')[kw.lower()].squeeze()
+    except:
+        print(f"Keyword `{kw} == {filename}` not found in {hdr_id} header")
+        return None
+    return kw_val
+
+
+
+def init_table_from_config(tab_name, nentries=1, config=shared_utils.config):
+    """
+    Initialize a pandas dataframe from the config file
+
+    Parameters
+    ----------
+    tab_name : str
+      name of the table (must exist in config file)
+    nentries : int [0]
+      size of the dataframe index
+    config : ConfigParser object [shared_utils.config]
+      ConfigParser object with the file loaded
+
+    Output
+    ------
+    table : pd.DataFrame
+      empty dataframe (initialized to nan's)
+      if the table is not defined in the config file, return None
+    """
+
+    # pull the table section out of the config file
+    if not config.has_section(tab_name.upper()):
+        print(f"Table {tab_name.upper()} definition not found.")
+        return None
+    section = config[tab_name.upper()]
+    columns = [i.strip() for i in section['COLUMNS'].split()]
+    dtype = section['DTYPE']
+    table = pd.DataFrame(data=0,
+                         index=np.arange(nentries),
+                         columns=columns,
+                         dtype=dtype)
+    return table
+
+####################
+# Catalog cleaning #
+####################
+# see cleaning_utils.py
 
 

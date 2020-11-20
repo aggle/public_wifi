@@ -10,7 +10,11 @@ import warnings
 import numpy as np
 import pandas as pd
 
-from . import shared_utils, header_utils, ks2_utils, table_utils, image_utils
+from . import shared_utils
+from . import header_utils
+from . import ks2_utils
+from . import table_utils
+from . import image_utils
 
 def frtn2py_ind(ind):
     """
@@ -213,7 +217,7 @@ def generate_stamp_table(ps_table):
     return stamp_table
 
 
-def write_fundamental_db(stamps=False):
+def write_fundamental_db(db_file=shared_utils.db_raw_file, stamps=False):
     """
     Write the basic tables to the database file:
     - stars
@@ -228,6 +232,7 @@ def write_fundamental_db(stamps=False):
 
     Parameters
     ----------
+    db_file : str or Path [shared_utils.db_file]
     stamps : bool [False]
       if True, generate the stamps too (takes a long time)
 
@@ -273,7 +278,7 @@ def write_fundamental_db(stamps=False):
         master_tables_dict['stamps'] = stamp_table
 
     # write all the tables to the database file
-    with pd.HDFStore(shared_utils.db_file, mode='w') as store:
+    with pd.HDFStore(db_file, mode='w') as store:
         for k, v in sorted(master_tables_dict.items()):
             print(f"Writing table `{k}`...")
             # suppress PerformanceWarnings when saving non c-mapping objects

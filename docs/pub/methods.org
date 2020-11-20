@@ -17,6 +17,10 @@ Here's what remains:
 - Finalize q-parameter cut for cluster/background separation
 - Finalize master and point source catalogs and write to disk
 
+** List of cuts
+- Reject F139M instrumental magnitude > -6
+  This is based both on field contamination in the CMD and poor PSF correlation for different detections of the same star, for stars with m_F139M > -6
+
 * Performing PSF subtraction
 Based heavily on cite:Strampelli_2020 
 ** Catalog cleaning

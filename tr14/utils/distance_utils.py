@@ -210,3 +210,29 @@ def get_exposure_neighbors(catalog, obj_id, exp_id, radius):
     return neighbor_df
 
 
+
+def calc_detector_distances(df):
+    """
+    Calculate the on-detector distances for a point source dataframe. Diagonal is nan.
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+      dataframe containing at least the columns: ps_id, ps_x_exp, ps_y_exp
+
+    Output
+    ------
+    dist_mat : pd.DataFrame
+      symmetric dataframe of distances between point source detections.
+      index and columns are ps_id, diag is nan
+
+    """
+    tmp_df = df.set_index('ps_id')
+    dist_mat = df.set_index('ps_id').apply(lambda x:
+                                           pd.Series(np.linalg.norm(df[['ps_x_exp', 'ps_y_exp']] - x[['ps_x_exp', 'ps_y_exp']], axis=1),
+                                                     index=df['ps_id']),
+                                           axis=1)
+
+    dist_mat.values[np.diag_indices_from(dist_mat)] = np.nan
+    return dist_mat
+

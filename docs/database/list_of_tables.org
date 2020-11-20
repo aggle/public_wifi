@@ -187,9 +187,65 @@ This table stores the parameters used for PSF subtraction, like Kklips and refer
 Data
 *** Description
 This table keeps a list of which stamps meet the criteria to be PSF references for other stamps. Important quantities to consider are a stamp's own "good reference" flag, and the result of the image similarity computation between any two stamps.
+** grid_sector_definitions
+This table stores the x- and y-bounds for the sector numbers. The sectors are numbers 1-36, starting from the lower left
+|----+----+----+----+----+----|
+| 31 | 32 | 33 | 34 | 35 | 36 |
+|----+----+----+----+----+----|
+| 25 | 26 | 27 | 28 | 29 | 30 |
+|----+----+----+----+----+----|
+| 19 | 20 | 21 | 22 | 23 | 24 |
+|----+----+----+----+----+----|
+| 13 | 14 | 15 | 16 | 17 | 18 |
+|----+----+----+----+----+----|
+|  7 |  8 |  9 | 10 | 11 | 12 |
+|----+----+----+----+----+----|
+|  1 |  2 |  3 |  4 |  5 |  6 |
+|----+----+----+----+----+----|
 
-* Tables and fields
-Here we associate fields with each table
+There are 1014 pixels across the detector in x and y. For a 6x6 grid, this makes each sector 169 pixels wide in x and y
+*** Columns:
+- sector_id [int, 1-36]
+  unique sector identifier
+- x_llim [float, 0-1014]
+  sector lower bound in x (>=)
+- x_ulim [float, 0-1014]
+  sector upper bound in x (<)
+- y_llim [float, 0-1014]
+  sector lower bound in y (>=)
+- y_ulim [float, 0-1014]
+  sector upper bound in y (<)
+
+** lookup_point_source_sectors
+This table stores the ID number of a the grid sector in which a point source detection is located
+*** Columns:
+- sector_id [int, 1-36]
+  unique sector identifier
+- ps_id [str]
+  point source/detection identifier
+
+** catalog_cuts
+This table contains information on whether a point source, stamp, or star should be included or excluded from the catalog, and based on which cut.
+It has three columns for identifying the source that should be cut -- the star, point source, and stamp identifiers.
+Each remaining column describes a cut that was made, and the value for an entry is "True" if an object *passes* the cut (i.e., keep) or "False" if an object *fails* the cut (i.e. drop)
+*** Columns
+**** Identifier columns
+these are all string identifiers
+- cat_star_id 
+  unique stellar identifier
+- cat_ps_id 
+  unique point source identifier
+- cat_stamp_id 
+  unique stamp identifier
+**** Cut columns
+these are all boolean True or False
+- no_interlopers
+  is the star sufficiently isolated?
+- mag_le_-6
+  is the instrumental magnitude brighter than -6?
+
+* Formal tables and field descriptions
+Here we associate fields with each table, and formally define the contents of each field
 ** stars [9/9]
 *** DONE star_id
 CLOSED: [2020-07-27 Mon 23:31]
@@ -3565,6 +3621,9 @@ Enter range of allowed values here
 ** companion_status [2/2]
 This table records whether or not companions have been found around a primary.
 Companions includes visual binaries/spatial coincidences.
+0: no companions
+1: visual binary
+2: high-contrast candidate companion
 *** DONE comp_prim_id
 CLOSED: [2020-08-18 Tue 11:20]
 **** General Elements
@@ -3822,6 +3881,357 @@ None (until set)
 | hdr_time |
 ** psf_subtractions [0/0]
 ** reference_matrix [0/0]
+** grid_sectors
+*** field template
+**** General Elements
+***** Field Name
+Enter field name here
+***** Parent Table
+Enter parent table here
+***** Label
+Enter label or shorter name here
+***** Specification Type
+- [ ] Unique
+- [ ] Generic
+- [ ] Replica
+***** Source Specification
+If /Specification Type/ is /Replica/, enter source field here
+***** Shared By
+List other tables that share this field here
+***** Aliases
+List other names for this field here
+***** Description
+Describe the field here
+**** Physical Elements
+***** Data Type
+Enter data type here (alphanumeric, numeric, datetime)
+***** Length
+Number of characters the field will hold
+***** Decimal Places
+Enter number of decimal places here (can be all)
+***** Character Support
+- [ ] Letters (A-Z)
+- [ ] Numbers (0-9)
+- [ ] Keyboard (.,/$#%)
+- [ ] Special
+***** Input Mask
+Enter input mask here (the manner in which a user should enter the data)
+***** Display Format
+Enter display format here
+
+**** Logical Elements
+***** Key Type
+- [ ] Non
+- [ ] Foreign
+- [ ] Primary
+- [ ] Alternate
+***** Key Structure
+- [ ] Simple
+- [ ] Composite
+***** Uniqueness
+- [ ] Non-unique
+- [ ] Unique
+***** Null Support
+- [ ] Nulls Allowed
+- [ ] No Nulls
+***** Values Entered By
+- [ ] User
+- [ ] System
+***** Required Value
+- [ ] No
+- [ ] Yes
+***** Default Value
+Enter default value here
+***** Range of Values
+Enter range of allowed values here
+***** Edit Rule
+- [ ] Enter Now, Edits Allowed
+- [ ] Enter Now, Edits Not Allowed
+- [ ] Enter Later, Edits Allowed
+- [ ] Enter Later, Edits Not Allowed
+- [ ] Not Determined At This Time
+***** Comparisons Allowed
+- Same Field
+  - [ ] All
+  - [ ] =
+  - [ ] >
+  - [ ] >=
+  - [ ] !=
+  - [ ] <
+  - [ ] <=
+- Other Fields
+  - [ ] All
+  - [ ] =
+  - [ ] >
+  - [ ] >=
+  - [ ] !=
+  - [ ] <
+  - [ ] <=
+- Value Expression
+  - [ ] All
+  - [ ] =
+  - [ ] >
+  - [ ] >=
+  - [ ] !=
+  - [ ] <
+  - [ ] <=
+***** Operations Allowed
+- Same Field
+  - [ ] All
+  - [ ] +
+  - [ ] -
+  - [ ] *
+  - [ ] /
+  - [ ] Concatenation
+- Other Fields
+  - [ ] All
+  - [ ] +
+  - [ ] -
+  - [ ] *
+  - [ ] /
+  - [ ] Concatenation
+- Value Expression
+  - [ ] All
+  - [ ] +
+  - [ ] -
+  - [ ] *
+  - [ ] /
+  - [ ] Concatenation
+
+** grid_point_sources
+*** field template
+**** General Elements
+***** Field Name
+Enter field name here
+***** Parent Table
+Enter parent table here
+***** Label
+Enter label or shorter name here
+***** Specification Type
+- [ ] Unique
+- [ ] Generic
+- [ ] Replica
+***** Source Specification
+If /Specification Type/ is /Replica/, enter source field here
+***** Shared By
+List other tables that share this field here
+***** Aliases
+List other names for this field here
+***** Description
+Describe the field here
+**** Physical Elements
+***** Data Type
+Enter data type here (alphanumeric, numeric, datetime)
+***** Length
+Number of characters the field will hold
+***** Decimal Places
+Enter number of decimal places here (can be all)
+***** Character Support
+- [ ] Letters (A-Z)
+- [ ] Numbers (0-9)
+- [ ] Keyboard (.,/$#%)
+- [ ] Special
+***** Input Mask
+Enter input mask here (the manner in which a user should enter the data)
+***** Display Format
+Enter display format here
+
+**** Logical Elements
+***** Key Type
+- [ ] Non
+- [ ] Foreign
+- [ ] Primary
+- [ ] Alternate
+***** Key Structure
+- [ ] Simple
+- [ ] Composite
+***** Uniqueness
+- [ ] Non-unique
+- [ ] Unique
+***** Null Support
+- [ ] Nulls Allowed
+- [ ] No Nulls
+***** Values Entered By
+- [ ] User
+- [ ] System
+***** Required Value
+- [ ] No
+- [ ] Yes
+***** Default Value
+Enter default value here
+***** Range of Values
+Enter range of allowed values here
+***** Edit Rule
+- [ ] Enter Now, Edits Allowed
+- [ ] Enter Now, Edits Not Allowed
+- [ ] Enter Later, Edits Allowed
+- [ ] Enter Later, Edits Not Allowed
+- [ ] Not Determined At This Time
+***** Comparisons Allowed
+- Same Field
+  - [ ] All
+  - [ ] =
+  - [ ] >
+  - [ ] >=
+  - [ ] !=
+  - [ ] <
+  - [ ] <=
+- Other Fields
+  - [ ] All
+  - [ ] =
+  - [ ] >
+  - [ ] >=
+  - [ ] !=
+  - [ ] <
+  - [ ] <=
+- Value Expression
+  - [ ] All
+  - [ ] =
+  - [ ] >
+  - [ ] >=
+  - [ ] !=
+  - [ ] <
+  - [ ] <=
+***** Operations Allowed
+- Same Field
+  - [ ] All
+  - [ ] +
+  - [ ] -
+  - [ ] *
+  - [ ] /
+  - [ ] Concatenation
+- Other Fields
+  - [ ] All
+  - [ ] +
+  - [ ] -
+  - [ ] *
+  - [ ] /
+  - [ ] Concatenation
+- Value Expression
+  - [ ] All
+  - [ ] +
+  - [ ] -
+  - [ ] *
+  - [ ] /
+  - [ ] Concatenation
+    
+** catalog_cuts
+*** field template
+**** General Elements
+***** Field Name
+Enter field name here
+***** Parent Table
+Enter parent table here
+***** Label
+Enter label or shorter name here
+***** Specification Type
+- [ ] Unique
+- [ ] Generic
+- [ ] Replica
+***** Source Specification
+If /Specification Type/ is /Replica/, enter source field here
+***** Shared By
+List other tables that share this field here
+***** Aliases
+List other names for this field here
+***** Description
+Describe the field here
+**** Physical Elements
+***** Data Type
+Enter data type here (alphanumeric, numeric, datetime)
+***** Length
+Number of characters the field will hold
+***** Decimal Places
+Enter number of decimal places here (can be all)
+***** Character Support
+- [ ] Letters (A-Z)
+- [ ] Numbers (0-9)
+- [ ] Keyboard (.,/$#%)
+- [ ] Special
+***** Input Mask
+Enter input mask here (the manner in which a user should enter the data)
+***** Display Format
+Enter display format here
+
+**** Logical Elements
+***** Key Type
+- [ ] Non
+- [ ] Foreign
+- [ ] Primary
+- [ ] Alternate
+***** Key Structure
+- [ ] Simple
+- [ ] Composite
+***** Uniqueness
+- [ ] Non-unique
+- [ ] Unique
+***** Null Support
+- [ ] Nulls Allowed
+- [ ] No Nulls
+***** Values Entered By
+- [ ] User
+- [ ] System
+***** Required Value
+- [ ] No
+- [ ] Yes
+***** Default Value
+Enter default value here
+***** Range of Values
+Enter range of allowed values here
+***** Edit Rule
+- [ ] Enter Now, Edits Allowed
+- [ ] Enter Now, Edits Not Allowed
+- [ ] Enter Later, Edits Allowed
+- [ ] Enter Later, Edits Not Allowed
+- [ ] Not Determined At This Time
+***** Comparisons Allowed
+- Same Field
+  - [ ] All
+  - [ ] =
+  - [ ] >
+  - [ ] >=
+  - [ ] !=
+  - [ ] <
+  - [ ] <=
+- Other Fields
+  - [ ] All
+  - [ ] =
+  - [ ] >
+  - [ ] >=
+  - [ ] !=
+  - [ ] <
+  - [ ] <=
+- Value Expression
+  - [ ] All
+  - [ ] =
+  - [ ] >
+  - [ ] >=
+  - [ ] !=
+  - [ ] <
+  - [ ] <=
+***** Operations Allowed
+- Same Field
+  - [ ] All
+  - [ ] +
+  - [ ] -
+  - [ ] *
+  - [ ] /
+  - [ ] Concatenation
+- Other Fields
+  - [ ] All
+  - [ ] +
+  - [ ] -
+  - [ ] *
+  - [ ] /
+  - [ ] Concatenation
+- Value Expression
+  - [ ] All
+  - [ ] +
+  - [ ] -
+  - [ ] *
+  - [ ] /
+  - [ ] Concatenation
+
 * Linking tables
 Make sure to define these linking and lookup tables!
 ** TODO lookup_nmast
