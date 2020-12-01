@@ -12,7 +12,6 @@ import configparser
 # the paths are stored in the config file
 config_file = (Path(__file__).parent.absolute() / "../config.ini").resolve()
 config = configparser.ConfigParser()
-config.read(config_file)
 """
 This block defines some useful paths, as well as a wrapper function for loading paths from the config file and handling them properly, like turning relative paths into absolute paths
 """
@@ -28,6 +27,9 @@ def load_config_path(key):
     path : pathlib.Path or None
       absolute path to the target in the config file. Prints warning if the path does not exist.
     """
+    # reread the file whenever the function is called so you don't have to
+    # reload the entire module if the config file gets updated
+    config.read(config_file)
     key = key.upper()
     path = Path(config['PATHS'][key]).resolve()
     # test that the path exists
@@ -37,6 +39,8 @@ def load_config_path(key):
         print(f"Warning: {path} not found.")
     return path
 
+# path to header tables
+headers_path = load_config_path('headers_path')
 # HST data files for manipulation
 data_path = load_config_path("data_path")
 # Database tables
@@ -45,11 +49,15 @@ db_raw_file = load_config_path("db_raw_file")
 db_file = load_config_path("db_file")
 db_subcat_file = load_config_path("db_subcat_file")
 db_clean_file =  load_config_path("db_clean_file")
+# composite image
+#composite_image_path = load_config_path("composite_img_file")
+
 
 # gaia catalog and source matches
 align_path = load_config_path("align_path")
 # KS2 output files
 ks2_path = load_config_path("ks2_path")
+
 
 #############
 # FLT files #

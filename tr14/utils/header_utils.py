@@ -82,6 +82,28 @@ def headerdict2dataframe(header_dicts):
     return header_df
 
 
+def get_header_dfs(fits_files):
+    """
+    From the given fits file names, group all the headers into dataframes, with
+    dataframe for each type of header and one row for each file
+
+    Parameters
+    ----------
+    fits_files : list-like
+      a list of filenames for FITS images you want to collect together
+
+    Output
+    ------
+    df_dict : dict
+      a dictionary of the dataframes. the dict key is the name of the header type
+      (PRI, SCI, ERR, etc)
+
+    """
+    header_dicts = headers2dict(fits_files)
+    header_dfs = {k: headerdict2dataframe(header_dicts[k]) for k in header_dicts}
+    return header_dfs 
+
+
 def write_headers(filenames, verbose=False):
     """
     Save the headers, as csv files that can be read into dataframes, in the folder designated at the top of the file ({0}). The file name is the extension header EXTNAME value, and 'pri' refers to the primary header. Does all the work to compile and write headers. No return value; writes a file instead

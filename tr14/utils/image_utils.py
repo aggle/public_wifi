@@ -348,32 +348,60 @@ def cube_scroller(df,
     titles = []
     stamp_indices = []
 
+
     # collect data
-    if "stamp_array" in df.columns:
+    # if it's a series, assume it's an array of stamps
+    if isinstance(df, pd.Series):
+        stamps = np.stack(df.values)
+        titles = df.index
+        stamp_indices.append([np.arange(stamps.shape[-2]),
+                              np.arange(stamps.shape[-1])])
+
+    elif "stamp_array" in df.columns:
         # if the dataframe has the column "stamp_array", it's a stamps table
         for i, row in df.iterrows():
             stamps.append(row['stamp_array'])
             titles.append(f"{row['stamp_star_id']}/{row['stamp_ps_id']}")
-            stamp_indices.append(get_stamp_ind(row[['stamp_x_cent','stamp_y_cent']],
-                                               stamp_args['stamp_size']))
+            ind = get_stamp_ind(row[['stamp_x_cent','stamp_y_cent']],
+                                row['stamp_array'].shape[0])
+            stamp_indices.append(ind)
     else:
         # otherwise, assume it's a point sources table
         for i, row in df.iterrows():
-            s, ind =  get_stamp_from_ps_table(row, **stamp_args, return_img_ind=True)
+            s, ind =  get_stamp_from_ps_row(row, **stamp_args, return_img_ind=True)
+            ind[0] = np.tile(ind[0], (ind[0].size, 1)).T
+            ind[1] = np.tile(ind[1], (ind[1].size, 1))
             stamps.append(s)
-            stamp_indices.append(ind)
             titles.append(f"{row['ps_star_id']}/{row['ps_id']}\nMag: {row['ps_mag']:0.2f}")
+            stamp_indices.append(ind)
+
+
+    return _cube_scroller(stamps, titles, stamp_indices,
+                          fig_args=fig_args,
+                          imshow_args=imshow_args,
+                          norm_func=norm_func,
+                          norm_args=norm_args)
+
+
+def _cube_scroller(stamps, titles, indices,
+                   fig_args={},
+                   imshow_args={},
+                   norm_func=mpl.colors.Normalize,
+                   norm_args=()):
 
     # plotting functions start here
     def update_image(img_ind): # img_ind goes from 0 to N for N stamps
         fig, ax = plt.subplots(1, 1, **fig_args)
-        row = df.iloc[img_ind]
         img = stamps[img_ind]
-        yx = stamp_indices[img_ind]
-        # get the x and y that work with plt.pcolor
-        x = np.concatenate((yx[1][0,:], [yx[1][0,-1]+1]))
-        y = np.concatenate((yx[0][:,0], [yx[0][-1,0]+1]))
-        title = titles[img_ind]#f"{row['ps_star_id']} + {row['ps_exp_id']}\nMag: {row['ps_mag']:0.2f}"
+        if indices == None:
+            x = np.arange(0, img.shape[1]+1)
+            y = np.arange(0, img.shape[0]+1)
+        else:
+            yx = indices[img_ind]
+            # get the x and y that work with plt.pcolor
+            x = np.concatenate((yx[1][0,:], [yx[1][0,-1]+1]))
+            y = np.concatenate((yx[0][:,0], [yx[0][-1,0]+1]))
+        title = titles[img_ind]
         #imax = ax.imshow(img, **imshow_args, norm=norm_func())
         imax = ax.pcolor(x, y, img, **imshow_args, norm=norm_func())
         ax.set_aspect("equal")
@@ -381,7 +409,9 @@ def cube_scroller(df,
         ax.set_title(title)
         #plt.show(fig)
 
-    slider = widgets.IntSlider(min=0, max=len(df)-1, step=1, value=0, description='stamp index')
+    slider = widgets.IntSlider(min=0, max=len(stamps)-1, step=1, value=0,
+                               description='stamp index')
+
     interactive_plot = interactive(update_image, img_ind=slider)#, fig=fixed(fig), ax=fixed(ax))
     output = interactive_plot.children[-1]
     if 'figsize' in fig_args.keys():
@@ -393,5 +423,3 @@ def cube_scroller(df,
     output.layout.width = width
     output.layout.height = height
     return interactive_plot
-
-

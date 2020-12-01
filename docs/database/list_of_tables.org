@@ -246,77 +246,213 @@ these are all boolean True or False
 
 * Formal tables and field descriptions
 Here we associate fields with each table, and formally define the contents of each field
-** stars [9/9]
-*** DONE star_id
+** Observation tables
+These tables contain information that comes from the exposure headers, like filter names, file names, etc. These values never change, and should be put in a safe place where they will not be clobbered.
+*** filters [0/0]
+| filters   |
++-----------+
+| filt_id   |
+| filt_name |
+|           |
+*** headers [0/0] 
+| headers  |
++----------|
+| hdr_sci  |
+| hdr_err  |
+| hdr_dq   |
+| hdr_samp |
+| hdr_time |
+*** grid_sectors
+**** field template
+***** General Elements
+****** Field Name
+Enter field name here
+****** Parent Table
+Enter parent table here
+****** Label
+Enter label or shorter name here
+****** Specification Type
+- [ ] Unique
+- [ ] Generic
+- [ ] Replica
+****** Source Specification
+If /Specification Type/ is /Replica/, enter source field here
+****** Shared By
+List other tables that share this field here
+****** Aliases
+List other names for this field here
+****** Description
+Describe the field here
+***** Physical Elements
+****** Data Type
+Enter data type here (alphanumeric, numeric, datetime)
+****** Length
+Number of characters the field will hold
+****** Decimal Places
+Enter number of decimal places here (can be all)
+****** Character Support
+- [ ] Letters (A-Z)
+- [ ] Numbers (0-9)
+- [ ] Keyboard (.,/$#%)
+- [ ] Special
+****** Input Mask
+Enter input mask here (the manner in which a user should enter the data)
+****** Display Format
+Enter display format here
+
+***** Logical Elements
+****** Key Type
+- [ ] Non
+- [ ] Foreign
+- [ ] Primary
+- [ ] Alternate
+****** Key Structure
+- [ ] Simple
+- [ ] Composite
+****** Uniqueness
+- [ ] Non-unique
+- [ ] Unique
+****** Null Support
+- [ ] Nulls Allowed
+- [ ] No Nulls
+****** Values Entered By
+- [ ] User
+- [ ] System
+****** Required Value
+- [ ] No
+- [ ] Yes
+****** Default Value
+Enter default value here
+****** Range of Values
+Enter range of allowed values here
+****** Edit Rule
+- [ ] Enter Now, Edits Allowed
+- [ ] Enter Now, Edits Not Allowed
+- [ ] Enter Later, Edits Allowed
+- [ ] Enter Later, Edits Not Allowed
+- [ ] Not Determined At This Time
+****** Comparisons Allowed
+- Same Field
+  - [ ] All
+  - [ ] =
+  - [ ] >
+  - [ ] >=
+  - [ ] !=
+  - [ ] <
+  - [ ] <=
+- Other Fields
+  - [ ] All
+  - [ ] =
+  - [ ] >
+  - [ ] >=
+  - [ ] !=
+  - [ ] <
+  - [ ] <=
+- Value Expression
+  - [ ] All
+  - [ ] =
+  - [ ] >
+  - [ ] >=
+  - [ ] !=
+  - [ ] <
+  - [ ] <=
+****** Operations Allowed
+- Same Field
+  - [ ] All
+  - [ ] +
+  - [ ] -
+  - [ ] *
+  - [ ] /
+  - [ ] Concatenation
+- Other Fields
+  - [ ] All
+  - [ ] +
+  - [ ] -
+  - [ ] *
+  - [ ] /
+  - [ ] Concatenation
+- Value Expression
+  - [ ] All
+  - [ ] +
+  - [ ] -
+  - [ ] *
+  - [ ] /
+  - [ ] Concatenation
+
+
+** Catalog tables
+These tables contain information related to the point sources pulled from the exposures, and may change.
+*** stars [9/9]
+**** DONE star_id
 CLOSED: [2020-07-27 Mon 23:31]
-**** General Elements
-***** Field Name
+***** General Elements
+****** Field Name
 star_id
-***** Parent Table
+****** Parent Table
 stars
-***** Label:
+****** Label:
 none
-***** Specification Type
+****** Specification Type
 - [X] Unique
 - [ ] Generic
 - [ ] Replica
-***** Source Specification
+****** Source Specification
 none
-***** Shared By
+****** Shared By
 - point_sources
 - candidates_master
-***** Aliases
+****** Aliases
 none
-***** Description
+****** Description
 This field is a unique identifier for an astrophysical object. Starts with "S" for Star
-**** Physical Elements
-***** Data Type
+***** Physical Elements
+****** Data Type
 alphanumeric
-***** Length
+****** Length
 7
-***** Decimal Places
+****** Decimal Places
 none
-***** Character Support
+****** Character Support
 - [X] Letters (A-Z)
 - [X] Numbers (0-9)
 - [ ] Keyboard (.,/$#%)
 - [ ] Special
-***** Input Mask
+****** Input Mask
 none
-***** Display Format
+****** Display Format
 S123456
-**** Logical Elements
-***** Key Type
+***** Logical Elements
+****** Key Type
 - [ ] Non
 - [ ] Foreign
 - [X] Primary
 - [ ] Alternate
-***** Key Structure
+****** Key Structure
 - [X] Simple
 - [ ] Composite
-***** Uniqueness
+****** Uniqueness
 - [ ] Non-unique
 - [X] Unique
-***** Null Support
+****** Null Support
 - [ ] Nulls Allowed
 - [X] No Nulls
-***** Values Entered By
+****** Values Entered By
 - [ ] User
 - [X] System
-***** Required Value
+****** Required Value
 - [ ] No
 - [X] Yes
-***** Default Value
+****** Default Value
 none
-***** Range of Values
+****** Range of Values
 S000000 - S999999
-***** Edit Rule
+****** Edit Rule
 - [ ] Enter Now, Edits Allowed
 - [X] Enter Now, Edits Not Allowed
 - [ ] Enter Later, Edits Allowed
 - [ ] Enter Later, Edits Not Allowed
 - [ ] Not Determined At This Time
-***** Comparisons Allowed
+****** Comparisons Allowed
 - [-] Same Field
   - [ ] All
   - [X] =
@@ -341,7 +477,7 @@ S000000 - S999999
   - [ ] !=
   - [ ] <
   - [ ] <=
-***** Operations Allowed
+****** Operations Allowed
 - [ ] Same Field
   - [ ] All
   - [ ] +
@@ -363,76 +499,76 @@ S000000 - S999999
   + [ ] *
   + [ ] /
   + [ ] Concatenation
-*** DONE u_mast
+**** DONE u_mast
 CLOSED: [2020-07-28 Tue 00:00]
-**** General Elements
-***** Field Name
+***** General Elements
+****** Field Name
 u_mast
-***** Parent Table
+****** Parent Table
 stars
-***** Label:
+****** Label:
 none
-***** Specification Type
+****** Specification Type
 - [X] Unique
 - [ ] Generic
 - [ ] Replica
-***** Source Specification
+****** Source Specification
 none
-***** Shared By
+****** Shared By
 none
-***** Aliases
+****** Aliases
 none
-***** Description
+****** Description
 KS2 u-coordinate in the master reference frame
-**** Physical Elements
-***** Data Type
+***** Physical Elements
+****** Data Type
 numeric
-***** Length
+****** Length
 6
-***** Decimal Places
+****** Decimal Places
 2
-***** Character Support
+****** Character Support
 - [ ] Letters (A-Z)
 - [X] Numbers (0-9)
 - [X] Keyboard (.,/$#%)
 - [ ] Special
-***** Input Mask
+****** Input Mask
 Enter input mask here (the manner in which a user should enter the data)
-***** Display Format
+****** Display Format
 0000.00
 
-**** Logical Elements
-***** Key Type
+***** Logical Elements
+****** Key Type
 - [X] Non
 - [ ] Foreign
 - [ ] Primary
 - [ ] Alternate
-***** Key Structure
+****** Key Structure
 - [ ] Simple
 - [ ] Composite
-***** Uniqueness
+****** Uniqueness
 - [X] Non-unique
 - [ ] Unique
-***** Null Support
+****** Null Support
 - [X] Nulls Allowed
 - [ ] No Nulls
-***** Values Entered By
+****** Values Entered By
 - [ ] User
 - [X] System
-***** Required Value
+****** Required Value
 - [ ] No
 - [X] Yes
-***** Default Value
+****** Default Value
 nan
-***** Range of Values
+****** Range of Values
 000.00-999.99
-***** Edit Rule
+****** Edit Rule
 - [ ] Enter Now, Edits Allowed
 - [X] Enter Now, Edits Not Allowed
 - [ ] Enter Later, Edits Allowed
 - [ ] Enter Later, Edits Not Allowed
 - [ ] Not Determined At This Time
-***** Comparisons Allowed
+****** Comparisons Allowed
 - Same Field
   - [X] All
   - [ ] =
@@ -457,7 +593,7 @@ nan
   - [ ] !=
   - [ ] <
   - [ ] <=
-***** Operations Allowed
+****** Operations Allowed
 - Same Field
   - [ ] All
   - [X] +
@@ -479,76 +615,76 @@ nan
   - [X] *
   - [X] /
   - [ ] Concatenation
-*** DONE v_mast
+**** DONE v_mast
 CLOSED: [2020-07-28 Tue 00:06]
-**** General Elements
-***** Field Name
+***** General Elements
+****** Field Name
 v_mast
-***** Parent Table
+****** Parent Table
 stars_master
-***** Label
+****** Label
 None
-***** Specification Type
+****** Specification Type
 - [X] Unique
 - [ ] Generic
 - [ ] Replica
-***** Source Specification
+****** Source Specification
 None
-***** Shared By
+****** Shared By
 None
-***** Aliases
+****** Aliases
 None
-***** Description
+****** Description
 KS2 v-coordinate in the master reference frame
-**** Physical Elements
-***** Data Type
+***** Physical Elements
+****** Data Type
 numeric
-***** Length
+****** Length
 6
-***** Decimal Places
+****** Decimal Places
 2
-***** Character Support
+****** Character Support
 - [ ] Letters (A-Z)
 - [X] Numbers (0-9)
 - [X] Keyboard (.,/$#%)
 - [ ] Special
-***** Input Mask
+****** Input Mask
 000.00
-***** Display Format
+****** Display Format
 000.00
 
-**** Logical Elements
-***** Key Type
+***** Logical Elements
+****** Key Type
 - [X] Non
 - [ ] Foreign
 - [ ] Primary
 - [ ] Alternate
-***** Key Structure
+****** Key Structure
 - [ ] Simple
 - [ ] Composite
-***** Uniqueness
+****** Uniqueness
 - [X] Non-unique
 - [ ] Unique
-***** Null Support
+****** Null Support
 - [X] Nulls Allowed
 - [ ] No Nulls
-***** Values Entered By
+****** Values Entered By
 - [ ] User
 - [X] System
-***** Required Value
+****** Required Value
 - [ ] No
 - [X] Yes
-***** Default Value
+****** Default Value
 nan
-***** Range of Values
+****** Range of Values
 000.00-999.99
-***** Edit Rule
+****** Edit Rule
 - [ ] Enter Now, Edits Allowed
 - [X] Enter Now, Edits Not Allowed
 - [ ] Enter Later, Edits Allowed
 - [ ] Enter Later, Edits Not Allowed
 - [ ] Not Determined At This Time
-***** Comparisons Allowed
+****** Comparisons Allowed
 - Same Field
   - [X] All
   - [ ] =
@@ -573,7 +709,7 @@ nan
   - [ ] !=
   - [ ] <
   - [ ] <=
-***** Operations Allowed
+****** Operations Allowed
 - Same Field
   - [ ] All
   - [X] +
@@ -595,75 +731,75 @@ nan
   - [X] *
   - [X] /
   - [ ] Concatenation
-*** DONE star_phot_F#
+**** DONE star_phot_F#
 CLOSED: [2020-07-28 Tue 00:18]
-**** General Elements
-***** Field Name
+***** General Elements
+****** Field Name
 star_phot_f#
-***** Parent Table
+****** Parent Table
 stars
-***** Label:
+****** Label:
 none
-***** Specification Type
+****** Specification Type
 - [X] Unique
 - [ ] Generic
 - [ ] Replica
-***** Source Specification
+****** Source Specification
 None
-***** Shared By
+****** Shared By
 None
-***** Aliases
+****** Aliases
 None
-***** Description
+****** Description
 KS2 photometry (in counts) for the star in filter #(#), # is probably 1 or 2
-**** Physical Elements
-***** Data Type
+***** Physical Elements
+****** Data Type
 numeric
-***** Length
+****** Length
 32-bit precision
-***** Decimal Places
+****** Decimal Places
 all
-***** Character Support
+****** Character Support
 - [ ] Letters (A-Z)
 - [X] Numbers (0-9)
 - [X] Keyboard (.,/$#%)
 - [ ] Special
-***** Input Mask
+****** Input Mask
 none
-***** Display Format
+****** Display Format
 000.00
-**** Logical Elements
-***** Key Type
+***** Logical Elements
+****** Key Type
 - [X] Non
 - [ ] Foreign
 - [ ] Primary
 - [ ] Alternate
-***** Key Structure
+****** Key Structure
 - [ ] Simple
 - [ ] Composite
-***** Uniqueness
+****** Uniqueness
 - [X] Non-unique
 - [ ] Unique
-***** Null Support
+****** Null Support
 - [X] Nulls Allowed
 - [ ] No Nulls
-***** Values Entered By
+****** Values Entered By
 - [ ] User
 - [X] System
-***** Required Value
+****** Required Value
 - [ ] No
 - [X] Yes
-***** Default Value
+****** Default Value
 nan
-***** Range of Values
+****** Range of Values
 -inf - inf
-***** Edit Rule
+****** Edit Rule
 - [ ] Enter Now, Edits Allowed
 - [X] Enter Now, Edits Not Allowed
 - [ ] Enter Later, Edits Allowed
 - [ ] Enter Later, Edits Not Allowed
 - [ ] Not Determined At This Time
-***** Comparisons Allowed
+****** Comparisons Allowed
 - Same Field
   - [X] All
   - [ ] =
@@ -688,7 +824,7 @@ nan
   - [ ] !=
   - [ ] <
   - [ ] <=
-***** Operations Allowed
+****** Operations Allowed
 - Same Field
   - [X] All
   - [X] +
@@ -710,76 +846,76 @@ nan
   - [X] *
   - [X] /
   - [ ] Concatenation
-*** DONE star_phot_e_F#
+**** DONE star_phot_e_F#
 CLOSED: [2020-07-28 Tue 22:32]
-**** General Elements
-***** Field Name
+***** General Elements
+****** Field Name
 star_phot_e_f#
-***** Parent Table
+****** Parent Table
 stars_master
-***** Label
+****** Label
 None
-***** Specification Type
+****** Specification Type
 - [X] Unique
 - [ ] Generic
 - [ ] Replica
-***** Source Specification
+****** Source Specification
 None
-***** Shared By
+****** Shared By
 None
-***** Aliases
+****** Aliases
 None
-***** Description
+****** Description
 KS2 uncertainty in the flux in filter #(#)
-**** Physical Elements
-***** Data Type
+***** Physical Elements
+****** Data Type
 numeric
-***** Length
+****** Length
 32-bit signed float
-***** Decimal Places
+****** Decimal Places
 all
-***** Character Support
+****** Character Support
 - [ ] Letters (A-Z)
 - [X] Numbers (0-9)
 - [X] Keyboard (.,/$#%)
 - [ ] Special
-***** Input Mask
+****** Input Mask
 none
-***** Display Format
+****** Display Format
 000.00
 
-**** Logical Elements
-***** Key Type
+***** Logical Elements
+****** Key Type
 - [X] Non
 - [ ] Foreign
 - [ ] Primary
 - [ ] Alternate
-***** Key Structure
+****** Key Structure
 - [ ] Simple
 - [ ] Composite
-***** Uniqueness
+****** Uniqueness
 - [X] Non-unique
 - [ ] Unique
-***** Null Support
+****** Null Support
 - [X] Nulls Allowed
 - [ ] No Nulls
-***** Values Entered By
+****** Values Entered By
 - [ ] User
 - [X] System
-***** Required Value
+****** Required Value
 - [ ] No
 - [X] Yes
-***** Default Value
+****** Default Value
 nan
-***** Range of Values
+****** Range of Values
 -inf - inf
-***** Edit Rule
+****** Edit Rule
 - [ ] Enter Now, Edits Allowed
 - [X] Enter Now, Edits Not Allowed
 - [ ] Enter Later, Edits Allowed
 - [ ] Enter Later, Edits Not Allowed
 - [ ] Not Determined At This Time
-***** Comparisons Allowed
+****** Comparisons Allowed
 - Same Field
   - [X] All
   - [ ] =
@@ -804,7 +940,7 @@ nan
   - [ ] !=
   - [ ] <
   - [ ] <=
-***** Operations Allowed
+****** Operations Allowed
 - Same Field
   - [ ] All
   - [X] +
@@ -826,75 +962,75 @@ nan
   - [X] *
   - [X] /
   - [ ] Concatenation
-*** DONE star_mag_F#
+**** DONE star_mag_F#
 CLOSED: [2020-07-30 Thu 00:19]
-**** General Elements
-***** Field Name
+***** General Elements
+****** Field Name
 star_mag_f#
-***** Parent Table
+****** Parent Table
 stars
-***** Label:
+****** Label:
 none
-***** Specification Type
+****** Specification Type
 - [X] Unique
 - [ ] Generic
 - [ ] Replica
-***** Source Specification
+****** Source Specification
 None
-***** Shared By
+****** Shared By
 None
-***** Aliases
+****** Aliases
 None
-***** Description
+****** Description
 KS2 magnitude for the star in filter #(#), # is probably 1 or 2
-**** Physical Elements
-***** Data Type
+***** Physical Elements
+****** Data Type
 numeric
-***** Length
+****** Length
 32-bit precision
-***** Decimal Places
+****** Decimal Places
 all
-***** Character Support
+****** Character Support
 - [ ] Letters (A-Z)
 - [X] Numbers (0-9)
 - [X] Keyboard (.,/$#%)
 - [ ] Special
-***** Input Mask
+****** Input Mask
 none
-***** Display Format
+****** Display Format
 000.00
-**** Logical Elements
-***** Key Type
+***** Logical Elements
+****** Key Type
 - [X] Non
 - [ ] Foreign
 - [ ] Primary
 - [ ] Alternate
-***** Key Structure
+****** Key Structure
 - [ ] Simple
 - [ ] Composite
-***** Uniqueness
+****** Uniqueness
 - [X] Non-unique
 - [ ] Unique
-***** Null Support
+****** Null Support
 - [X] Nulls Allowed
 - [ ] No Nulls
-***** Values Entered By
+****** Values Entered By
 - [ ] User
 - [X] System
-***** Required Value
+****** Required Value
 - [ ] No
 - [X] Yes
-***** Default Value
+****** Default Value
 nan
-***** Range of Values
+****** Range of Values
 -inf - inf
-***** Edit Rule
+****** Edit Rule
 - [ ] Enter Now, Edits Allowed
 - [X] Enter Now, Edits Not Allowed
 - [ ] Enter Later, Edits Allowed
 - [ ] Enter Later, Edits Not Allowed
 - [ ] Not Determined At This Time
-***** Comparisons Allowed
+****** Comparisons Allowed
 - Same Field
   - [X] All
   - [ ] =
@@ -919,7 +1055,7 @@ nan
   - [ ] !=
   - [ ] <
   - [ ] <=
-***** Operations Allowed
+****** Operations Allowed
 - Same Field
   - [X] All
   - [X] +
@@ -941,75 +1077,75 @@ nan
   - [X] *
   - [X] /
   - [ ] Concatenation
-*** DONE star_mag_e_F#
+**** DONE star_mag_e_F#
 CLOSED: [2020-07-30 Thu 00:19]
-**** General Elements
-***** Field Name
+***** General Elements
+****** Field Name
 star_mag_e_f#
-***** Parent Table
+****** Parent Table
 stars
-***** Label
+****** Label
 None
-***** Specification Type
+****** Specification Type
 - [X] Unique
 - [ ] Generic
 - [ ] Replica
-***** Source Specification
+****** Source Specification
 None
-***** Shared By
+****** Shared By
 None
-***** Aliases
+****** Aliases
 None
-***** Description
+****** Description
 KS2 uncertainty in the magnitude in filter #(#)
-**** Physical Elements
-***** Data Type
+***** Physical Elements
+****** Data Type
 numeric
-***** Length
+****** Length
 32-bit signed float
-***** Decimal Places
+****** Decimal Places
 all
-***** Character Support
+****** Character Support
 - [ ] Letters (A-Z)
 - [X] Numbers (0-9)
 - [X] Keyboard (.,/$#%)
 - [ ] Special
-***** Input Mask
+****** Input Mask
 none
-***** Display Format
+****** Display Format
 000.00
-**** Logical Elements
-***** Key Type
+***** Logical Elements
+****** Key Type
 - [X] Non
 - [ ] Foreign
 - [ ] Primary
 - [ ] Alternate
-***** Key Structure
+****** Key Structure
 - [ ] Simple
 - [ ] Composite
-***** Uniqueness
+****** Uniqueness
 - [X] Non-unique
 - [ ] Unique
-***** Null Support
+****** Null Support
 - [X] Nulls Allowed
 - [ ] No Nulls
-***** Values Entered By
+****** Values Entered By
 - [ ] User
 - [X] System
-***** Required Value
+****** Required Value
 - [ ] No
 - [X] Yes
-***** Default Value
+****** Default Value
 nan
-***** Range of Values
+****** Range of Values
 -inf - inf
-***** Edit Rule
+****** Edit Rule
 - [ ] Enter Now, Edits Allowed
 - [X] Enter Now, Edits Not Allowed
 - [ ] Enter Later, Edits Allowed
 - [ ] Enter Later, Edits Not Allowed
 - [ ] Not Determined At This Time
-***** Comparisons Allowed
+****** Comparisons Allowed
 - Same Field
   - [X] All
   - [ ] =
@@ -1034,7 +1170,7 @@ nan
   - [ ] !=
   - [ ] <
   - [ ] <=
-***** Operations Allowed
+****** Operations Allowed
 - Same Field
   - [ ] All
   - [X] +
@@ -1056,76 +1192,76 @@ nan
   - [X] *
   - [X] /
   - [ ] Concatenation
-*** DONE clust_memb
+**** DONE clust_memb
 CLOSED: [2020-07-28 Tue 00:28]
-**** General Elements
-***** Field Name
+***** General Elements
+****** Field Name
 star_clust_memb
-***** Parent Table
+****** Parent Table
 stars
-***** Label:
+****** Label:
 
-***** Specification Type
+****** Specification Type
 - [X] Unique
 - [ ] Generic
 - [ ] Replica
-***** Source Specification
+****** Source Specification
 None
-***** Shared By
+****** Shared By
 None
-***** Aliases
+****** Aliases
 None
-***** Description
+****** Description
 True if star is a cluster member, else False
-**** Physical Elements
-***** Data Type
+***** Physical Elements
+****** Data Type
 boolean
-***** Length
+****** Length
 bool
-***** Decimal Places
+****** Decimal Places
 n/a
-***** Character Support
+****** Character Support
 - [ ] Letters (A-Z)
 - [X] Numbers (0-9)
 - [ ] Keyboard (.,/$#%)
 - [ ] Special
-***** Input Mask
+****** Input Mask
 None
-***** Display Format
+****** Display Format
 True/False
 
-**** Logical Elements
-***** Key Type
+***** Logical Elements
+****** Key Type
 - [X] Non
 - [ ] Foreign
 - [ ] Primary
 - [ ] Alternate
-***** Key Structure
+****** Key Structure
 - [ ] Simple
 - [ ] Composite
-***** Uniqueness
+****** Uniqueness
 - [X] Non-unique
 - [ ] Unique
-***** Null Support
+****** Null Support
 - [X] Nulls Allowed
 - [ ] No Nulls
-***** Values Entered By
+****** Values Entered By
 - [ ] User
 - [X] System
-***** Required Value
+****** Required Value
 - [X] No
 - [ ] Yes
-***** Default Value
+****** Default Value
 None
-***** Range of Values
+****** Range of Values
 True or False
-***** Edit Rule
+****** Edit Rule
 - [X] Enter Now, Edits Allowed
 - [ ] Enter Now, Edits Not Allowed
 - [ ] Enter Later, Edits Allowed
 - [ ] Enter Later, Edits Not Allowed
 - [ ] Not Determined At This Time
-***** Comparisons Allowed
+****** Comparisons Allowed
 - Same Field
   - [ ] All
   - [X] =
@@ -1150,7 +1286,7 @@ True or False
   - [ ] !=
   - [ ] <
   - [ ] <=
-***** Operations Allowed
+****** Operations Allowed
 - Same Field
   - [ ] All
   - [ ] +
@@ -1172,76 +1308,76 @@ True or False
   - [ ] *
   - [ ] /
   - [ ] Concatenation
-** point_sources [14/14]
-*** DONE ps_id
+*** point_sources [14/14]
+**** DONE ps_id
 CLOSED: [2020-07-28 Tue 23:31]
-**** General Elements
-***** Field Name
+***** General Elements
+****** Field Name
 ps_id
-***** Parent Table
+****** Parent Table
 point_sources
-***** Label
+****** Label
 None
-***** Specification Type
+****** Specification Type
 - [X] Unique
 - [ ] Generic
 - [ ] Replica
-***** Source Specification
+****** Source Specification
 None
-***** Shared By
+****** Shared By
 stamps, candidates
-***** Aliases
+****** Aliases
 None
-***** Description
+****** Description
 Unique identifier for the point source detection for this star. Starts with "P" for Point source.
-**** Physical Elements
-***** Data Type
+***** Physical Elements
+****** Data Type
 alphanumeric
-***** Length
+****** Length
 7
-***** Decimal Places
+****** Decimal Places
 0
-***** Character Support
+****** Character Support
 - [X] Letters (A-Z)
 - [X] Numbers (0-9)
 - [ ] Keyboard (.,/$#%)
 - [ ] Special
-***** Input Mask
+****** Input Mask
 None
-***** Display Format
+****** Display Format
 P123456
-**** Logical Elements
-***** Key Type
+***** Logical Elements
+****** Key Type
 - [ ] Non
 - [ ] Foreign
 - [X] Primary
 - [ ] Alternate
-***** Key Structure
+****** Key Structure
 - [X] Simple
 - [ ] Composite
-***** Uniqueness
+****** Uniqueness
 - [ ] Non-unique
 - [X] Unique
-***** Null Support
+****** Null Support
 - [ ] Nulls Allowed
 - [X] No Nulls
-***** Values Entered By
+****** Values Entered By
 - [ ] User
 - [X] System
-***** Required Value
+****** Required Value
 - [ ] No
 - [X] Yes
-***** Default Value
+****** Default Value
 N/A
-***** Range of Values
+****** Range of Values
 P000000-P999999
-***** Edit Rule
+****** Edit Rule
 - [ ] Enter Now, Edits Allowed
 - [X] Enter Now, Edits Not Allowed
 - [ ] Enter Later, Edits Allowed
 - [ ] Enter Later, Edits Not Allowed
 - [ ] Not Determined At This Time
-***** Comparisons Allowed
+****** Comparisons Allowed
 - Same Field
   - [ ] All
   - [X] =
@@ -1266,7 +1402,7 @@ P000000-P999999
   - [ ] !=
   - [ ] <
   - [ ] <=
-***** Operations Allowed
+****** Operations Allowed
 - Same Field
   - [ ] All
   - [ ] +
@@ -1289,76 +1425,76 @@ P000000-P999999
   - [ ] /
   - [ ] Concatenation
 
-*** DONE ps_star_id
+**** DONE ps_star_id
 CLOSED: [2020-07-28 Tue 23:36]
-**** General Elements
-***** Field Name
+***** General Elements
+****** Field Name
 ps_star_id
-***** Parent Table
+****** Parent Table
 point_sources
-***** Label
+****** Label
 none
-***** Specification Type
+****** Specification Type
 - [ ] Unique
 - [ ] Generic
 - [X] Replica
-***** Source Specification
+****** Source Specification
 stars:star_id
-***** Shared By
+****** Shared By
 stars
-***** Aliases
+****** Aliases
 none
-***** Description
+****** Description
 unique identifier of the star
-**** Physical Elements
-***** Data Type
+***** Physical Elements
+****** Data Type
 Enter data type here (alphanumeric, numeric, datetime)
-***** Length
+****** Length
 Number of characters the field will hold
-***** Decimal Places
+****** Decimal Places
 Enter number of decimal places here (can be all)
-***** Character Support
+****** Character Support
 - [ ] Letters (A-Z)
 - [ ] Numbers (0-9)
 - [ ] Keyboard (.,/$#%)
 - [ ] Special
-***** Input Mask
+****** Input Mask
 Enter input mask here (the manner in which a user should enter the data)
-***** Display Format
+****** Display Format
 Enter display format here
 
-**** Logical Elements
-***** Key Type
+***** Logical Elements
+****** Key Type
 - [ ] Non
 - [ ] Foreign
 - [ ] Primary
 - [ ] Alternate
-***** Key Structure
+****** Key Structure
 - [ ] Simple
 - [ ] Composite
-***** Uniqueness
+****** Uniqueness
 - [ ] Non-unique
 - [ ] Unique
-***** Null Support
+****** Null Support
 - [ ] Nulls Allowed
 - [ ] No Nulls
-***** Values Entered By
+****** Values Entered By
 - [ ] User
 - [ ] System
-***** Required Value
+****** Required Value
 - [ ] No
 - [ ] Yes
-***** Default Value
+****** Default Value
 Enter default value here
-***** Range of Values
+****** Range of Values
 Enter range of allowed values here
-***** Edit Rule
+****** Edit Rule
 - [ ] Enter Now, Edits Allowed
 - [ ] Enter Now, Edits Not Allowed
 - [ ] Enter Later, Edits Allowed
 - [ ] Enter Later, Edits Not Allowed
 - [ ] Not Determined At This Time
-***** Comparisons Allowed
+****** Comparisons Allowed
 - Same Field
   - [ ] All
   - [ ] =
@@ -1383,7 +1519,7 @@ Enter range of allowed values here
   - [ ] !=
   - [ ] <
   - [ ] <=
-***** Operations Allowed
+****** Operations Allowed
 - Same Field
   - [ ] All
   - [ ] +
@@ -1406,75 +1542,75 @@ Enter range of allowed values here
   - [ ] /
   - [ ] Concatenation
 
-*** DONE ps_exp_id
+**** DONE ps_exp_id
 CLOSED: [2020-07-28 Tue 23:46]
-**** General Elements
-***** Field Name
+***** General Elements
+****** Field Name
 ps_exp_id
-***** Parent Table
+****** Parent Table
 point_sources
-***** Label
+****** Label
 None
-***** Specification Type
+****** Specification Type
 - [X] Unique
 - [ ] Generic
 - [ ] Replica
-***** Source Specification
+****** Source Specification
 none
-***** Shared By
+****** Shared By
 companion_detections, stamps
-***** Aliases
+****** Aliases
 none
-***** Description
+****** Description
 identifier for the HST exposure. Starts with "E" for Exposure.
-**** Physical Elements
-***** Data Type
+***** Physical Elements
+****** Data Type
 alphanumeric
-***** Length
+****** Length
 4
-***** Decimal Places
+****** Decimal Places
 0
-***** Character Support
+****** Character Support
 - [X] Letters (A-Z)
 - [X] Numbers (0-9)
 - [ ] Keyboard (.,/$#%)
 - [ ] Special
-***** Input Mask
+****** Input Mask
 None
-***** Display Format
+****** Display Format
 E123
-**** Logical Elements
-***** Key Type
+***** Logical Elements
+****** Key Type
 - [X] Non
 - [ ] Foreign
 - [ ] Primary
 - [ ] Alternate
-***** Key Structure
+****** Key Structure
 - [ ] Simple
 - [ ] Composite
-***** Uniqueness
+****** Uniqueness
 - [X] Non-unique
 - [ ] Unique
-***** Null Support
+****** Null Support
 - [ ] Nulls Allowed
 - [X] No Nulls
-***** Values Entered By
+****** Values Entered By
 - [ ] User
 - [X] System
-***** Required Value
+****** Required Value
 - [ ] No
 - [X] Yes
-***** Default Value
+****** Default Value
 n/a
-***** Range of Values
+****** Range of Values
 E000-E999
-***** Edit Rule
+****** Edit Rule
 - [ ] Enter Now, Edits Allowed
 - [X] Enter Now, Edits Not Allowed
 - [ ] Enter Later, Edits Allowed
 - [ ] Enter Later, Edits Not Allowed
 - [ ] Not Determined At This Time
-***** Comparisons Allowed
+****** Comparisons Allowed
 - Same Field
   - [ ] All
   - [X] =
@@ -1499,7 +1635,7 @@ E000-E999
   - [ ] !=
   - [ ] <
   - [ ] <=
-***** Operations Allowed
+****** Operations Allowed
 - Same Field
   - [ ] All
   - [ ] +
@@ -1522,75 +1658,75 @@ E000-E999
   - [ ] /
   - [ ] Concatenation
 
-*** DONE ps_filter_id
+**** DONE ps_filter_id
 CLOSED: [2020-07-28 Tue 23:50]
-**** General Elements
-***** Field Name
+***** General Elements
+****** Field Name
 ps_filter_id
-***** Parent Table
+****** Parent Table
 point_sources
-***** Label
+****** Label
 none
-***** Specification Type
+****** Specification Type
 - [ ] Unique
 - [X] Generic
 - [ ] Replica
-***** Source Specification
+****** Source Specification
 none
-***** Shared By
+****** Shared By
 none
-***** Aliases
+****** Aliases
 none
-***** Description
+****** Description
 identifier for the HST filter (see filter table for filter name)
-**** Physical Elements
-***** Data Type
+***** Physical Elements
+****** Data Type
 alphanumeric
-***** Length
+****** Length
 2
-***** Decimal Places
+****** Decimal Places
 0
-***** Character Support
+****** Character Support
 - [X] Letters (A-Z)
 - [X] Numbers (0-9)
 - [ ] Keyboard (.,/$#%)
 - [ ] Special
-***** Input Mask
+****** Input Mask
 none
-***** Display Format
+****** Display Format
 F0
-**** Logical Elements
-***** Key Type
+***** Logical Elements
+****** Key Type
 - [X] Non
 - [ ] Foreign
 - [ ] Primary
 - [ ] Alternate
-***** Key Structure
+****** Key Structure
 - [ ] Simple
 - [ ] Composite
-***** Uniqueness
+****** Uniqueness
 - [X] Non-unique
 - [ ] Unique
-***** Null Support
+****** Null Support
 - [ ] Nulls Allowed
 - [X] No Nulls
-***** Values Entered By
+****** Values Entered By
 - [ ] User
 - [X] System
-***** Required Value
+****** Required Value
 - [ ] No
 - [X] Yes
-***** Default Value
+****** Default Value
 n/a
-***** Range of Values
+****** Range of Values
 F0-F9
-***** Edit Rule
+****** Edit Rule
 - [ ] Enter Now, Edits Allowed
 - [X] Enter Now, Edits Not Allowed
 - [ ] Enter Later, Edits Allowed
 - [ ] Enter Later, Edits Not Allowed
 - [ ] Not Determined At This Time
-***** Comparisons Allowed
+****** Comparisons Allowed
 - Same Field
   - [ ] All
   - [X] =
@@ -1615,7 +1751,7 @@ F0-F9
   - [ ] !=
   - [ ] <
   - [ ] <=
-***** Operations Allowed
+****** Operations Allowed
 - Same Field
   - [ ] All
   - [ ] +
@@ -1638,75 +1774,75 @@ F0-F9
   - [ ] /
   - [ ] Concatenation
 
-*** DONE ps_epoch_id
+**** DONE ps_epoch_id
 CLOSED: [2020-07-30 Thu 00:27]
-**** General Elements
-***** Field Name
+***** General Elements
+****** Field Name
 ps_epoch_id
-***** Parent Table
+****** Parent Table
 point_sources
-***** Label
+****** Label
 none
-***** Specification Type
+****** Specification Type
 - [X] Unique
 - [ ] Generic
 - [ ] Replica
-***** Source Specification
+****** Source Specification
 none
-***** Shared By
+****** Shared By
 none
-***** Aliases
+****** Aliases
 none
-***** Description
+****** Description
 epoch identifier
-**** Physical Elements
-***** Data Type
+***** Physical Elements
+****** Data Type
 alphanumeric
-***** Length
+****** Length
 2
-***** Decimal Places
+****** Decimal Places
 0
-***** Character Support
+****** Character Support
 - [X] Letters (A-Z)
 - [X] Numbers (0-9)
 - [ ] Keyboard (.,/$#%)
 - [ ] Special
-***** Input Mask
+****** Input Mask
 none
-***** Display Format
+****** Display Format
 D0
-**** Logical Elements
-***** Key Type
+***** Logical Elements
+****** Key Type
 - [X] Non
 - [ ] Foreign
 - [ ] Primary
 - [ ] Alternate
-***** Key Structure
+****** Key Structure
 - [ ] Simple
 - [ ] Composite
-***** Uniqueness
+****** Uniqueness
 - [X] Non-unique
 - [ ] Unique
-***** Null Support
+****** Null Support
 - [ ] Nulls Allowed
 - [X] No Nulls
-***** Values Entered By
+****** Values Entered By
 - [ ] User
 - [X] System
-***** Required Value
+****** Required Value
 - [ ] No
 - [X] Yes
-***** Default Value
+****** Default Value
 n/a
-***** Range of Values
+****** Range of Values
 F0-F9
-***** Edit Rule
+****** Edit Rule
 - [ ] Enter Now, Edits Allowed
 - [X] Enter Now, Edits Not Allowed
 - [ ] Enter Later, Edits Allowed
 - [ ] Enter Later, Edits Not Allowed
 - [ ] Not Determined At This Time
-***** Comparisons Allowed
+****** Comparisons Allowed
 - Same Field
   - [ ] All
   - [X] =
@@ -1731,7 +1867,7 @@ F0-F9
   - [ ] !=
   - [ ] <
   - [ ] <=
-***** Operations Allowed
+****** Operations Allowed
 - Same Field
   - [ ] All
   - [ ] +
@@ -1753,75 +1889,75 @@ F0-F9
   - [ ] *
   - [ ] /
   - [ ] Concatenation
-*** DONE ps_phot
+**** DONE ps_phot
 CLOSED: [2020-07-28 Tue 23:58]
-**** General Elements
-***** Field Name
+***** General Elements
+****** Field Name
 ps_phot
-***** Parent Table
+****** Parent Table
 point_sources
-***** Label
+****** Label
 none
-***** Specification Type
+****** Specification Type
 - [ ] Unique
 - [X] Generic
 - [ ] Replica
-***** Source Specification
+****** Source Specification
 none
-***** Shared By
+****** Shared By
 none
-***** Aliases
+****** Aliases
 none
-***** Description
+****** Description
 KS2 photometry for this point source detection
-**** Physical Elements
-***** Data Type
+***** Physical Elements
+****** Data Type
 numeric
-***** Length
+****** Length
 32-bit float
-***** Decimal Places
+****** Decimal Places
 32-bit float
-***** Character Support
+****** Character Support
 - [ ] Letters (A-Z)
 - [X] Numbers (0-9)
 - [X] Keyboard (.,/$#%)
 - [ ] Special
-***** Input Mask
+****** Input Mask
 none
-***** Display Format
+****** Display Format
 123.45
-**** Logical Elements
-***** Key Type
+***** Logical Elements
+****** Key Type
 - [X] Non
 - [ ] Foreign
 - [ ] Primary
 - [ ] Alternate
-***** Key Structure
+****** Key Structure
 - [ ] Simple
 - [ ] Composite
-***** Uniqueness
+****** Uniqueness
 - [X] Non-unique
 - [ ] Unique
-***** Null Support
+****** Null Support
 - [X] Nulls Allowed
 - [ ] No Nulls
-***** Values Entered By
+****** Values Entered By
 - [ ] User
 - [X] System
-***** Required Value
+****** Required Value
 - [X] No
 - [ ] Yes
-***** Default Value
+****** Default Value
 nan
-***** Range of Values
+****** Range of Values
 -inf - inf
-***** Edit Rule
+****** Edit Rule
 - [ ] Enter Now, Edits Allowed
 - [X] Enter Now, Edits Not Allowed
 - [ ] Enter Later, Edits Allowed
 - [ ] Enter Later, Edits Not Allowed
 - [ ] Not Determined At This Time
-***** Comparisons Allowed
+****** Comparisons Allowed
 - Same Field
   - [X] All
   - [ ] =
@@ -1846,7 +1982,7 @@ nan
   - [ ] !=
   - [ ] <
   - [ ] <=
-***** Operations Allowed
+****** Operations Allowed
 - Same Field
   - [ ] All
   - [X] +
@@ -1869,75 +2005,75 @@ nan
   - [X] /
   - [ ] Concatenation
 
-*** DONE ps_phot_e
+**** DONE ps_phot_e
 CLOSED: [2020-07-29 Wed 00:04]
-**** General Elements
-***** Field Name
+***** General Elements
+****** Field Name
 ps_phot_e
-***** Parent Table
+****** Parent Table
 point_sources
-***** Label
+****** Label
 none
-***** Specification Type
+****** Specification Type
 - [ ] Unique
 - [X] Generic
 - [ ] Replica
-***** Source Specification
+****** Source Specification
 none
-***** Shared By
+****** Shared By
 none
-***** Aliases
+****** Aliases
 none
-***** Description
+****** Description
 KS2 photometric uncertainty, however its defined
-**** Physical Elements
-***** Data Type
+***** Physical Elements
+****** Data Type
 numeric
-***** Length
+****** Length
 32-bit float
-***** Decimal Places
+****** Decimal Places
 32-bit float
-***** Character Support
+****** Character Support
 - [ ] Letters (A-Z)
 - [X] Numbers (0-9)
 - [X] Keyboard (.,/$#%)
 - [ ] Special
-***** Input Mask
+****** Input Mask
 none
-***** Display Format
+****** Display Format
 123.45
-**** Logical Elements
-***** Key Type
+***** Logical Elements
+****** Key Type
 - [X] Non
 - [ ] Foreign
 - [ ] Primary
 - [ ] Alternate
-***** Key Structure
+****** Key Structure
 - [ ] Simple
 - [ ] Composite
-***** Uniqueness
+****** Uniqueness
 - [X] Non-unique
 - [ ] Unique
-***** Null Support
+****** Null Support
 - [X] Nulls Allowed
 - [ ] No Nulls
-***** Values Entered By
+****** Values Entered By
 - [ ] User
 - [X] System
-***** Required Value
+****** Required Value
 - [ ] No
 - [X] Yes
-***** Default Value
+****** Default Value
 nan
-***** Range of Values
+****** Range of Values
 -inf - inf
-***** Edit Rule
+****** Edit Rule
 - [ ] Enter Now, Edits Allowed
 - [X] Enter Now, Edits Not Allowed
 - [ ] Enter Later, Edits Allowed
 - [ ] Enter Later, Edits Not Allowed
 - [ ] Not Determined At This Time
-***** Comparisons Allowed
+****** Comparisons Allowed
 - Same Field
   - [X] All
   - [ ] =
@@ -1962,7 +2098,7 @@ nan
   - [ ] !=
   - [ ] <
   - [ ] <=
-***** Operations Allowed
+****** Operations Allowed
 - Same Field
   - [ ] All
   - [X] +
@@ -1985,75 +2121,75 @@ nan
   - [X] /
   - [ ] Concatenation
 
-*** DONE ps_y_exp
+**** DONE ps_y_exp
 CLOSED: [2020-07-29 Wed 00:14]
-**** General Elements
-***** Field Name
+***** General Elements
+****** Field Name
 ps_y_exp
-***** Parent Table
+****** Parent Table
 point_sources
-***** Label
+****** Label
 none
-***** Specification Type
+****** Specification Type
 - [ ] Unique
 - [X] Generic
 - [ ] Replica
-***** Source Specification
+****** Source Specification
 none
-***** Shared By
+****** Shared By
 none
-***** Aliases
+****** Aliases
 none
-***** Description
+****** Description
 KS2 y-pixel position of the point source in the exposure
-**** Physical Elements
-***** Data Type
+***** Physical Elements
+****** Data Type
 numeric
-***** Length
+****** Length
 32-bit float
-***** Decimal Places
+****** Decimal Places
 32-bit float
-***** Character Support
+****** Character Support
 - [ ] Letters (A-Z)
 - [X] Numbers (0-9)
 - [X] Keyboard (.,/$#%)
 - [ ] Special
-***** Input Mask
+****** Input Mask
 None
-***** Display Format
+****** Display Format
 123.45
-**** Logical Elements
-***** Key Type
+***** Logical Elements
+****** Key Type
 - [X] Non
 - [ ] Foreign
 - [ ] Primary
 - [ ] Alternate
-***** Key Structure
+****** Key Structure
 - [ ] Simple
 - [ ] Composite
-***** Uniqueness
+****** Uniqueness
 - [X] Non-unique
 - [ ] Unique
-***** Null Support
+****** Null Support
 - [X] Nulls Allowed
 - [ ] No Nulls
-***** Values Entered By
+****** Values Entered By
 - [ ] User
 - [X] System
-***** Required Value
+****** Required Value
 - [ ] No
 - [X] Yes
-***** Default Value
+****** Default Value
 none
-***** Range of Values
+****** Range of Values
 0-1014
-***** Edit Rule
+****** Edit Rule
 - [ ] Enter Now, Edits Allowed
 - [X] Enter Now, Edits Not Allowed
 - [ ] Enter Later, Edits Allowed
 - [ ] Enter Later, Edits Not Allowed
 - [ ] Not Determined At This Time
-***** Comparisons Allowed
+****** Comparisons Allowed
 - Same Field
   - [X] All
   - [ ] =
@@ -2078,7 +2214,7 @@ none
   - [ ] !=
   - [ ] <
   - [ ] <=
-***** Operations Allowed
+****** Operations Allowed
 - Same Field
   - [ ] All
   - [X] +
@@ -2100,75 +2236,75 @@ none
   - [X] *
   - [X] /
   - [ ] Concatenation
-*** DONE ps_x_exp
+**** DONE ps_x_exp
 CLOSED: [2020-07-29 Wed 00:16]
-**** General Elements
-***** Field Name
+***** General Elements
+****** Field Name
 ps_x_exp
-***** Parent Table
+****** Parent Table
 point_sources
-***** Label
+****** Label
 None
-***** Specification Type
+****** Specification Type
 - [ ] Unique
 - [ ] Generic
 - [X] Replica
-***** Source Specification
+****** Source Specification
 point_sources:ps_y_exp
-***** Shared By
+****** Shared By
 None
-***** Aliases
+****** Aliases
 None
-***** Description
+****** Description
 KS2 y-pixel position of the point source in the exposure
-**** Physical Elements
-***** Data Type
+***** Physical Elements
+****** Data Type
 Enter data type here (alphanumeric, numeric, datetime)
-***** Length
+****** Length
 Number of characters the field will hold
-***** Decimal Places
+****** Decimal Places
 Enter number of decimal places here (can be all)
-***** Character Support
+****** Character Support
 - [ ] Letters (A-Z)
 - [ ] Numbers (0-9)
 - [ ] Keyboard (.,/$#%)
 - [ ] Special
-***** Input Mask
+****** Input Mask
 Enter input mask here (the manner in which a user should enter the data)
-***** Display Format
+****** Display Format
 Enter display format here
-**** Logical Elements
-***** Key Type
+***** Logical Elements
+****** Key Type
 - [ ] Non
 - [ ] Foreign
 - [ ] Primary
 - [ ] Alternate
-***** Key Structure
+****** Key Structure
 - [ ] Simple
 - [ ] Composite
-***** Uniqueness
+****** Uniqueness
 - [ ] Non-unique
 - [ ] Unique
-***** Null Support
+****** Null Support
 - [ ] Nulls Allowed
 - [ ] No Nulls
-***** Values Entered By
+****** Values Entered By
 - [ ] User
 - [ ] System
-***** Required Value
+****** Required Value
 - [ ] No
 - [ ] Yes
-***** Default Value
+****** Default Value
 Enter default value here
-***** Range of Values
+****** Range of Values
 Enter range of allowed values here
-***** Edit Rule
+****** Edit Rule
 - [ ] Enter Now, Edits Allowed
 - [ ] Enter Now, Edits Not Allowed
 - [ ] Enter Later, Edits Allowed
 - [ ] Enter Later, Edits Not Allowed
 - [ ] Not Determined At This Time
-***** Comparisons Allowed
+****** Comparisons Allowed
 - Same Field
   - [ ] All
   - [ ] =
@@ -2193,7 +2329,7 @@ Enter range of allowed values here
   - [ ] !=
   - [ ] <
   - [ ] <=
-***** Operations Allowed
+****** Operations Allowed
 - Same Field
   - [ ] All
   - [ ] +
@@ -2216,75 +2352,75 @@ Enter range of allowed values here
   - [ ] /
   - [ ] Concatenation
 
-*** DONE ps_u_mast
+**** DONE ps_u_mast
 CLOSED: [2020-07-30 Thu 00:28]
-**** General Elements
-***** Field Name
+***** General Elements
+****** Field Name
 ps_u_mast
-***** Parent Table
+****** Parent Table
 point_sources
-***** Label
+****** Label
 none
-***** Specification Type
+****** Specification Type
 - [ ] Unique
 - [ ] Generic
 - [X] Replica
-***** Source Specification
+****** Source Specification
 stars:u_mast
-***** Shared By
+****** Shared By
 none
-***** Aliases
+****** Aliases
 none
-***** Description
+****** Description
 KS2 u-position of the point source in the master frame
-**** Physical Elements
-***** Data Type
+***** Physical Elements
+****** Data Type
 numeric
-***** Length
+****** Length
 32-bit float
-***** Decimal Places
+****** Decimal Places
 32-bit float
-***** Character Support
+****** Character Support
 - [ ] Letters (A-Z)
 - [X] Numbers (0-9)
 - [X] Keyboard (.,/$#%)
 - [ ] Special
-***** Input Mask
+****** Input Mask
 None
-***** Display Format
+****** Display Format
 123.45
-**** Logical Elements
-***** Key Type
+***** Logical Elements
+****** Key Type
 - [X] Non
 - [ ] Foreign
 - [ ] Primary
 - [ ] Alternate
-***** Key Structure
+****** Key Structure
 - [ ] Simple
 - [ ] Composite
-***** Uniqueness
+****** Uniqueness
 - [X] Non-unique
 - [ ] Unique
-***** Null Support
+****** Null Support
 - [X] Nulls Allowed
 - [ ] No Nulls
-***** Values Entered By
+****** Values Entered By
 - [ ] User
 - [X] System
-***** Required Value
+****** Required Value
 - [ ] No
 - [X] Yes
-***** Default Value
+****** Default Value
 none
-***** Range of Values
+****** Range of Values
 0-1014
-***** Edit Rule
+****** Edit Rule
 - [ ] Enter Now, Edits Allowed
 - [X] Enter Now, Edits Not Allowed
 - [ ] Enter Later, Edits Allowed
 - [ ] Enter Later, Edits Not Allowed
 - [ ] Not Determined At This Time
-***** Comparisons Allowed
+****** Comparisons Allowed
 - Same Field
   - [X] All
   - [ ] =
@@ -2309,7 +2445,7 @@ none
   - [ ] !=
   - [ ] <
   - [ ] <=
-***** Operations Allowed
+****** Operations Allowed
 - Same Field
   - [ ] All
   - [X] +
@@ -2331,75 +2467,75 @@ none
   - [X] *
   - [X] /
   - [ ] Concatenation
-*** DONE ps_v_mast
+**** DONE ps_v_mast
 CLOSED: [2020-07-30 Thu 00:29]
-**** General Elements
-***** Field Name
+***** General Elements
+****** Field Name
 ps_v_mast
-***** Parent Table
+****** Parent Table
 point_sources
-***** Label
+****** Label
 None
-***** Specification Type
+****** Specification Type
 - [ ] Unique
 - [ ] Generic
 - [X] Replica
-***** Source Specification
+****** Source Specification
 point_sources:ps_u_mast
-***** Shared By
+****** Shared By
 None
-***** Aliases
+****** Aliases
 None
-***** Description
+****** Description
 KS2 v-position of the point source in the master frame
-**** Physical Elements
-***** Data Type
+***** Physical Elements
+****** Data Type
 Enter data type here (alphanumeric, numeric, datetime)
-***** Length
+****** Length
 Number of characters the field will hold
-***** Decimal Places
+****** Decimal Places
 Enter number of decimal places here (can be all)
-***** Character Support
+****** Character Support
 - [ ] Letters (A-Z)
 - [ ] Numbers (0-9)
 - [ ] Keyboard (.,/$#%)
 - [ ] Special
-***** Input Mask
+****** Input Mask
 Enter input mask here (the manner in which a user should enter the data)
-***** Display Format
+****** Display Format
 Enter display format here
-**** Logical Elements
-***** Key Type
+***** Logical Elements
+****** Key Type
 - [ ] Non
 - [ ] Foreign
 - [ ] Primary
 - [ ] Alternate
-***** Key Structure
+****** Key Structure
 - [ ] Simple
 - [ ] Composite
-***** Uniqueness
+****** Uniqueness
 - [ ] Non-unique
 - [ ] Unique
-***** Null Support
+****** Null Support
 - [ ] Nulls Allowed
 - [ ] No Nulls
-***** Values Entered By
+****** Values Entered By
 - [ ] User
 - [ ] System
-***** Required Value
+****** Required Value
 - [ ] No
 - [ ] Yes
-***** Default Value
+****** Default Value
 Enter default value here
-***** Range of Values
+****** Range of Values
 Enter range of allowed values here
-***** Edit Rule
+****** Edit Rule
 - [ ] Enter Now, Edits Allowed
 - [ ] Enter Now, Edits Not Allowed
 - [ ] Enter Later, Edits Allowed
 - [ ] Enter Later, Edits Not Allowed
 - [ ] Not Determined At This Time
-***** Comparisons Allowed
+****** Comparisons Allowed
 - Same Field
   - [ ] All
   - [ ] =
@@ -2424,7 +2560,7 @@ Enter range of allowed values here
   - [ ] !=
   - [ ] <
   - [ ] <=
-***** Operations Allowed
+****** Operations Allowed
 - Same Field
   - [ ] All
   - [ ] +
@@ -2447,75 +2583,75 @@ Enter range of allowed values here
   - [ ] /
   - [ ] Concatenation
 
-*** DONE ps_mag
+**** DONE ps_mag
 CLOSED: [2020-07-30 Thu 01:03]
-**** General Elements
-***** Field Name
+***** General Elements
+****** Field Name
 ps_mag
-***** Parent Table
+****** Parent Table
 point_sources
-***** Label
+****** Label
 none
-***** Specification Type
+****** Specification Type
 - [ ] Unique
 - [ ] Generic
 - [X] Replica
-***** Source Specification
+****** Source Specification
 star_mag
-***** Shared By
+****** Shared By
 None
-***** Aliases
+****** Aliases
 None
-***** Description
+****** Description
 KS2 magnitude for the point source
-**** Physical Elements
-***** Data Type
+***** Physical Elements
+****** Data Type
 numeric
-***** Length
+****** Length
 32-bit precision
-***** Decimal Places
+****** Decimal Places
 all
-***** Character Support
+****** Character Support
 - [ ] Letters (A-Z)
 - [X] Numbers (0-9)
 - [X] Keyboard (.,/$#%)
 - [ ] Special
-***** Input Mask
+****** Input Mask
 none
-***** Display Format
+****** Display Format
 000.00
-**** Logical Elements
-***** Key Type
+***** Logical Elements
+****** Key Type
 - [X] Non
 - [ ] Foreign
 - [ ] Primary
 - [ ] Alternate
-***** Key Structure
+****** Key Structure
 - [ ] Simple
 - [ ] Composite
-***** Uniqueness
+****** Uniqueness
 - [X] Non-unique
 - [ ] Unique
-***** Null Support
+****** Null Support
 - [X] Nulls Allowed
 - [ ] No Nulls
-***** Values Entered By
+****** Values Entered By
 - [ ] User
 - [X] System
-***** Required Value
+****** Required Value
 - [ ] No
 - [X] Yes
-***** Default Value
+****** Default Value
 nan
-***** Range of Values
+****** Range of Values
 -inf - inf
-***** Edit Rule
+****** Edit Rule
 - [ ] Enter Now, Edits Allowed
 - [X] Enter Now, Edits Not Allowed
 - [ ] Enter Later, Edits Allowed
 - [ ] Enter Later, Edits Not Allowed
 - [ ] Not Determined At This Time
-***** Comparisons Allowed
+****** Comparisons Allowed
 - Same Field
   - [X] All
   - [ ] =
@@ -2540,7 +2676,7 @@ nan
   - [ ] !=
   - [ ] <
   - [ ] <=
-***** Operations Allowed
+****** Operations Allowed
 - Same Field
   - [X] All
   - [X] +
@@ -2562,75 +2698,75 @@ nan
   - [X] *
   - [X] /
   - [ ] Concatenation
-*** DONE ps_mag_e
+**** DONE ps_mag_e
 CLOSED: [2020-07-30 Thu 01:03]
-**** General Elements
-***** Field Name
+***** General Elements
+****** Field Name
 ps_mag_e
-***** Parent Table
+****** Parent Table
 point_sources
-***** Label
+****** Label
 None
-***** Specification Type
+****** Specification Type
 - [ ] Unique
 - [ ] Generic
 - [X] Replica
-***** Source Specification
+****** Source Specification
 star_mag_e
-***** Shared By
+****** Shared By
 None
-***** Aliases
+****** Aliases
 None
-***** Description
+****** Description
 KS2 uncertainty in the point source magnitude
-**** Physical Elements
-***** Data Type
+***** Physical Elements
+****** Data Type
 numeric
-***** Length
+****** Length
 32-bit signed float
-***** Decimal Places
+****** Decimal Places
 all
-***** Character Support
+****** Character Support
 - [ ] Letters (A-Z)
 - [X] Numbers (0-9)
 - [X] Keyboard (.,/$#%)
 - [ ] Special
-***** Input Mask
+****** Input Mask
 none
-***** Display Format
+****** Display Format
 000.00
-**** Logical Elements
-***** Key Type
+***** Logical Elements
+****** Key Type
 - [X] Non
 - [ ] Foreign
 - [ ] Primary
 - [ ] Alternate
-***** Key Structure
+****** Key Structure
 - [ ] Simple
 - [ ] Composite
-***** Uniqueness
+****** Uniqueness
 - [X] Non-unique
 - [ ] Unique
-***** Null Support
+****** Null Support
 - [X] Nulls Allowed
 - [ ] No Nulls
-***** Values Entered By
+****** Values Entered By
 - [ ] User
 - [X] System
-***** Required Value
+****** Required Value
 - [ ] No
 - [X] Yes
-***** Default Value
+****** Default Value
 nan
-***** Range of Values
+****** Range of Values
 -inf - inf
-***** Edit Rule
+****** Edit Rule
 - [ ] Enter Now, Edits Allowed
 - [X] Enter Now, Edits Not Allowed
 - [ ] Enter Later, Edits Allowed
 - [ ] Enter Later, Edits Not Allowed
 - [ ] Not Determined At This Time
-***** Comparisons Allowed
+****** Comparisons Allowed
 - Same Field
   - [X] All
   - [ ] =
@@ -2655,7 +2791,7 @@ nan
   - [ ] !=
   - [ ] <
   - [ ] <=
-***** Operations Allowed
+****** Operations Allowed
 - Same Field
   - [ ] All
   - [X] +
@@ -2677,75 +2813,75 @@ nan
   - [X] *
   - [X] /
   - [ ] Concatenation
-*** DONE ps_psf_fit
+**** DONE ps_psf_fit
 CLOSED: [2020-07-30 Thu 01:13]
-**** General Elements
-***** Field Name
+***** General Elements
+****** Field Name
 ps_psf_fit
-***** Parent Table
+****** Parent Table
 point_sources
-***** Label
+****** Label
 None
-***** Specification Type
+****** Specification Type
 - [X] Unique
 - [ ] Generic
 - [ ] Replica
-***** Source Specification
+****** Source Specification
 None
-***** Shared By
+****** Shared By
 None
-***** Aliases
+****** Aliases
 None
-***** Description
+****** Description
 KS2 psf fit quality factory
-**** Physical Elements
-***** Data Type
+***** Physical Elements
+****** Data Type
 numeric
-***** Length
+****** Length
 32-bit signed float
-***** Decimal Places
+****** Decimal Places
 all
-***** Character Support
+****** Character Support
 - [ ] Letters (A-Z)
 - [X] Numbers (0-9)
 - [X] Keyboard (.,/$#%)
 - [ ] Special
-***** Input Mask
+****** Input Mask
 none
-***** Display Format
+****** Display Format
 0.00
-**** Logical Elements
-***** Key Type
+***** Logical Elements
+****** Key Type
 - [X] Non
 - [ ] Foreign
 - [ ] Primary
 - [ ] Alternate
-***** Key Structure
+****** Key Structure
 - [ ] Simple
 - [ ] Composite
-***** Uniqueness
+****** Uniqueness
 - [X] Non-unique
 - [ ] Unique
-***** Null Support
+****** Null Support
 - [X] Nulls Allowed
 - [ ] No Nulls
-***** Values Entered By
+****** Values Entered By
 - [ ] User
 - [X] System
-***** Required Value
+****** Required Value
 - [ ] No
 - [X] Yes
-***** Default Value
+****** Default Value
 nan
-***** Range of Values
+****** Range of Values
 0-1
-***** Edit Rule
+****** Edit Rule
 - [ ] Enter Now, Edits Allowed
 - [X] Enter Now, Edits Not Allowed
 - [ ] Enter Later, Edits Allowed
 - [ ] Enter Later, Edits Not Allowed
 - [ ] Not Determined At This Time
-***** Comparisons Allowed
+****** Comparisons Allowed
 - Same Field
   - [X] All
   - [ ] =
@@ -2770,7 +2906,7 @@ nan
   - [ ] !=
   - [ ] <
   - [ ] <=
-***** Operations Allowed
+****** Operations Allowed
 - Same Field
   - [ ] All
   - [X] +
@@ -2793,77 +2929,77 @@ nan
   - [X] /
   - [ ] Concatenation
 
-** stamps [3/7]
-*** DONE stamp_id 
+*** stamps [3/7]
+**** DONE stamp_id 
 CLOSED: [2020-08-03 Mon 09:35]
-**** General Elements
-***** Field Name
+***** General Elements
+****** Field Name
 stamp_id
-***** Parent Table
+****** Parent Table
 stamps
-***** Label
+****** Label
 None
-***** Specification Type
+****** Specification Type
 - [X] Unique
 - [ ] Generic
 - [ ] Replica
-***** Source Specification
+****** Source Specification
 None
-***** Shared By
+****** Shared By
 None
-***** Aliases
+****** Aliases
 None
-***** Description
+****** Description
 Unique identifier for a stamp. Starts with "T" for sTamp
-**** Physical Elements
-***** Data Type
+***** Physical Elements
+****** Data Type
 alphanumeric
-***** Length
+****** Length
 7
-***** Decimal Places
+****** Decimal Places
 0
-***** Character Support
+****** Character Support
 - [X] Letters (A-Z)
 - [X] Numbers (0-9)
 - [ ] Keyboard (.,/$#%)
 - [ ] Special
-***** Input Mask
+****** Input Mask
 None
-***** Display Format
+****** Display Format
 T123456
 
-**** Logical Elements
-***** Key Type
+***** Logical Elements
+****** Key Type
 - [ ] Non
 - [ ] Foreign
 - [X] Primary
 - [ ] Alternate
-***** Key Structure
+****** Key Structure
 - [X] Simple
 - [ ] Composite
-***** Uniqueness
+****** Uniqueness
 - [ ] Non-unique
 - [X] Unique
-***** Null Support
+****** Null Support
 - [ ] Nulls Allowed
 - [X] No Nulls
-***** Values Entered By
+****** Values Entered By
 - [ ] User
 - [X] System
-***** Required Value
+****** Required Value
 - [ ] No
 - [X] Yes
-***** Default Value
+****** Default Value
 n/a
-***** Range of Values
+****** Range of Values
 S000000-S999999
-***** Edit Rule
+****** Edit Rule
 - [ ] Enter Now, Edits Allowed
 - [X] Enter Now, Edits Not Allowed
 - [ ] Enter Later, Edits Allowed
 - [ ] Enter Later, Edits Not Allowed
 - [ ] Not Determined At This Time
-***** Comparisons Allowed
+****** Comparisons Allowed
 - Same Field
   - [ ] All
   - [X] =
@@ -2888,7 +3024,7 @@ S000000-S999999
   - [ ] !=
   - [ ] <
   - [ ] <=
-***** Operations Allowed
+****** Operations Allowed
 - Same Field
   - [ ] All
   - [ ] +
@@ -2911,78 +3047,78 @@ S000000-S999999
   - [ ] /
   - [ ] Concatenation
 
-*** DONE stamp_ps_id 
+**** DONE stamp_ps_id 
 CLOSED: [2020-08-03 Mon 09:37]
-**** General Elements
-***** Field Name
+***** General Elements
+****** Field Name
 stamp_ps_id
-***** Parent Table
+****** Parent Table
 stamps
-***** Label
+****** Label
 None
-***** Specification Type
+****** Specification Type
 - [ ] Unique
 - [ ] Generic
 - [X] Replica
-***** Source Specification
+****** Source Specification
 point_sources.ps_id
-***** Shared By
+****** Shared By
 none
-***** Aliases
+****** Aliases
 List other names for this field here
-***** Description
+****** Description
 Link to the corresponding point source ID
-**** Physical Elements
+***** Physical Elements
 See specification for point_sources.ps_id
-***** Data Type
+****** Data Type
 Enter data type here (alphanumeric, numeric, datetime)
-***** Length
+****** Length
 Number of characters the field will hold
-***** Decimal Places
+****** Decimal Places
 Enter number of decimal places here (can be all)
-***** Character Support
+****** Character Support
 - [ ] Letters (A-Z)
 - [ ] Numbers (0-9)
 - [ ] Keyboard (.,/$#%)
 - [ ] Special
-***** Input Mask
+****** Input Mask
 Enter input mask here (the manner in which a user should enter the data)
-***** Display Format
+****** Display Format
 Enter display format here
 
-**** Logical Elements
+***** Logical Elements
 See point_sources.ps_id specification
-***** Key Type
+****** Key Type
 - [ ] Non
 - [ ] Foreign
 - [ ] Primary
 - [ ] Alternate
-***** Key Structure
+****** Key Structure
 - [ ] Simple
 - [ ] Composite
-***** Uniqueness
+****** Uniqueness
 - [ ] Non-unique
 - [ ] Unique
-***** Null Support
+****** Null Support
 - [ ] Nulls Allowed
 - [ ] No Nulls
-***** Values Entered By
+****** Values Entered By
 - [ ] User
 - [ ] System
-***** Required Value
+****** Required Value
 - [ ] No
 - [ ] Yes
-***** Default Value
+****** Default Value
 Enter default value here
-***** Range of Values
+****** Range of Values
 Enter range of allowed values here
-***** Edit Rule
+****** Edit Rule
 - [ ] Enter Now, Edits Allowed
 - [ ] Enter Now, Edits Not Allowed
 - [ ] Enter Later, Edits Allowed
 - [ ] Enter Later, Edits Not Allowed
 - [ ] Not Determined At This Time
-***** Comparisons Allowed
+****** Comparisons Allowed
 - Same Field
   - [ ] All
   - [ ] =
@@ -3007,7 +3143,7 @@ Enter range of allowed values here
   - [ ] !=
   - [ ] <
   - [ ] <=
-***** Operations Allowed
+****** Operations Allowed
 - Same Field
   - [ ] All
   - [ ] +
@@ -3030,78 +3166,78 @@ Enter range of allowed values here
   - [ ] /
   - [ ] Concatenation
 
-*** DONE stamp_star_id
+**** DONE stamp_star_id
 CLOSED: [2020-08-03 Mon 09:38]
-**** General Elements
-***** Field Name
+***** General Elements
+****** Field Name
 stamp_star_id
-***** Parent Table
+****** Parent Table
 stamps
-***** Label
+****** Label
 None
-***** Specification Type
+****** Specification Type
 - [ ] Unique
 - [ ] Generic
 - [X] Replica
-***** Source Specification
+****** Source Specification
 stars.star_id
-***** Shared By
+****** Shared By
 None
-***** Aliases
+****** Aliases
 None
-***** Description
+****** Description
 Many-to-one link to the main star ID
-**** Physical Elements
+***** Physical Elements
 See stars.star_id specification
-***** Data Type
+****** Data Type
 Enter data type here (alphanumeric, numeric, datetime)
-***** Length
+****** Length
 Number of characters the field will hold
-***** Decimal Places
+****** Decimal Places
 Enter number of decimal places here (can be all)
-***** Character Support
+****** Character Support
 - [ ] Letters (A-Z)
 - [ ] Numbers (0-9)
 - [ ] Keyboard (.,/$#%)
 - [ ] Special
-***** Input Mask
+****** Input Mask
 Enter input mask here (the manner in which a user should enter the data)
-***** Display Format
+****** Display Format
 Enter display format here
 
-**** Logical Elements
+***** Logical Elements
 See stars.star_id specification
-***** Key Type
+****** Key Type
 - [ ] Non
 - [ ] Foreign
 - [ ] Primary
 - [ ] Alternate
-***** Key Structure
+****** Key Structure
 - [ ] Simple
 - [ ] Composite
-***** Uniqueness
+****** Uniqueness
 - [ ] Non-unique
 - [ ] Unique
-***** Null Support
+****** Null Support
 - [ ] Nulls Allowed
 - [ ] No Nulls
-***** Values Entered By
+****** Values Entered By
 - [ ] User
 - [ ] System
-***** Required Value
+****** Required Value
 - [ ] No
 - [ ] Yes
-***** Default Value
+****** Default Value
 Enter default value here
-***** Range of Values
+****** Range of Values
 Enter range of allowed values here
-***** Edit Rule
+****** Edit Rule
 - [ ] Enter Now, Edits Allowed
 - [ ] Enter Now, Edits Not Allowed
 - [ ] Enter Later, Edits Allowed
 - [ ] Enter Later, Edits Not Allowed
 - [ ] Not Determined At This Time
-***** Comparisons Allowed
+****** Comparisons Allowed
 - Same Field
   - [ ] All
   - [ ] =
@@ -3126,7 +3262,7 @@ Enter range of allowed values here
   - [ ] !=
   - [ ] <
   - [ ] <=
-***** Operations Allowed
+****** Operations Allowed
 - Same Field
   - [ ] All
   - [ ] +
@@ -3149,75 +3285,75 @@ Enter range of allowed values here
   - [ ] /
   - [ ] Concatenation
  
-*** TODO stamp_x_cent
-**** General Elements
-***** Field Name
+**** TODO stamp_x_cent
+***** General Elements
+****** Field Name
 Enter field name here
-***** Parent Table
+****** Parent Table
 Enter parent table here
-***** Label
+****** Label
 Enter label or shorter name here
-***** Specification Type
+****** Specification Type
 - [ ] Unique
 - [ ] Generic
 - [ ] Replica
-***** Source Specification
+****** Source Specification
 If /Specification Type/ is /Replica/, enter source field here
-***** Shared By
+****** Shared By
 List other tables that share this field here
-***** Aliases
+****** Aliases
 List other names for this field here
-***** Description
+****** Description
 Describe the field here
-**** Physical Elements
-***** Data Type
+***** Physical Elements
+****** Data Type
 Enter data type here (alphanumeric, numeric, datetime)
-***** Length
+****** Length
 Number of characters the field will hold
-***** Decimal Places
+****** Decimal Places
 Enter number of decimal places here (can be all)
-***** Character Support
+****** Character Support
 - [ ] Letters (A-Z)
 - [ ] Numbers (0-9)
 - [ ] Keyboard (.,/$#%)
 - [ ] Special
-***** Input Mask
+****** Input Mask
 Enter input mask here (the manner in which a user should enter the data)
-***** Display Format
+****** Display Format
 Enter display format here
 
-**** Logical Elements
-***** Key Type
+***** Logical Elements
+****** Key Type
 - [ ] Non
 - [ ] Foreign
 - [ ] Primary
 - [ ] Alternate
-***** Key Structure
+****** Key Structure
 - [ ] Simple
 - [ ] Composite
-***** Uniqueness
+****** Uniqueness
 - [ ] Non-unique
 - [ ] Unique
-***** Null Support
+****** Null Support
 - [ ] Nulls Allowed
 - [ ] No Nulls
-***** Values Entered By
+****** Values Entered By
 - [ ] User
 - [ ] System
-***** Required Value
+****** Required Value
 - [ ] No
 - [ ] Yes
-***** Default Value
+****** Default Value
 Enter default value here
-***** Range of Values
+****** Range of Values
 Enter range of allowed values here
-***** Edit Rule
+****** Edit Rule
 - [ ] Enter Now, Edits Allowed
 - [ ] Enter Now, Edits Not Allowed
 - [ ] Enter Later, Edits Allowed
 - [ ] Enter Later, Edits Not Allowed
 - [ ] Not Determined At This Time
-***** Comparisons Allowed
+****** Comparisons Allowed
 - Same Field
   - [ ] All
   - [ ] =
@@ -3242,7 +3378,7 @@ Enter range of allowed values here
   - [ ] !=
   - [ ] <
   - [ ] <=
-***** Operations Allowed
+****** Operations Allowed
 - Same Field
   - [ ] All
   - [ ] +
@@ -3265,75 +3401,75 @@ Enter range of allowed values here
   - [ ] /
   - [ ] Concatenation
 
-*** TODO stamp_y_cent 
-**** General Elements
-***** Field Name
+**** TODO stamp_y_cent 
+***** General Elements
+****** Field Name
 Enter field name here
-***** Parent Table
+****** Parent Table
 Enter parent table here
-***** Label
+****** Label
 Enter label or shorter name here
-***** Specification Type
+****** Specification Type
 - [ ] Unique
 - [ ] Generic
 - [ ] Replica
-***** Source Specification
+****** Source Specification
 If /Specification Type/ is /Replica/, enter source field here
-***** Shared By
+****** Shared By
 List other tables that share this field here
-***** Aliases
+****** Aliases
 List other names for this field here
-***** Description
+****** Description
 Describe the field here
-**** Physical Elements
-***** Data Type
+***** Physical Elements
+****** Data Type
 Enter data type here (alphanumeric, numeric, datetime)
-***** Length
+****** Length
 Number of characters the field will hold
-***** Decimal Places
+****** Decimal Places
 Enter number of decimal places here (can be all)
-***** Character Support
+****** Character Support
 - [ ] Letters (A-Z)
 - [ ] Numbers (0-9)
 - [ ] Keyboard (.,/$#%)
 - [ ] Special
-***** Input Mask
+****** Input Mask
 Enter input mask here (the manner in which a user should enter the data)
-***** Display Format
+****** Display Format
 Enter display format here
 
-**** Logical Elements
-***** Key Type
+***** Logical Elements
+****** Key Type
 - [ ] Non
 - [ ] Foreign
 - [ ] Primary
 - [ ] Alternate
-***** Key Structure
+****** Key Structure
 - [ ] Simple
 - [ ] Composite
-***** Uniqueness
+****** Uniqueness
 - [ ] Non-unique
 - [ ] Unique
-***** Null Support
+****** Null Support
 - [ ] Nulls Allowed
 - [ ] No Nulls
-***** Values Entered By
+****** Values Entered By
 - [ ] User
 - [ ] System
-***** Required Value
+****** Required Value
 - [ ] No
 - [ ] Yes
-***** Default Value
+****** Default Value
 Enter default value here
-***** Range of Values
+****** Range of Values
 Enter range of allowed values here
-***** Edit Rule
+****** Edit Rule
 - [ ] Enter Now, Edits Allowed
 - [ ] Enter Now, Edits Not Allowed
 - [ ] Enter Later, Edits Allowed
 - [ ] Enter Later, Edits Not Allowed
 - [ ] Not Determined At This Time
-***** Comparisons Allowed
+****** Comparisons Allowed
 - Same Field
   - [ ] All
   - [ ] =
@@ -3358,7 +3494,7 @@ Enter range of allowed values here
   - [ ] !=
   - [ ] <
   - [ ] <=
-***** Operations Allowed
+****** Operations Allowed
 - Same Field
   - [ ] All
   - [ ] +
@@ -3381,75 +3517,75 @@ Enter range of allowed values here
   - [ ] /
   - [ ] Concatenation
 
-*** TODO stamp_path 
-**** General Elements
-***** Field Name
+**** TODO stamp_path 
+***** General Elements
+****** Field Name
 Enter field name here
-***** Parent Table
+****** Parent Table
 Enter parent table here
-***** Label
+****** Label
 Enter label or shorter name here
-***** Specification Type
+****** Specification Type
 - [ ] Unique
 - [ ] Generic
 - [ ] Replica
-***** Source Specification
+****** Source Specification
 If /Specification Type/ is /Replica/, enter source field here
-***** Shared By
+****** Shared By
 List other tables that share this field here
-***** Aliases
+****** Aliases
 List other names for this field here
-***** Description
+****** Description
 Describe the field here
-**** Physical Elements
-***** Data Type
+***** Physical Elements
+****** Data Type
 Enter data type here (alphanumeric, numeric, datetime)
-***** Length
+****** Length
 Number of characters the field will hold
-***** Decimal Places
+****** Decimal Places
 Enter number of decimal places here (can be all)
-***** Character Support
+****** Character Support
 - [ ] Letters (A-Z)
 - [ ] Numbers (0-9)
 - [ ] Keyboard (.,/$#%)
 - [ ] Special
-***** Input Mask
+****** Input Mask
 Enter input mask here (the manner in which a user should enter the data)
-***** Display Format
+****** Display Format
 Enter display format here
 
-**** Logical Elements
-***** Key Type
+***** Logical Elements
+****** Key Type
 - [ ] Non
 - [ ] Foreign
 - [ ] Primary
 - [ ] Alternate
-***** Key Structure
+****** Key Structure
 - [ ] Simple
 - [ ] Composite
-***** Uniqueness
+****** Uniqueness
 - [ ] Non-unique
 - [ ] Unique
-***** Null Support
+****** Null Support
 - [ ] Nulls Allowed
 - [ ] No Nulls
-***** Values Entered By
+****** Values Entered By
 - [ ] User
 - [ ] System
-***** Required Value
+****** Required Value
 - [ ] No
 - [ ] Yes
-***** Default Value
+****** Default Value
 Enter default value here
-***** Range of Values
+****** Range of Values
 Enter range of allowed values here
-***** Edit Rule
+****** Edit Rule
 - [ ] Enter Now, Edits Allowed
 - [ ] Enter Now, Edits Not Allowed
 - [ ] Enter Later, Edits Allowed
 - [ ] Enter Later, Edits Not Allowed
 - [ ] Not Determined At This Time
-***** Comparisons Allowed
+****** Comparisons Allowed
 - Same Field
   - [ ] All
   - [ ] =
@@ -3474,7 +3610,7 @@ Enter range of allowed values here
   - [ ] !=
   - [ ] <
   - [ ] <=
-***** Operations Allowed
+****** Operations Allowed
 - Same Field
   - [ ] All
   - [ ] +
@@ -3497,75 +3633,75 @@ Enter range of allowed values here
   - [ ] /
   - [ ] Concatenation
 
-*** TODO stamp_ref_flag
-**** General Elements
-***** Field Name
+**** TODO stamp_ref_flag
+***** General Elements
+****** Field Name
 Enter field name here
-***** Parent Table
+****** Parent Table
 Enter parent table here
-***** Label
+****** Label
 Enter label or shorter name here
-***** Specification Type
+****** Specification Type
 - [ ] Unique
 - [ ] Generic
 - [ ] Replica
-***** Source Specification
+****** Source Specification
 If /Specification Type/ is /Replica/, enter source field here
-***** Shared By
+****** Shared By
 List other tables that share this field here
-***** Aliases
+****** Aliases
 List other names for this field here
-***** Description
+****** Description
 Describe the field here
-**** Physical Elements
-***** Data Type
+***** Physical Elements
+****** Data Type
 Enter data type here (alphanumeric, numeric, datetime)
-***** Length
+****** Length
 Number of characters the field will hold
-***** Decimal Places
+****** Decimal Places
 Enter number of decimal places here (can be all)
-***** Character Support
+****** Character Support
 - [ ] Letters (A-Z)
 - [ ] Numbers (0-9)
 - [ ] Keyboard (.,/$#%)
 - [ ] Special
-***** Input Mask
+****** Input Mask
 Enter input mask here (the manner in which a user should enter the data)
-***** Display Format
+****** Display Format
 Enter display format here
 
-**** Logical Elements
-***** Key Type
+***** Logical Elements
+****** Key Type
 - [ ] Non
 - [ ] Foreign
 - [ ] Primary
 - [ ] Alternate
-***** Key Structure
+****** Key Structure
 - [ ] Simple
 - [ ] Composite
-***** Uniqueness
+****** Uniqueness
 - [ ] Non-unique
 - [ ] Unique
-***** Null Support
+****** Null Support
 - [ ] Nulls Allowed
 - [ ] No Nulls
-***** Values Entered By
+****** Values Entered By
 - [ ] User
 - [ ] System
-***** Required Value
+****** Required Value
 - [ ] No
 - [ ] Yes
-***** Default Value
+****** Default Value
 Enter default value here
-***** Range of Values
+****** Range of Values
 Enter range of allowed values here
-***** Edit Rule
+****** Edit Rule
 - [ ] Enter Now, Edits Allowed
 - [ ] Enter Now, Edits Not Allowed
 - [ ] Enter Later, Edits Allowed
 - [ ] Enter Later, Edits Not Allowed
 - [ ] Not Determined At This Time
-***** Comparisons Allowed
+****** Comparisons Allowed
 - Same Field
   - [ ] All
   - [ ] =
@@ -3590,7 +3726,7 @@ Enter range of allowed values here
   - [ ] !=
   - [ ] <
   - [ ] <=
-***** Operations Allowed
+****** Operations Allowed
 - Same Field
   - [ ] All
   - [ ] +
@@ -3612,89 +3748,89 @@ Enter range of allowed values here
   - [ ] *
   - [ ] /
   - [ ] Concatenation
-** stamp_dq_flags [0/0]
+*** stamp_dq_flags [0/0]
 | stamp_dq_flags      |
 |---------------------|
 | stamp_id            |
 | stamp_dq_flag       |
 | stamp_dq_flag_value |
-** companion_status [2/2]
+*** companion_status [2/2]
 This table records whether or not companions have been found around a primary.
 Companions includes visual binaries/spatial coincidences.
 0: no companions
 1: visual binary
 2: high-contrast candidate companion
-*** DONE comp_prim_id
+**** DONE comp_prim_id
 CLOSED: [2020-08-18 Tue 11:20]
-**** General Elements
-***** Field Name
+***** General Elements
+****** Field Name
 comp_prim_id
-***** Parent Table
+****** Parent Table
 companions
-***** Label
+****** Label
 None
-***** Specification Type
+****** Specification Type
 - [ ] Unique
 - [ ] Generic
 - [X] Replica
-***** Source Specification
+****** Source Specification
 stars/star_id
-***** Shared By
+****** Shared By
 stars
-***** Aliases
+****** Aliases
 star_id
-***** Description
+****** Description
 Identifier for the primary star
-**** Physical Elements
+***** Physical Elements
 See stars/star_id
-***** Data Type
+****** Data Type
 Enter data type here (alphanumeric, numeric, datetime)
-***** Length
+****** Length
 Number of characters the field will hold
-***** Decimal Places
+****** Decimal Places
 Enter number of decimal places here (can be all)
-***** Character Support
+****** Character Support
 - [ ] Letters (A-Z)
 - [ ] Numbers (0-9)
 - [ ] Keyboard (.,/$#%)
 - [ ] Special
-***** Input Mask
+****** Input Mask
 Enter input mask here (the manner in which a user should enter the data)
-***** Display Format
+****** Display Format
 Enter display format here
 
-**** Logical Elements
-***** Key Type
+***** Logical Elements
+****** Key Type
 - [ ] Non
 - [ ] Foreign
 - [X] Primary
 - [ ] Alternate
-***** Key Structure
+****** Key Structure
 - [X] Simple
 - [ ] Composite
-***** Uniqueness
+****** Uniqueness
 - [ ] Non-unique
 - [X] Unique
-***** Null Support
+****** Null Support
 - [ ] Nulls Allowed
 - [X] No Nulls
-***** Values Entered By
+****** Values Entered By
 - [ ] User
 - [X] System
-***** Required Value
+****** Required Value
 - [ ] No
 - [X] Yes
-***** Default Value
+****** Default Value
 Enter default value here
-***** Range of Values
+****** Range of Values
 S000000-S999999
-***** Edit Rule
+****** Edit Rule
 - [ ] Enter Now, Edits Allowed
 - [X] Enter Now, Edits Not Allowed
 - [ ] Enter Later, Edits Allowed
 - [ ] Enter Later, Edits Not Allowed
 - [ ] Not Determined At This Time
-***** Comparisons Allowed
+****** Comparisons Allowed
 - Same Field
   - [ ] All
   - [X] =
@@ -3719,7 +3855,7 @@ S000000-S999999
   - [ ] !=
   - [ ] <
   - [ ] <=
-***** Operations Allowed
+****** Operations Allowed
 - Same Field
   - [ ] All
   - [ ] +
@@ -3742,78 +3878,78 @@ S000000-S999999
   - [ ] /
   - [ ] Concatenation
 
-*** DONE companion_flag
+**** DONE companion_flag
 CLOSED: [2020-08-18 Tue 11:14]
-**** General Elements
-***** Field Name
+***** General Elements
+****** Field Name
 companion_flag
-***** Parent Table
+****** Parent Table
 stars
-***** Label
+****** Label
 None
-***** Specification Type
+****** Specification Type
 - [X] Unique
 - [ ] Generic
 - [ ] Replica
-***** Source Specification
+****** Source Specification
 None
-***** Shared By
+****** Shared By
 None
-***** Aliases
+****** Aliases
 None
-***** Description
+****** Description
 Flag if this star has a companion or not
 0 - no companions
 1 - visual binary (i.e. no KLIP)
 2 - high-contrast companion (revealed after PSF subtraction)
-**** Physical Elements
-***** Data Type
+***** Physical Elements
+****** Data Type
 Numeric
-***** Length
+****** Length
 1
-***** Decimal Places
+****** Decimal Places
 0
-***** Character Support
+****** Character Support
 - [ ] Letters (A-Z)
 - [X] Numbers (0-9)
 - [ ] Keyboard (.,/$#%)
 - [ ] Special
-***** Input Mask
+****** Input Mask
 None
-***** Display Format
+****** Display Format
 0
-**** Logical Elements
-***** Key Type
+***** Logical Elements
+****** Key Type
 - [X] Non
 - [ ] Foreign
 - [ ] Primary
 - [ ] Alternate
-***** Key Structure
+****** Key Structure
 - [ ] Simple
 - [ ] Composite
-***** Uniqueness
+****** Uniqueness
 - [X] Non-unique
 - [ ] Unique
-***** Null Support
+****** Null Support
 - [ ] Nulls Allowed
 - [X] No Nulls
-***** Values Entered By
+****** Values Entered By
 - [ ] User
 - [X] System
-***** Required Value
+****** Required Value
 - [ ] No
 - [X] Yes
-***** Default Value
+****** Default Value
 None (until set)
-***** Range of Values
+****** Range of Values
 0-2
-***** Edit Rule
+****** Edit Rule
 - [X] Enter Now, Edits Allowed
 - [ ] Enter Now, Edits Not Allowed
 - [ ] Enter Later, Edits Allowed
 - [ ] Enter Later, Edits Not Allowed
 - [ ] Not Determined At This Time
-***** Comparisons Allowed
+****** Comparisons Allowed
 - Same Field
   - [ ] All
   - [X] =
@@ -3838,7 +3974,7 @@ None (until set)
   - [ ] !=
   - [ ] <
   - [ ] <=
-***** Operations Allowed
+****** Operations Allowed
 - Same Field
   - [ ] All
   - [ ] +
@@ -3862,95 +3998,81 @@ None (until set)
   - [ ] Concatenation
 
 *
-** candidate_detections
+*** candidate_detections
 
-** candidate_master [0/0]
-** filters [0/0]
-| filters   |
-+-----------+
-| filt_id   |
-| filt_name |
-|           |
-** headers [0/0] 
-| headers  |
-+----------|
-| hdr_sci  |
-| hdr_err  |
-| hdr_dq   |
-| hdr_samp |
-| hdr_time |
-** psf_subtractions [0/0]
-** reference_matrix [0/0]
-** grid_sectors
-*** field template
-**** General Elements
-***** Field Name
+*** candidate_master [0/0]
+*** psf_subtractions [0/0]
+*** reference_matrix [0/0]
+*** grid_point_sources
+**** field template
+***** General Elements
+****** Field Name
 Enter field name here
-***** Parent Table
+****** Parent Table
 Enter parent table here
-***** Label
+****** Label
 Enter label or shorter name here
-***** Specification Type
+****** Specification Type
 - [ ] Unique
 - [ ] Generic
 - [ ] Replica
-***** Source Specification
+****** Source Specification
 If /Specification Type/ is /Replica/, enter source field here
-***** Shared By
+****** Shared By
 List other tables that share this field here
-***** Aliases
+****** Aliases
 List other names for this field here
-***** Description
+****** Description
 Describe the field here
-**** Physical Elements
-***** Data Type
+***** Physical Elements
+****** Data Type
 Enter data type here (alphanumeric, numeric, datetime)
-***** Length
+****** Length
 Number of characters the field will hold
-***** Decimal Places
+****** Decimal Places
 Enter number of decimal places here (can be all)
-***** Character Support
+****** Character Support
 - [ ] Letters (A-Z)
 - [ ] Numbers (0-9)
 - [ ] Keyboard (.,/$#%)
 - [ ] Special
-***** Input Mask
+****** Input Mask
 Enter input mask here (the manner in which a user should enter the data)
-***** Display Format
+****** Display Format
 Enter display format here
 
-**** Logical Elements
-***** Key Type
+***** Logical Elements
+****** Key Type
 - [ ] Non
 - [ ] Foreign
 - [ ] Primary
 - [ ] Alternate
-***** Key Structure
+****** Key Structure
 - [ ] Simple
 - [ ] Composite
-***** Uniqueness
+****** Uniqueness
 - [ ] Non-unique
 - [ ] Unique
-***** Null Support
+****** Null Support
 - [ ] Nulls Allowed
 - [ ] No Nulls
-***** Values Entered By
+****** Values Entered By
 - [ ] User
 - [ ] System
-***** Required Value
+****** Required Value
 - [ ] No
 - [ ] Yes
-***** Default Value
+****** Default Value
 Enter default value here
-***** Range of Values
+****** Range of Values
 Enter range of allowed values here
-***** Edit Rule
+****** Edit Rule
 - [ ] Enter Now, Edits Allowed
 - [ ] Enter Now, Edits Not Allowed
 - [ ] Enter Later, Edits Allowed
 - [ ] Enter Later, Edits Not Allowed
 - [ ] Not Determined At This Time
-***** Comparisons Allowed
+****** Comparisons Allowed
 - Same Field
   - [ ] All
   - [ ] =
@@ -3975,124 +4097,7 @@ Enter range of allowed values here
   - [ ] !=
   - [ ] <
   - [ ] <=
-***** Operations Allowed
-- Same Field
-  - [ ] All
-  - [ ] +
-  - [ ] -
-  - [ ] *
-  - [ ] /
-  - [ ] Concatenation
-- Other Fields
-  - [ ] All
-  - [ ] +
-  - [ ] -
-  - [ ] *
-  - [ ] /
-  - [ ] Concatenation
-- Value Expression
-  - [ ] All
-  - [ ] +
-  - [ ] -
-  - [ ] *
-  - [ ] /
-  - [ ] Concatenation
-
-** grid_point_sources
-*** field template
-**** General Elements
-***** Field Name
-Enter field name here
-***** Parent Table
-Enter parent table here
-***** Label
-Enter label or shorter name here
-***** Specification Type
-- [ ] Unique
-- [ ] Generic
-- [ ] Replica
-***** Source Specification
-If /Specification Type/ is /Replica/, enter source field here
-***** Shared By
-List other tables that share this field here
-***** Aliases
-List other names for this field here
-***** Description
-Describe the field here
-**** Physical Elements
-***** Data Type
-Enter data type here (alphanumeric, numeric, datetime)
-***** Length
-Number of characters the field will hold
-***** Decimal Places
-Enter number of decimal places here (can be all)
-***** Character Support
-- [ ] Letters (A-Z)
-- [ ] Numbers (0-9)
-- [ ] Keyboard (.,/$#%)
-- [ ] Special
-***** Input Mask
-Enter input mask here (the manner in which a user should enter the data)
-***** Display Format
-Enter display format here
-
-**** Logical Elements
-***** Key Type
-- [ ] Non
-- [ ] Foreign
-- [ ] Primary
-- [ ] Alternate
-***** Key Structure
-- [ ] Simple
-- [ ] Composite
-***** Uniqueness
-- [ ] Non-unique
-- [ ] Unique
-***** Null Support
-- [ ] Nulls Allowed
-- [ ] No Nulls
-***** Values Entered By
-- [ ] User
-- [ ] System
-***** Required Value
-- [ ] No
-- [ ] Yes
-***** Default Value
-Enter default value here
-***** Range of Values
-Enter range of allowed values here
-***** Edit Rule
-- [ ] Enter Now, Edits Allowed
-- [ ] Enter Now, Edits Not Allowed
-- [ ] Enter Later, Edits Allowed
-- [ ] Enter Later, Edits Not Allowed
-- [ ] Not Determined At This Time
-***** Comparisons Allowed
-- Same Field
-  - [ ] All
-  - [ ] =
-  - [ ] >
-  - [ ] >=
-  - [ ] !=
-  - [ ] <
-  - [ ] <=
-- Other Fields
-  - [ ] All
-  - [ ] =
-  - [ ] >
-  - [ ] >=
-  - [ ] !=
-  - [ ] <
-  - [ ] <=
-- Value Expression
-  - [ ] All
-  - [ ] =
-  - [ ] >
-  - [ ] >=
-  - [ ] !=
-  - [ ] <
-  - [ ] <=
-***** Operations Allowed
+****** Operations Allowed
 - Same Field
   - [ ] All
   - [ ] +
@@ -4115,76 +4120,76 @@ Enter range of allowed values here
   - [ ] /
   - [ ] Concatenation
     
-** catalog_cuts
-*** field template
-**** General Elements
-***** Field Name
+*** catalog_cuts
+**** field template
+***** General Elements
+****** Field Name
 Enter field name here
-***** Parent Table
+****** Parent Table
 Enter parent table here
-***** Label
+****** Label
 Enter label or shorter name here
-***** Specification Type
+****** Specification Type
 - [ ] Unique
 - [ ] Generic
 - [ ] Replica
-***** Source Specification
+****** Source Specification
 If /Specification Type/ is /Replica/, enter source field here
-***** Shared By
+****** Shared By
 List other tables that share this field here
-***** Aliases
+****** Aliases
 List other names for this field here
-***** Description
+****** Description
 Describe the field here
-**** Physical Elements
-***** Data Type
+***** Physical Elements
+****** Data Type
 Enter data type here (alphanumeric, numeric, datetime)
-***** Length
+****** Length
 Number of characters the field will hold
-***** Decimal Places
+****** Decimal Places
 Enter number of decimal places here (can be all)
-***** Character Support
+****** Character Support
 - [ ] Letters (A-Z)
 - [ ] Numbers (0-9)
 - [ ] Keyboard (.,/$#%)
 - [ ] Special
-***** Input Mask
+****** Input Mask
 Enter input mask here (the manner in which a user should enter the data)
-***** Display Format
+****** Display Format
 Enter display format here
 
-**** Logical Elements
-***** Key Type
+***** Logical Elements
+****** Key Type
 - [ ] Non
 - [ ] Foreign
 - [ ] Primary
 - [ ] Alternate
-***** Key Structure
+****** Key Structure
 - [ ] Simple
 - [ ] Composite
-***** Uniqueness
+****** Uniqueness
 - [ ] Non-unique
 - [ ] Unique
-***** Null Support
+****** Null Support
 - [ ] Nulls Allowed
 - [ ] No Nulls
-***** Values Entered By
+****** Values Entered By
 - [ ] User
 - [ ] System
-***** Required Value
+****** Required Value
 - [ ] No
 - [ ] Yes
-***** Default Value
+****** Default Value
 Enter default value here
-***** Range of Values
+****** Range of Values
 Enter range of allowed values here
-***** Edit Rule
+****** Edit Rule
 - [ ] Enter Now, Edits Allowed
 - [ ] Enter Now, Edits Not Allowed
 - [ ] Enter Later, Edits Allowed
 - [ ] Enter Later, Edits Not Allowed
 - [ ] Not Determined At This Time
-***** Comparisons Allowed
+****** Comparisons Allowed
 - Same Field
   - [ ] All
   - [ ] =
@@ -4209,7 +4214,7 @@ Enter range of allowed values here
   - [ ] !=
   - [ ] <
   - [ ] <=
-***** Operations Allowed
+****** Operations Allowed
 - Same Field
   - [ ] All
   - [ ] +

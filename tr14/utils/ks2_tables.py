@@ -238,9 +238,9 @@ def write_fundamental_db(db_file=shared_utils.db_raw_file, stamps=False):
 
     Output
     ------
-    generates {0}
+    generates an HDF5 file at the path specified
 
-    """.format(shared_utils.db_file)
+    """
 
     # use this dict to collect all the tables for writing
     master_tables_dict = {}
@@ -280,7 +280,7 @@ def write_fundamental_db(db_file=shared_utils.db_raw_file, stamps=False):
     # write all the tables to the database file
     with pd.HDFStore(db_file, mode='w') as store:
         for k, v in sorted(master_tables_dict.items()):
-            print(f"Writing table `{k}`...")
+            print(f"Writing table `{k}` to {db_file}...")
             # suppress PerformanceWarnings when saving non c-mapping objects
             with warnings.catch_warnings():
                 warnings.simplefilter("ignore")
