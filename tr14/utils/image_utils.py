@@ -2,6 +2,7 @@
 This file contains utilities for image manipulation: cutting stamps, rotations and reflections, computing indices, etc.
 """
 
+from functools import reduce
 import numpy as np
 import pandas as pd
 import matplotlib as mpl
@@ -11,12 +12,14 @@ import ipywidgets as widgets
 
 from astropy.io import fits
 
-from . import shared_utils, table_utils
+from . import shared_utils
+from . import table_utils
 
 
 ###############
 # Save Figure #
 ###############
+# n.b. this has been moved to plot_utils
 def savefig(fig, name, save=False, fig_args={}):
     """
     Wrapper for fig.savefig that handles enabling/disabling and printing
@@ -289,137 +292,77 @@ def make_pcolor_index(indices):
             np.array(x)+0.5)
 
 
-"""
-I made a cubescroller that works in jupyterlab!
-"""
-def update_image1(img_ind, stamps, df, fig, ax):
-    """not used, for some reason"""
-    fig, ax = plt.subplots(1, 1, **fig_args)
-    row_ind = list(stamps.keys())[img_ind]
-    row = df.loc[row_ind]
-    title = (f"{row['NMAST']} + {row['exp_id']}\nMag: {row['magu']}"
-             + "\nSNR: {row['z2']/row['sz2']:0.2f}")
-    img = stamps[row_ind]
-    imax = ax.imshow(img)
-    fig.colorbar(imax)
-    ax.set_title(title)
 
-def cube_scroller(df,
-                  stamp_args={},
-                  fig_args={},
-                  imshow_args={},
-                  norm_func=mpl.colors.Normalize,
-                  norm_args=()):
+#######################
+### Array Reshaping ###
+#######################
+def flatten_image_axes(array):
     """
-    Accept a dataframe and show the stamps in the dataframe
-
-    Parameters
-    ----------
-    df : pd.DataFrame
-      point sources dataframe OR stamps dataframe, with just the ones you want
-      to show
-    stamp_args : dict
-      dict of arguments to pass to ks2_utils.get_stamp_from_ks2(row, **stamp_args)
-    fig_args : dict
-      dict of arguments to pass to plt.subplots(**fig_args)
-    imshow_args : dict
-      dict of arguments to pass to ax.imshow(img, **imshow_args)
-    norm_func : mpl.colors.Normalize function / child function
-      this is separated from imshow_args now because if you pass an *instance*
-      then it doesn't get reset; you need to pass the function
-    norm_args : list [()]
-      arguments to pass to the normalization function (e.g. for PowerNorm(0.5))
-
-    Output
-    ------
-    interactive_plot : ipywidgets.interact
-      an widget that will run in the output of a notebook cell
-
-    Example:
-    plot_stamps_scroll(df.query("mag >= 10 and mag < 15"), fig_args=dict(figsize=(6,6)))
+    returns the array with the final two axes - assumed to be the image pixels - flattened
     """
-    # default arguments
-    stamp_args.setdefault("stamp_size", 11)
-    #imshow_args.setdefault("norm", mpl.colors.Normalize())
+    shape = array.shape
+    imshape = shape[-2:]
+    newshape = [i for i in list(shape[:-2])]
+
+    newshape += [reduce(lambda x,y: x*y, shape[-2:])]
+    return array.reshape(newshape)
 
 
-    # store data to be plotted in these lists
-    stamps = []
-    titles = []
-    stamp_indices = []
+def flatten_leading_axes(array, axis=-1):
+    """
+    For an array of flattened images of with N axes where the first N-1 axes
+    index parameters (or whatever else), return an array with the first N-1 axes flattened
+    so the final result is 2-D, with the last axis being the pixel axis
+    Args:
+        array: an array of at least 2 dimensions
+        axis [-1]: flattens shape up to this axis (e.g. -1 to flatten up to 
+          the last axis, -2 to preserve last two axes, etc.)
+    """
+    # test axis value is valid
+    if np.abs(axis) >= array.ndim:
+        print("Preserving all axes shapes")
+        return array
+    oldshape = array.shape
+    newshape = [reduce(lambda x,y: x*y, oldshape[:axis])] + list(oldshape[axis:])
+    return np.reshape(array, newshape)
 
 
-    # collect data
-    # if it's a series, assume it's an array of stamps
-    if isinstance(df, pd.Series):
-        stamps = np.stack(df.values)
-        titles = df.index
-        stamp_indices.append([np.arange(stamps.shape[-2]),
-                              np.arange(stamps.shape[-1])])
+def make_image_from_flat(flat, indices=None, shape=None, squeeze=True):
+    """
+    put the flattened region back into an image. if no indices or shape are specified, assumes that
+    the region of N pixels is a square with Nx = Ny = sqrt(N). Only operates on the last axis.
+    Input:
+        flat: [Ni,[Nj,[Nk...]]] x Npix array (any shape as long as the last dim is the pixels)
+        indices: [None] Npix array of flattened pixel coordinates 
+                 corresponding to the region
+        shape: [None] image shape
+        squeeze [True]: gets rid of extra axes 
+    Returns:
+        img: an image (or array of) with dims `shape` and with nan's in 
+            whatever indices are not explicitly set
+    """
+    oldshape = flat.shape[:]
+    if shape is None:
+        # assume that you have been given the full square imae
+        Npix = oldshape[-1]
+        Nside = np.int(np.sqrt(Npix))
+        indices = np.array(range(Npix))
+        shape = (Nside, Nside)
+        return flat.reshape(oldshape[:-1]+shape)
 
-    elif "stamp_array" in df.columns:
-        # if the dataframe has the column "stamp_array", it's a stamps table
-        for i, row in df.iterrows():
-            stamps.append(row['stamp_array'])
-            titles.append(f"{row['stamp_star_id']}/{row['stamp_ps_id']}")
-            ind = get_stamp_ind(row[['stamp_x_cent','stamp_y_cent']],
-                                row['stamp_array'].shape[0])
-            stamp_indices.append(ind)
+    img = np.ravel(np.zeros(shape))*np.nan
+    # this is super memory inefficient
+    # handle the case of region being a 2D array by extending the img axes
+    if flat.ndim > 1:
+        # assume last dimension is the pixel
+        flat = np.reshape(flat, (reduce(lambda x,y: x*y, oldshape[:-1]), oldshape[-1]))
+        img = np.tile(img, (flat.shape[0], 1))
     else:
-        # otherwise, assume it's a point sources table
-        for i, row in df.iterrows():
-            s, ind =  get_stamp_from_ps_row(row, **stamp_args, return_img_ind=True)
-            ind[0] = np.tile(ind[0], (ind[0].size, 1)).T
-            ind[1] = np.tile(ind[1], (ind[1].size, 1))
-            stamps.append(s)
-            titles.append(f"{row['ps_star_id']}/{row['ps_id']}\nMag: {row['ps_mag']:0.2f}")
-            stamp_indices.append(ind)
-
-
-    return _cube_scroller(stamps, titles, stamp_indices,
-                          fig_args=fig_args,
-                          imshow_args=imshow_args,
-                          norm_func=norm_func,
-                          norm_args=norm_args)
-
-
-def _cube_scroller(stamps, titles, indices,
-                   fig_args={},
-                   imshow_args={},
-                   norm_func=mpl.colors.Normalize,
-                   norm_args=()):
-
-    # plotting functions start here
-    def update_image(img_ind): # img_ind goes from 0 to N for N stamps
-        fig, ax = plt.subplots(1, 1, **fig_args)
-        img = stamps[img_ind]
-        if indices == None:
-            x = np.arange(0, img.shape[1]+1)
-            y = np.arange(0, img.shape[0]+1)
-        else:
-            yx = indices[img_ind]
-            # get the x and y that work with plt.pcolor
-            x = np.concatenate((yx[1][0,:], [yx[1][0,-1]+1]))
-            y = np.concatenate((yx[0][:,0], [yx[0][-1,0]+1]))
-        title = titles[img_ind]
-        #imax = ax.imshow(img, **imshow_args, norm=norm_func())
-        imax = ax.pcolor(x, y, img, **imshow_args, norm=norm_func())
-        ax.set_aspect("equal")
-        fig.colorbar(imax, shrink=0.75)
-        ax.set_title(title)
-        #plt.show(fig)
-
-    slider = widgets.IntSlider(min=0, max=len(stamps)-1, step=1, value=0,
-                               description='stamp index')
-
-    interactive_plot = interactive(update_image, img_ind=slider)#, fig=fixed(fig), ax=fixed(ax))
-    output = interactive_plot.children[-1]
-    if 'figsize' in fig_args.keys():
-        width = f"{fig_args['figsize'][0]}in"
-        height = f"{fig_args['figsize'][1]}in"
-    else:
-        width = '350px'
-        height = '350px'
-    output.layout.width = width
-    output.layout.height = height
-    return interactive_plot
+        img = img[None,:]
+    # fill in the image
+    img[:,indices] = flat
+    # reshape and get rid of extra axes, if any
+    img = img.reshape(list(oldshape[:-1])+list(shape))
+    if squeeze == True:
+        img = np.squeeze(img)
+    return img
