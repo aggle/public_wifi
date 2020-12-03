@@ -3,8 +3,11 @@ __pycache__
 # ignore notebooks and associated files
 tr14/*ipynb
 tr14/.ipynb_checkpoints
+tr14/notebooks/*ipynb
+
 # don't track figures
 tr14/figs/
+
 # ignore astrodrizzle/tweakreg output
 tr14/*coo
 tr14/*list
