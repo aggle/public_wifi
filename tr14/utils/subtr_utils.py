@@ -7,14 +7,12 @@ import pandas as pd
 
 from . import table_utils
 from . import shared_utils
+from . import image_utils
 
 # RDI
 import sys
-sys.path.append(shared_utils.load_config_path('rdi_path'))
-import rdi
-from rdi import RDIklip as RK
-from rdi.utils import utils as rutils
-
+sys.path.append(shared_utils.load_config_path('pyklip_path', as_str=True))
+from pyklip import klip
 
 def calc_corr_mat(stamps, corr_func, corr_func_args={}):
     """
@@ -74,6 +72,8 @@ def klip_subtr_wrapper(target_stamp, refs_table, restore_scale=False, klip_args=
       if True, put back the original flux scale of the target stamp. If False,
       then leave the KL-subtracted result as-is after the target and references
       have been scaled to max_val = 1
+    klip_args : dict [{}]
+      dictionary of optional arguments passed to pyklip.klip.klip_math
 
     Output
     ------
@@ -83,21 +83,25 @@ def klip_subtr_wrapper(target_stamp, refs_table, restore_scale=False, klip_args=
       dimensions are always the row, col image coordinates
 
     """
-    targ_stamp_flat = rutils.flatten_image_axes(target_stamp)
-    ref_stamps_flat = rutils.flatten_image_axes(np.stack(refs_table['stamp_array']))
+    targ_stamp_flat = image_utils.flatten_image_axes(target_stamp)
+    ref_stamps_flat = image_utils.flatten_image_axes(np.stack(refs_table['stamp_array']))
     # rescale target and references
     target_scale = np.nanmax(targ_stamp_flat, axis=-1, keepdims=True)
     ref_stamps_scale = np.nanmax(ref_stamps_flat, axis=-1, keepdims=True)
     targ_stamp_flat = targ_stamp_flat / target_scale
     ref_stamps_flat = ref_stamps_flat / ref_stamps_scale
     # apply KLIP
-    kl_max = len(ref_stamps_flat)-1
-    kl_basis = RK.generate_kl_basis(ref_stamps_flat,
-                                    kl_max=klip_args.get('kl_max', kl_max))
-    kl_sub = RK.klip_subtract_with_basis(targ_stamp_flat, ref_stamps_flat,
-                                         n_bases=klip_args.get('n_bases', kl_max))
+    kl_max = np.array([len(ref_stamps_flat)-1])
+    #kl_basis = RK.generate_kl_basis(ref_stamps_flat,
+    #                                kl_max=klip_args.get('kl_max', kl_max))
+    #kl_sub = RK.klip_subtract_with_basis(targ_stamp_flat,
+    #                                     kl_basis,
+    #                                     n_bases=klip_args.get('n_bases', kl_max))
+    kl_sub, kl_basis = klip.klip_math(targ_stamp_flat, ref_stamps_flat,
+                                      numbasis = klip_args.get('numbasis', kl_max),
+                                      return_basis = klip_args.get('return_basis', True))
     # return the subtracted stamps as images
-    kl_sub_img = rutils.make_image_from_flat(kl_sub)
+    kl_sub_img = image_utils.make_image_from_flat(kl_sub.T)
     if restore_scale == True:
         kl_sub_img = kl_sub_img * target_scale
     return kl_sub_img
