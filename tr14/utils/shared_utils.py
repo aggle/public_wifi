@@ -15,17 +15,22 @@ config = configparser.ConfigParser()
 """
 This block defines some useful paths, as well as a wrapper function for loading paths from the config file and handling them properly, like turning relative paths into absolute paths
 """
-def load_config_path(key):
+def load_config_path(key, as_str=False):
     """
     Load a path from the config file. Also handles case of key not found
+
     Parameters
     ----------
     key : str
       a key in the PATHS section of the config file
-    Returns
+    as_str : bool [False]
+      if True, returns path as a string (default is pathlib.Path object)
+
+    Output
     -------
     path : pathlib.Path or None
-      absolute path to the target in the config file. Prints warning if the path does not exist.
+      absolute path to the target in the config file.
+      Prints warning if the path does not exist.
     """
     # reread the file whenever the function is called so you don't have to
     # reload the entire module if the config file gets updated
@@ -37,7 +42,10 @@ def load_config_path(key):
         assert(path.exists())
     except AssertionError:
         print(f"Warning: {path} not found.")
+    if as_str == True:
+        path = path.as_posix()
     return path
+
 
 # path to header tables
 headers_path = load_config_path('headers_path')
