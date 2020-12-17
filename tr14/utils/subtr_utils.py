@@ -9,6 +9,7 @@ import numpy as np
 import pandas as pd
 
 # RDI imports
+from scipy import stats
 from skimage.metrics import structural_similarity as ssim
 import sys
 sys.path.append(shared_utils.load_config_path('pyklip_path', as_str=True))
@@ -45,7 +46,7 @@ def calc_refcube_mse(targ, references):
     targ = targ.ravel() # 1-d
     #references = references.reshape(references.shape[0],
     #                                reduce(lambda x,y: x*y, references.shape[1:]))
-    references = utils.flatten_image_axes(references)
+    references = image_utils.flatten_image_axes(references)
 
     mse = np.squeeze(np.nansum((targ - references)**2, axis=-1) / npix)
     #mse = (np.linalg.norm(targ-references, axis=-1)) / npix
@@ -71,7 +72,7 @@ def calc_refcube_pcc(targ, references):
     targ = targ.ravel() # 1-d
     #references = references.reshape(references.shape[0],
     #                                reduce(lambda x,y: x*y, references.shape[1:]))
-    references = utils.flatten_image_axes(references).copy()
+    references = image_utils.flatten_image_axes(references).copy()
 
     # stats.pearsonr can't handle nan's, which are present in edge stamps
     pcc = np.array([stats.pearsonr(targ, r)[0] for r in references])
@@ -101,7 +102,7 @@ def calc_refcube_ssim(targ, references, win_size=3., kw_args={}):
 
     """
     targ = targ.ravel()
-    references = utils.flatten_image_axes(references)
+    references = image_utils.flatten_image_axes(references)
     ssim_vals = np.array([ssim(targ, r, win_size=win_size,
                                use_sample_covariance=True,
                                **kw_args)
