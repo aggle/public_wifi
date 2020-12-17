@@ -1,19 +1,114 @@
 """
-Utilities for PSF subtraction
+Utilities for PSF subtraction:
+- PSF correlation metrics
+- KLIP utilities and wrappers
+- KLIP PSF model reconstruction
 """
 
 import numpy as np
 import pandas as pd
 
-from . import table_utils
-from . import shared_utils
-from . import image_utils
-
-# RDI
+# RDI imports
+from skimage.metrics import structural_similarity as ssim
 import sys
 sys.path.append(shared_utils.load_config_path('pyklip_path', as_str=True))
 from pyklip import klip
 
+# local imports
+from . import table_utils
+from . import shared_utils
+from . import image_utils
+
+
+###################
+# PSF correlation #
+###################
+# these metrics are described in Ruane et al., 2019
+
+# Mean squared error (MSE)
+def calc_refcube_mse(targ, references):
+    """
+    Calculate the pixel-wise mean squared error (MSE) for each reference
+    compared to the target. Returns -log10(MSE) so that the largest values
+    indicate the most similarity 
+
+    Parameters
+    ----------
+      targ: the target image to subtract
+      references: the cube of references [Nimg x Npix] (can also be 3-d)
+
+    Output
+    ------
+      mse: Nref array of MSE values
+    """
+    npix = targ.size
+    targ = targ.ravel() # 1-d
+    #references = references.reshape(references.shape[0],
+    #                                reduce(lambda x,y: x*y, references.shape[1:]))
+    references = utils.flatten_image_axes(references)
+
+    mse = np.squeeze(np.nansum((targ - references)**2, axis=-1) / npix)
+    #mse = (np.linalg.norm(targ-references, axis=-1)) / npix
+    mse = -np.log10(mse)
+
+    return mse
+
+# Pearson correlation coefficient (PCC)
+def calc_refcube_pcc(targ, references):
+    """
+    Compute the Pearson correlation coefficient (PCC) between the target and the refs
+    PCC(a, b) = cov(a, b)/(std(a) std(b))
+    does higher or lower mean more similar?
+    Parameters
+    ----------
+      targ: 1- or 2-d target image
+      references: 2- or 3-D cube of references
+    Output
+    ------
+      pcc: Nref array of PCC values
+    """
+    npix = targ.size
+    targ = targ.ravel() # 1-d
+    #references = references.reshape(references.shape[0],
+    #                                reduce(lambda x,y: x*y, references.shape[1:]))
+    references = utils.flatten_image_axes(references).copy()
+
+    # stats.pearsonr can't handle nan's, which are present in edge stamps
+    pcc = np.array([stats.pearsonr(targ, r)[0] for r in references])
+    return pcc
+
+# Structural similarity index metric (SSIM), with helper functions
+def calc_refcube_ssim(targ, references, win_size=3., kw_args={}):
+    """
+    Use the scikit-image library function to calculate the SSIM
+
+    Parameters
+    ----------
+    targ : np.array
+      2-D target image
+    references : np.array
+      3-D [Nref, Nx, Ny] reference image stack
+    win_size : int
+      window size for calculating SSM (must be odd)
+    kw_args : {}
+      any additional keyword arguments to pass to
+      skimage.metrics.structural_similarity()
+
+    Output
+    ------
+    ssim_vals : np.array
+      Nref array of SSIM values between the target and the indicated reference image
+
+    """
+    targ = targ.ravel()
+    references = utils.flatten_image_axes(references)
+    ssim_vals = np.array([ssim(targ, r, win_size=win_size,
+                               use_sample_covariance=True,
+                               **kw_args)
+                          for r in references])
+    return ssim_vals
+
+# this function applies the correlation functions to a stamp dataframe
 def calc_corr_mat(stamps, corr_func, corr_func_args={}):
     """
     Calculate a correlation matrix between the stamps.
@@ -57,6 +152,10 @@ def calc_corr_mat(stamps, corr_func, corr_func_args={}):
 
     return corr_mat
 
+
+####################
+# KLIP subtraction #
+####################
 
 def klip_subtr_wrapper(target_stamp, refs_table, restore_scale=False, klip_args={}):
     """
