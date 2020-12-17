@@ -1,0 +1,74 @@
+#+TITLE: Tracking the PSF Subtraction Residuals
+
+* Overview
+Tracking PSF subtraction residuals is a critical part of the RDI self-contained reduction process. It is important to know which PSF subtraction algorithm was used and which parameters were selected. If a star or stamp is found to have a candidate in it, it is necessary to identify all the other stamps for which it was used as a reference and re-process them without the problematic stamp.
+pyKLIP does a good job recording the algorithm identifier and parameters, though it stores them in the FITS headers of the output product and not in a table like I would use. I should take notes on how they do that.
+ALICE does a good job tracking the references used and if they are good or bad. I should take notes on how they do that.
+
+* ALICE notes
+
+** HLSP design
+Choquet et al., 2014 (https://ui.adsabs.harvard.edu/abs/2014SPIE.9147E..51C/abstract)
+The following information should be included in the HLSPs:
+*** Target information
+*** Observation parameters
+*** Reduced images
+*** Image error maps
+*** Spectral information
+*** Field orientation information
+*** Polarization information
+*** Sensitivity limits
+- Use intensity limit instead of contrast limit
+- specifiy to 1-sigma
+- 
+**** Unit: same as reduced images, specified in a dedicated keyword
+*** SNR maps
+Computed by the ratio between the reduced images and the sensitivity limit images
+*** Point source database
+For each reduced image, include for each point source detected at e.g. 3-sigma,
+- SNR of the point source
+- Error on the SNR
+- RA of the point source relative to star
+- RA error
+- Dec of the point source relative to star
+- Dec error
+- Separation of point source relative to star
+- Position angle of the point source in the image
+- Error on the PA
+- Photometry of the point source
+- Error on the photometry
+- Status of the point source at the date of detection. Possible entries are:
+  - Background
+  - Comoving
+  - Unconfirmed
+  - Ambiguous
+- References to previous detections
+- Possible additional comments
+
+** Point source detection
+Choquet et al., 2015 (https://ui.adsabs.harvard.edu/abs/2015SPIE.9605E..1PC/abstract)
+Looks for point sources even at low confidence, because this can be valuable for confirming/rejecting candidates found later with other instruments
+Astrometry is found my uising the correlation maximum with a TinyTim NICMOS PSF
+Photometry is estimated by measuring the correlation at that position between the image and a normalized synthetic PSF, then by correcting for the local background level using a ring aperture.
+SNR is estimated from the raw photometry and the local noise as measured using the standard deviation of a synthetic PSF-convolved annulus at the same separation.
+
+*** Statistical Analysis of the Detections
+Problem is to classify detections as real astrophysical (bound or unbound), or false positives. Instead of SNR, we use ROC curves with fake injections.
+Fake injections can only be performed on data with no detections.
+Good diagnostic plots:
+1. Plot the number of true positives and the number of false positives vs SNR threshold on the same plot.
+   - Also plot the true positive *rate* vs SNR thresh (and the false positive *rate* vs SNR thresh, too)
+2. Then you can plot the false positive rate vs the true positive rate, and mark the spots on the curve that correspond to the different SNR thresholds.
+TPR is *very* steep at low values of FPR (i.e., high SNR threshold). You lose a *lot* of true candidates as you raise your SNR threshold for detection.
+*** Completeness per detection
+Every separation has a different ROC. Do all the shit you did for beta Pic. Calculate the AUC.
+
+* PSF subtraction method should return:
+- references used
+- algorithm
+- parameters
+- reduced images
+
+I think maybe the form of the returned values could be a multindexed dataframe or series with the KLIP parameters as the index
+
+
