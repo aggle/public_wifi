@@ -84,7 +84,8 @@ def plot_cmd(df, ax=None, ax_args={}):
     ylim = ax.get_ylim()
     ax.set_ylim(max(ylim), min(ylim))
 
-    ax.legend()
+    if ax_args.get('label') != None:
+        ax.legend()
 
     fig = ax.get_figure()
     return fig
@@ -195,7 +196,7 @@ def _cube_scroller(stamps,
             y = np.concatenate((yx[0][:,0], [yx[0][-1,0]+1]))
         title = titles[img_ind]
         #imax = ax.imshow(img, **imshow_args, norm=norm_func())
-        imax = ax.pcolor(x, y, img, **imshow_args, norm=norm_func())
+        imax = ax.pcolor(x, y, img, **imshow_args, norm=norm_func(*norm_args))
         ax.set_aspect("equal")
         fig.colorbar(imax, shrink=0.75)
         ax.set_title(title)

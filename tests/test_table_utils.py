@@ -53,3 +53,9 @@ def test_create_database_subset():
         assert(set(star_subset).issubset(set(table[star_col])))
 
 
+
+def test_lookup_from_id():
+    """
+    Test that you get the right subset of a table
+    """
+    ps_table = table_utils.load_table('point_sources')

@@ -77,10 +77,12 @@ def klip_subtr_wrapper(target_stamp, refs_table, restore_scale=False, klip_args=
 
     Output
     ------
-    kl_sub : np.array
+    kl_sub_img : np.array
       an array of klip-subtracted images. the shape of the returned array is
       whatever is appropriate for the passed KLIP parameters, but the final two
       dimensions are always the row, col image coordinates
+    kl_basis_img : np.array
+      array of the klip basis, as images.
 
     """
     targ_stamp_flat = image_utils.flatten_image_axes(target_stamp)
@@ -88,26 +90,78 @@ def klip_subtr_wrapper(target_stamp, refs_table, restore_scale=False, klip_args=
     # rescale target and references
     target_scale = np.nanmax(targ_stamp_flat, axis=-1, keepdims=True)
     ref_stamps_scale = np.nanmax(ref_stamps_flat, axis=-1, keepdims=True)
-    targ_stamp_flat = targ_stamp_flat / target_scale
-    ref_stamps_flat = ref_stamps_flat / ref_stamps_scale
+    targ_stamp_flat = targ_stamp_flat #/ target_scale
+    ref_stamps_flat = ref_stamps_flat #* (target_scale / ref_stamps_scale)
     # apply KLIP
     kl_max = np.array([len(ref_stamps_flat)-1])
-    #kl_basis = RK.generate_kl_basis(ref_stamps_flat,
-    #                                kl_max=klip_args.get('kl_max', kl_max))
-    #kl_sub = RK.klip_subtract_with_basis(targ_stamp_flat,
-    #                                     kl_basis,
-    #                                     n_bases=klip_args.get('n_bases', kl_max))
-    kl_sub, kl_basis = klip.klip_math(targ_stamp_flat, ref_stamps_flat,
-                                      numbasis = klip_args.get('numbasis', kl_max),
-                                      return_basis = klip_args.get('return_basis', True))
+    numbasis = klip_args.get('numbasis', kl_max)
+    # kl_sub, kl_basis = klip.klip_math(targ_stamp_flat, ref_stamps_flat,
+    #                                   numbasis = klip_args.get('numbasis', kl_max),
+    #                                  return_basis = klip_args.get('return_basis', True))
+    return_basis = klip_args.get('return_basis', True)
+    klip_results = klip.klip_math(targ_stamp_flat, ref_stamps_flat,
+                                  numbasis = numbasis,
+                                  return_basis = return_basis)
+    if return_basis == True:
+        kl_sub, kl_basis = klip_results
+    else:
+        kl_sub = klip_results
+
+    # convert to series, indexed by the numbasis
+    if isinstance(numbasis, int):
+        numbasis = [numbasis]
+    kl_sub = pd.Series(dict(zip(numbasis, kl_sub.T)))
+    kl_sub.index.name = 'numbasis'
+    if return_basis == True:
+        kl_basis = pd.Series(dict(zip(range(1, len(kl_basis)+1), kl_basis)))
+        kl_basis.index.name = 'kklip'
+
+
     # return the subtracted stamps as images
-    kl_sub_img = image_utils.make_image_from_flat(kl_sub.T)
+    kl_sub_img = kl_sub.apply(image_utils.make_image_from_flat)
+    if return_basis == True:
+        kl_basis_img = kl_basis.apply(image_utils.make_image_from_flat)
     if restore_scale == True:
         kl_sub_img = kl_sub_img * target_scale
-    return kl_sub_img
+        if return_basis == True:
+            kl_basis_img = kl_basis_img * target_scale
 
+    if return_basis == True:
+        return kl_sub_img, kl_basis_img
+    else:
+        return kl_sub_img
 
+def psf_model_from_basis(target, kl_basis, numbasis=None):
+    """
+    Generate a model PSF from the KLIP basis vectors. See Soummer et al 2012.
 
+    Parameters
+    ----------
+    target : np.array
+      the target PSF, 2-D
+    kl_basis : np.array
+      Nklip x Nrows x Ncols array
+    numbasis : int or np.array [None]
+      number of Kklips to use. Default is None, meaning use all the KL vectors
+
+    Output
+    ------
+    psf_model : np.array
+      Nklip x Nrows x Ncols array of the model PSFs. Dimensionality depends on the value
+      of num_basis
+    """
+    # make sure numbasis is an integer array
+    if numbasis is None:
+        numbasis = len(kl_basis)
+    if isinstance(numbasis, int):
+        numbasis = np.array([numbasis])
+    numbasis = numbasis.astype(np.int)
+
+    coeffs = np.inner(target.ravel(), image_utils.flatten_image_axes(kl_basis))
+    psf_model = kl_basis * np.expand_dims(coeffs, [i+1 for i in range(kl_basis.ndim-1)])
+    psf_model = np.array([np.sum(psf_model[:k], axis=0) for k in numbasis])
+
+    return np.squeeze(psf_model)
 
 
 class StarTarget:

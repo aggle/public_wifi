@@ -16,6 +16,10 @@ from astropy.io import fits
 from . import shared_utils, header_utils
 
 
+# this dictionary helpfully maps the first letter of an identifier
+# to its typical table name
+ident_map = {'S': 'star_id', 'P': 'ps_id', 'T': 'stamp_id'}
+
 def write_table_json(table, key, kwargs={}, verbose=True):
     """
     Store a table as a JSON in the shared_utils.table_path folder
@@ -45,10 +49,10 @@ def write_table_json(table, key, kwargs={}, verbose=True):
     else:
         print(f"Error: table does not have `.to_json()` method.")
 
-def write_table(table, key, kwargs={}, db_file=shared_utils.db_file, verbose=True):
+def write_table(table, key, kwargs={}, db_file=shared_utils.db_clean_file, verbose=True):
     """
-    Add a table to the DB file `shared_utils.db_file`. Really just a simple
-    wrapper so I don't have to keep typing shared_utils.db_file every time
+    Add a table to the DB file `shared_utils.db_clean_file`. Really just a simple
+    wrapper so I don't have to keep typing shared_utils.db_clean_file every time
     I need to write something
 
     Parameters
@@ -60,7 +64,7 @@ def write_table(table, key, kwargs={}, db_file=shared_utils.db_file, verbose=Tru
     kwargs : dict [{}]
       any keyword arguments to pass to pd.DataFrame.to_hdf for DataFrames and
       Series, or to h5py.File for non-pandas objects
-    db_file : str or Path [shared_utils.db_file]
+    db_file : str or Path [shared_utils.db_clean_file]
       path to the database file
     verbose : bool [True]
       print some output
@@ -112,7 +116,7 @@ def load_table_json(table_key):
     return table
 
 
-def load_table(key, db_file=shared_utils.db_file):
+def load_table(key, db_file=shared_utils.db_clean_file):
     """
     Load a table.
 
@@ -167,7 +171,7 @@ def list_available_tables_json(return_list=False):
         return tables
 
 
-def list_available_tables(return_list=False, db_file=shared_utils.db_file):
+def list_available_tables(return_list=False, db_file=shared_utils.db_clean_file):
     """
     Print a list of tables and their descriptions. Alternately, return a list of the tables.
     TODO print the subtables, too
@@ -394,7 +398,7 @@ def get_stamp_coords_from_center(x, y, stamp_size):
 """
 Shortcut for loading the FITS headers
 """
-def load_header(extname='pri', db_file=shared_utils.db_file):
+def load_header(extname='pri', db_file=shared_utils.db_clean_file):
     """
     Helper function to load the right header file
 
@@ -421,7 +425,7 @@ def load_header(extname='pri', db_file=shared_utils.db_file):
     except AssertionError:
         print(f"{extname} not one of {all_headers}, please try again.")
         return None
-    df = load_table(f"hdr_{extname.lower()}")
+    df = load_table(f"hdr_{extname.lower()}", db_file=db_file)
     return df
 
 
@@ -457,32 +461,136 @@ def load_header_json(extname='pri'):
     return df
 
 
-######################
-# Table manipulation #
-######################
-
-def query_table(table, query, return_column=None):
+#################################
+# Table manipulation and lookup #
+#################################
+def lookup_from_id(ident,
+                   lookup_table, target_table,
+                   column=None):
     """
-    Pass a query to the given table.
+    This fucntion is intended to run underneath wrappers that target particular table combinations
     Parameters
     ----------
-    table : pd.DataFrame
-      the table to query
-    query : string
-      a string with proper query syntax
-    return_column : string (optional, default is None)
-      the column whose value you want to return. If left as default (None),
-      returns the full (queried) dataframe
+    ident : str or list
+      identifier(s) with format [S,P,T]######
+    lookup_table : pd.DataFrame
+      the table matching the given ID to the target identifier. If None, loads lookup table from the
+      specified database file
+    target_table : pd.DataFrame
+      the table containing the target information. if no columns are specified (column=None),
+      then returns the entire row. If None, loads the table from the specified
+      database file
+    column : string or list [None]
+      the column of the star table to return. if a string, returns one column. if a list,
+      returns all the specified columns. if None, returns the entire row
+    Output
+    ------
+    results : value, series, or dataframe
+      if one value for one object, then a single value. if several columns from a single
+      star or one value for several stars, then it's a series. if multiple columns for
+      multiple stars, then it's a dataframe.
 
-    Returns
-    -------
-    return_value : a series (or dataframe) of all the values that match the query
     """
-    return_value = table.query(query)
-    if return_column is not None:
-        return_column = return_column.lower()
-        return_value = return_value[return_column]
-    return return_value
+
+    # decide what kind of an identifier you have
+    if isinstance(ident, str):
+        ident = [ident]
+    ident_type = ident_map[ident[0][0]]
+    # the other identifier is the other column from the lookup table
+    targ_ident_type = [i for i in list(lookup_table.columns) if i != ident_type][0]
+    # get the corresponding identifiers
+    targ_ids = lookup_table.query(f'{ident_type} in @ident')[targ_ident_type]
+    targ_ids = targ_ids.drop_duplicates()
+    # use these identifiers to select a subset of the data
+    sub_table = target_table.query(f'{targ_ident_type} in @targ_ids')
+    #sub_table = sub_table.drop_duplicates()
+    # if applicable, select one (or more) columns
+    if isinstance(column, str) or isinstance(column, list):
+        try:
+            sub_table = sub_table[column].squeeze()
+        except KeyError:
+            print(f"Error: requested columns not found, returning full table.")
+    # finally, return the table
+    return sub_table
+
+# OK, now all the functions that wrap around it
+def lookup_star_from_ps_id(ps_id, lookup_table=None, star_table=None, column=None,
+                           db_file=shared_utils.db_clean_file):
+    """
+    Get the star table of star(s) that correspond to one or more point source detections.
+    Wraps around lookup_from_id.
+    """
+    if not isinstance(lookup_table, pd.DataFrame):
+        lookup_table = load_table("lookup_star-ps_id", db_file=db_file)
+    if not isinstance(star_table, pd.DataFrame):
+        star_table = load_table("stars", db_file=db_file)
+    return lookup_from_id(ps_id, lookup_table, star_table, column)
+
+def lookup_ps_from_star_id(star_id, lookup_table=None, ps_table=None, column=None,
+                           db_file=shared_utils.db_clean_file):
+    """
+    Get the point source table of point source(s) that correspond to one or more stars.
+    Wraps around lookup_from_id.
+    """
+    if not isinstance(lookup_table, pd.DataFrame):
+        lookup_table = load_table("lookup_star-ps_id", db_file=db_file)
+    if not isinstance(ps_table, pd.DataFrame):
+        ps_table = load_table("point_sources", db_file=db_file)
+    return lookup_from_id(star_id, lookup_table, ps_table, column)
+
+
+def lookup_star_from_stamp_id(stamp_id, lookup_table=None, star_table=None, column=None,
+                           db_file=shared_utils.db_clean_file):
+    """
+    Get the star table of star(s) that correspond to one or more stamps.
+    wraps around lookup_from_id.
+    """
+    if not isinstance(lookup_table, pd.DataFrame):
+        lookup_table = load_table("lookup_star-stamp_id", db_file=db_file)
+    if not isinstance(star_table, pd.DataFrame):
+        star_table = load_table("stars", db_file=db_file)
+    return lookup_from_id(stamp_id, lookup_table, star_table, column)
+
+
+def lookup_stamp_from_star_id(star_id, lookup_table=None, stamp_table=None, column=None,
+                              db_file=shared_utils.db_clean_file):
+    """
+    Get the stamp table of stamp(s) that correspond to one or more stars.
+    Wraps around lookup_from_id.
+    """
+    if not isinstance(lookup_table, pd.DataFrame):
+        lookup_table = load_table("lookup_star-stamp_id", db_file=db_file)
+    if not isinstance(stamp_table, pd.DataFrame):
+        stamp_table = load_table("stamps", db_file=db_file)
+    return lookup_from_id(star_id, lookup_table, stamp_table, column)
+
+def lookup_ps_from_stamp_id(stamp_id, lookup_table=None, ps_table=None, column=None,
+                            db_file=shared_utils.db_clean_file):
+    """
+    Get the point source table of point source(s) that correspond to one or more stamps.
+    Wraps around lookup_from_id.
+    """
+    if not isinstance(lookup_table, pd.DataFrame):
+        lookup_table = load_table("lookup_ps-stamp_id", db_file=db_file)
+    if not isinstance(ps_table, pd.DataFrame):
+        ps_table = load_table("point_sources", db_file=db_file)
+    return lookup_from_id(stamp_id, lookup_table, ps_table, column)
+
+def lookup_stamp_from_ps_id(ps_id, lookup_table=None, stamp_table=None, column=None,
+                            db_file=shared_utils.db_clean_file):
+    """
+    Get the stamp table of stamps correspond to one or more point source(s).
+    Wraps around lookup_from_id.
+    """
+    if not isinstance(lookup_table, pd.DataFrame):
+        lookup_table = load_table("lookup_ps-stamp_id", db_file=db_file)
+    if not isinstance(stamp_table, pd.DataFrame):
+        stamp_table = load_table("stamps", db_file=db_file)
+    return lookup_from_id(ps_id, lookup_table, stamp_table, column)
+
+
+
+
 
 
 def match_value_in_table(table, query_col, match_val, return_col=None):
@@ -517,12 +625,6 @@ def match_value_in_table(table, query_col, match_val, return_col=None):
     return return_val.squeeze()
 
 
-
-def set_value():
-    """
-    Set table value
-    """
-    pass
 
 def index_into_table(table, index_col, values):
     """
