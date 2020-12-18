@@ -20,6 +20,67 @@ from . import shared_utils, header_utils
 # to its typical table name
 ident_map = {'S': 'star_id', 'P': 'ps_id', 'T': 'stamp_id'}
 
+
+# Read form the config file
+config_file = (Path(__file__).parent.absolute() / "../table_definitions.cfg").resolve()
+config = configparser.ConfigParser()
+
+def load_table_definition(table_name):
+    """
+    Load a path from the config file. Also handles case of key not found
+    
+    Parameters
+    ----------
+    table_name : str
+      the name for the table (see docs)
+
+    Output
+    -------
+    col_dict : dict
+        a dictionary of column names and dtypes
+    """
+    # reread the file whenever the function is called so you don't have to
+    # reload the entire module if the config file gets updated
+    config.read(config_file)
+    table_name = table_name.upper()
+    try:
+        table_cols = list(config[table_name].items())
+    except KeyError:
+        available_tables = '\n\t'.join(config.sections())
+        print(f"Error, no table named {table_name.upper()}")
+        print(f"Available tables are: \n\t{available_tables}")
+        return None
+    table_dict = dict([(i[0][1], i[1][1]) for i in zip(table_cols[::2], table_cols[1::2])])
+    return table_dict
+
+def initialize_table(table_name, nrows):
+    """
+    Create an empty table based on the definitions found in table_definitions.cfg
+
+    Parameters
+    ----------
+    table_name : str
+      A valid table name
+    nrows : the length of the table
+
+    Output
+    ------
+    table : pd.DataFrame
+      the specified table
+
+    """
+    table_cols = load_table_definition(table_name)
+    table = pd.DataFrame(data=None,
+                         columns=table_cols.keys(),
+                         index=range(nrows))
+    for col in table_cols.keys():
+        table[col] = table[col].astype(table_cols[col])
+    return table
+
+
+
+
+
 def write_table_json(table, key, kwargs={}, verbose=True):
     """
     Store a table as a JSON in the shared_utils.table_path folder
@@ -740,39 +801,6 @@ def get_header_kw_for_exp(exp_id, kw, hdr_id='pri'):
     return kw_val
 
 
-
-def init_table_from_config(tab_name, nentries=1, config=shared_utils.config):
-    """
-    Initialize a pandas dataframe from the config file
-
-    Parameters
-    ----------
-    tab_name : str
-      name of the table (must exist in config file)
-    nentries : int [0]
-      size of the dataframe index
-    config : ConfigParser object [shared_utils.config]
-      ConfigParser object with the file loaded
-
-    Output
-    ------
-    table : pd.DataFrame
-      empty dataframe (initialized to nan's)
-      if the table is not defined in the config file, return None
-    """
-
-    # pull the table section out of the config file
-    if not config.has_section(tab_name.upper()):
-        print(f"Table {tab_name.upper()} definition not found.")
-        return None
-    section = config[tab_name.upper()]
-    columns = [i.strip() for i in section['COLUMNS'].split()]
-    dtype = section['DTYPE']
-    table = pd.DataFrame(data=0,
-                         index=np.arange(nentries),
-                         columns=columns,
-                         dtype=dtype)
-    return table
 
 ####################
 # Catalog cleaning #
