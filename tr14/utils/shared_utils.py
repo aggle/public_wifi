@@ -2,9 +2,29 @@
 Includes shared useful stuff, like path definitions and file formats
 """
 
+import configparser
 import re
 from pathlib import Path
-import configparser
+
+
+# universal debug printer
+def debug_print(debug_flag=False, debug_str=''):
+    """
+    Easy-to-enable/disable function for debug printing.
+
+    Parameters
+    ----------
+    debug_flag : bool [False]
+      Turns printing on and off. You can set a flag at the top of the module, or
+      turn on/off each statement individually.
+    debug_str : str ['']
+      Optional string to print. If empty, just prints 'DEBUG'
+    """
+    if debug_flag == True:
+        debug_str = 'DEBUG ' + debug_str
+        print(debug_str)
+    else:
+        pass
 
 #########
 # PATHS #
@@ -57,7 +77,7 @@ db_raw_file = load_config_path("db_raw_file")
 db_file = load_config_path("db_file")
 db_subcat_file = load_config_path("db_subcat_file")
 db_clean_file =  load_config_path("db_clean_file")
-# composite image
+# compo9site image
 #composite_image_path = load_config_path("composite_img_file")
 
 
