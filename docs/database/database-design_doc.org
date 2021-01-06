@@ -4,7 +4,7 @@
 * Steps
   1) [X] Defining a mission statement and mission objectives
   2) [X] Analyzing the current database
-  3) [ ] Creating the data structures
+  3) [X] Creating the data structures
   4) [ ] Determining and establishing table relationships
   5) [ ] Determining and defining business rules
   6) [ ] Determining and defining views

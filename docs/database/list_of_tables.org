@@ -101,7 +101,8 @@ This should probably be a subtable. Each field is the name of a parameter, and e
 *** Reference matrix
 This table aggregates (Yes/No) whether or not any particular stamp can be used as a reference for another stamp.
 * Final Table List
-Options for table type: data, linking, subset, or validation
+Long-form, qualitative description of the tables and their fields
+Options for table type: data, linking, subset, or validation.
 ** stars
 *** Type
 Data
@@ -244,6 +245,7 @@ these are all boolean True or False
 - mag_le_-6
   is the instrumental magnitude brighter than -6?
 
+
 * Formal tables and field descriptions
 Here we associate fields with each table, and formally define the contents of each field
 ** Observation tables
@@ -379,7 +381,7 @@ Enter range of allowed values here
   - [ ] /
   - [ ] Concatenation
 
-
+    
 ** Catalog tables
 These tables contain information related to the point sources pulled from the exposures, and may change.
 *** stars [9/9]
@@ -3636,30 +3638,30 @@ Enter range of allowed values here
 **** TODO stamp_ref_flag
 ***** General Elements
 ****** Field Name
-Enter field name here
-****** Parent Table
-Enter parent table here
+stamp_ref_flag
+****** parent Table
+stamps
 ****** Label
-Enter label or shorter name here
+None
 ****** Specification Type
-- [ ] Unique
+- [X] Unique
 - [ ] Generic
 - [ ] Replica
 ****** Source Specification
 If /Specification Type/ is /Replica/, enter source field here
 ****** Shared By
-List other tables that share this field here
+None
 ****** Aliases
-List other names for this field here
+None
 ****** Description
-Describe the field here
+Is the stamp OK for use as a reference PSF? True -> Yes, False -> No
 ***** Physical Elements
 ****** Data Type
-Enter data type here (alphanumeric, numeric, datetime)
+Boolean
 ****** Length
-Number of characters the field will hold
+N/A
 ****** Decimal Places
-Enter number of decimal places here (can be all)
+N/A
 ****** Character Support
 - [ ] Letters (A-Z)
 - [ ] Numbers (0-9)
@@ -3672,7 +3674,7 @@ Enter display format here
 
 ***** Logical Elements
 ****** Key Type
-- [ ] Non
+- [X] Non
 - [ ] Foreign
 - [ ] Primary
 - [ ] Alternate
@@ -3680,23 +3682,23 @@ Enter display format here
 - [ ] Simple
 - [ ] Composite
 ****** Uniqueness
-- [ ] Non-unique
+- [X] Non-unique
 - [ ] Unique
 ****** Null Support
 - [ ] Nulls Allowed
-- [ ] No Nulls
+- [X] No Nulls
 ****** Values Entered By
 - [ ] User
-- [ ] System
+- [X] System
 ****** Required Value
 - [ ] No
-- [ ] Yes
+- [X] Yes
 ****** Default Value
-Enter default value here
+True
 ****** Range of Values
-Enter range of allowed values here
+True, False
 ****** Edit Rule
-- [ ] Enter Now, Edits Allowed
+- [X] Enter Now, Edits Allowed
 - [ ] Enter Now, Edits Not Allowed
 - [ ] Enter Later, Edits Allowed
 - [ ] Enter Later, Edits Not Allowed
@@ -3704,10 +3706,10 @@ Enter range of allowed values here
 ****** Comparisons Allowed
 - Same Field
   - [ ] All
-  - [ ] =
+  - [X] =
   - [ ] >
   - [ ] >=
-  - [ ] !=
+  - [X] !=
   - [ ] <
   - [ ] <=
 - Other Fields
@@ -4236,6 +4238,7 @@ Enter range of allowed values here
   - [ ] *
   - [ ] /
   - [ ] Concatenation
+
 
 * Linking tables
 Make sure to define these linking and lookup tables!
