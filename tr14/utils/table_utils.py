@@ -808,3 +808,35 @@ def get_header_kw_for_exp(exp_id, kw, hdr_id='pri'):
 # see cleaning_utils.py
 
 
+###########
+# Setters #
+###########
+
+def set_reference_quality_flag(stamp_ids, flag=True, stamp_table=None):
+    """
+    Set the reference quality flag for the given stamp ids.
+    True -> stamp *can* be used as a reference
+    False -> stamp *cannot* be used as a reference
+
+    Parameters
+    ----------
+    stamp_ids : string or list-like
+      one or more stamp IDs whose reference flags need to be set.
+    flag : bool [True]
+      the value of the flag
+    stamp_table : pd.DataFrame [None]
+      the table to modify, passed by reference. If None, read from the default file
+
+    Output
+    ------
+    None: stamp_table is modified in-place
+
+    """
+    if isinstance(stamp_ids, str):
+        stamp_ids = [stamp_ids]
+    if not isinstance(stamp_table, pd.DataFrame):
+        print("None value for stamp_table not yet enabled, quitting")
+        return
+    ind = stamp_table.query("stamp_id in @stamp_ids").index
+    stamp_table.loc[ind, 'stamp_ref_flag'] = flag
+    # done
