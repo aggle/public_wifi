@@ -12,13 +12,15 @@ import pandas as pd
 from scipy import stats
 from skimage.metrics import structural_similarity as ssim
 import sys
-sys.path.append(shared_utils.load_config_path('pyklip_path', as_str=True))
-from pyklip import klip
 
 # local imports
 from . import table_utils
 from . import shared_utils
 from . import image_utils
+
+# pyklip
+sys.path.append(shared_utils.load_config_path('pyklip_path', as_str=True))
+from pyklip import klip
 
 
 ###################

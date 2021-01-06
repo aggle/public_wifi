@@ -77,7 +77,7 @@ db_raw_file = load_config_path("db_raw_file")
 db_file = load_config_path("db_file")
 db_subcat_file = load_config_path("db_subcat_file")
 db_clean_file =  load_config_path("db_clean_file")
-# compo9site image
+# composite image
 #composite_image_path = load_config_path("composite_img_file")
 
 
