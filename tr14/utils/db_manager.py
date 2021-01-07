@@ -14,11 +14,16 @@ class DBManager:
 
     def __init__(self, db_path=shared_utils.db_clean_file):
         self.db_path = db_path
+        # load the principle tables directly as class members
         self.tables = {} # list of loaded tables
         self.stars_tab = self.load_table('stars')
         self.ps_tab = self.load_table('point_sources')
         self.stamps_tab = self.load_table('stamps')
+        self.grid_defs_tab = self.load_table('grid_sector_definitions')
+        self.comp_status_tab = self.load_table('companion_status')
+        # dicts of tables that group naturally together
         self.lookup_dict = self.load_lookup_tables()
+        self.header_dict = self.load_header_tables()
 
     def load_table(self, key):
         """
@@ -48,6 +53,7 @@ class DBManager:
             df = None
         self.tables[key] = df
         return df
+
 
     def write_table(self, key, verbose=True, kwargs={}):
         """
@@ -144,6 +150,23 @@ class DBManager:
             return lkp_dict
 
 
+    def load_header_tables(self):
+        """
+        Load all the tables that start with *hdr_*
+
+        Parameters
+        ----------
+        path : path to the database file
+
+        Output
+        ------
+        hdr_dict : dictionary of header tables
+        """
+        with pd.HDFStore(self.db_path, mode='r') as store:
+            hdr_dict = {key[1:]: store[key] for key in store.keys()
+                        if key.startswith('/hdr')}
+            return hdr_dict
+
 
     def find_lookup_table(self, lkp1, lkp2):
         """
@@ -166,7 +189,7 @@ class DBManager:
         return None
 
 
-    def lookup_id(self, ids, want_this_id):
+    def find_matching_id(self, ids, want_this_id):
         """
         Given a set of ids (star IDs, stamp IDs, etc), find the matching IDs
         in the lookup table specified.
@@ -213,6 +236,7 @@ class DBManager:
         matching_ids = lkp_tab.set_index(start_id_type+"_id").loc[ids, want_this_id+"_id"]
         return matching_ids
 
+
     def set_reference_quality_flag(self, stamp_ids, flag=True):
         """
         Set the reference quality flag for the given stamp ids.
@@ -242,3 +266,139 @@ class DBManager:
         self.stamps_tab.loc[ind, 'stamp_ref_flag'] = flag
 
 
+    def find_sector(self, ps_id=None, sector_id=None):
+        """
+        Given one or several point source identifiers, find their sectors.
+        Or, given one or several sectors, find their point sources
+        One of ps_id and sector_id must be None, and the other must not be
+
+        Parameters
+        ----------
+        ps_id : str or list [None]
+          string or list of point source ids (format: P000000)
+        sector_id : int [None]
+          int or list of ints for the sector IDs
+
+        Output
+        ------
+        sector_df: pd.DataFrame, columns are 'ps_id' and 'sector_id'
+          the sector number(s) for each given point sources
+        """
+        # first, make sure that one of the inputs is None and the other isn't
+        try:
+            assert( ((ps_id is None) and (sector_id is None)) == False )
+        except AssertionError:
+            print("Error: both ps_id and sector_id cannot be None")
+            return None
+        # next, make sure that only *one* is None
+        try:
+            assert( ((ps_id is None) or (sector_id is None)) == True )
+        except AssertionError:
+            print("Error: one of ps_id and sector_id must be None")
+            return None
+
+        if ps_id is not None:
+            if isinstance(ps_id, str):
+                query_str = "ps_id == @ps_id"
+            else:
+                query_str = "ps_id in @ps_id"
+        elif sector_id is not None:
+            if isinstance(sector_id, int):
+                query_str = "sector_id == @sector_id"
+            else:
+                query_str = "sector_id in @sector_id"
+        else:
+            print("Failed to construct query, returning None")
+            return None
+
+        sector_df = self.lookup_dict['lookup_point_source_sectors'].query(query_str)
+        return sector_df
+
+
+    def query_table(self, table, query_str, **kwargs):
+        """
+        Interface for processing table queries, so you don't access the tables directly.
+        So far, not working because cannot pass variables to the query string
+
+        Parameters
+        ----------
+        table : pd.DataFrame
+          the table (an object member) to query
+        query_str : str
+          the query string to pass to table.query
+        kwargs : any arguments that need to be passed to the query
+
+        Output
+        ------
+        query_results : pd.DataFrame
+          results of the query
+        """
+        #for kw in kwargs:
+        #    print(kw)
+        # make all the variables in kwargs into local variables
+        #for k, val in kwargs.items():
+        #    exec(key+"=val")
+        return table.query(query_str)
+
+
+class DBSector(DBManager):
+
+    """
+    This class holds a subset of star, point source, and stamp tables for a WFC3 detector sector.
+    Basically it initializes a regular DBManager object and then filters down to the requested sector
+    """
+    def __init__(self,
+                 sector_id,
+                 db_path=shared_utils.db_clean_file):
+        """
+        Give it the stars, ps, and stamps tables. All other tables are copied
+        """
+        DBManager.__init__(self, db_path=db_path)
+        self.select_sector(sector_id)
+
+    def select_sector(self, sector_id):
+        """
+        Given a sector ID, return only the point sources, stamps, and stars in that sector
+
+        Output:
+        None; sets self.star_tab, self.ps_tab, and self.stamps_tab
+        """
+        # point sources
+        sec_ps_ids = self.find_sector(sector_id = sector_id)['ps_id']
+        idx = self.ps_tab.query('ps_id not in @sec_ps_ids').index
+        self.ps_tab.drop(idx, axis=0, inplace=True)
+        # now stamps
+        stamp_ids = self.find_matching_id(self.ps_tab['ps_id'].values, 'stamp')
+        idx = self.stamps_tab.query("stamp_id not in @stamp_ids").index
+        self.stamps_tab.drop(idx, axis=0, inplace=True)
+        # now stars
+        star_ids = self.find_matching_id(self.ps_tab['ps_id'].values, 'star')
+        idx = self.stars_tab.query("star_id not in @star_ids").index
+        self.stars_tab.drop(idx, axis=0, inplace=True)
+
+
+
+
+class DBSubset(DBManager):
+    """
+    This class holds a subset of star, point source, and stamp tables.
+    All other tables should be copied over.
+    It is more generic 
+    """
+    def __init__(self,
+                 stars_tab, ps_tab, stamps_tab,
+                 db_path=shared_utils.db_clean_file):
+        """
+        Give it the stars, ps, and stamps tables. All other tables are copied
+        It is more generic than DBSector
+        """
+        DBManager.__init__(self, db_path=db_path)
+        # remove old tables
+        del self.stars_tab, self.ps_tab, self.stamps_tab
+        # create new tables
+        self.stars_tab = stars_tab.copy()
+        self.table_dict['stars'] = self.stars_tab
+        self.ps_tab = ps_tab.copy()
+        self.table_dict['point_sources'] = self.ps_tab
+        self.stamps_tab = stamps_tab.copy()
+        self.table_dict['stamps'] = self.stamps_tab
