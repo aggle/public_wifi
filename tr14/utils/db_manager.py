@@ -341,6 +341,36 @@ class DBManager:
         return table.query(query_str)
 
 
+    def group_by_filter_epoch(self):
+        """
+        Group the stars, stamps, and point sources by filter and epoch.
+        Not sure what to do with these. Return them as separate objects?
+        Assign them as object attributes?
+
+        Parameters
+        ----------
+        self
+
+        Output
+        ------
+        assigns to self.fe_dict, which is a dict whose keys are the filter
+        and epoch keys, and each value is a dict that stores the star, ps, and
+        stamp tables for that filter and epoch combo
+        dict keys are the concatenated group keys
+        """
+        # group just the point source IDs
+        fe_groups = self.ps_tab.groupby(["ps_filt_id", "ps_epoch_id"])['ps_id']
+        self.fe_dict = {''.join(k): {} for k in fe_groups.groups.keys()}
+        for k, dk in zip(sorted(fe_groups.groups.keys()),
+                     [''.join(k) for k in sorted(fe_groups.groups.keys())]):
+            k_ps = fe_groups.get_group(k)
+            self.fe_dict[dk]['ps'] = self.ps_tab.query('ps_id in @k_ps')
+            k_stamps = self.find_matching_id(k_ps, 'stamp')
+            self.fe_dict[dk]['stamps'] = self.stamps_tab.query('stamp_id in @k_stamps')
+            k_stars = self.find_matching_id(k_ps, 'star')
+            self.fe_dict[dk]['stars'] = self.stars_tab.query('star_id in @k_stars')
+
+
 class DBSector(DBManager):
 
     """
@@ -355,6 +385,7 @@ class DBSector(DBManager):
         """
         DBManager.__init__(self, db_path=db_path)
         self.select_sector(sector_id)
+        self.group_by_filter_epoch()
 
     def select_sector(self, sector_id):
         """

@@ -112,7 +112,7 @@ def calc_refcube_ssim(targ, references, win_size=3., kw_args={}):
     return ssim_vals
 
 # this function applies the correlation functions to a stamp dataframe
-def calc_corr_mat(stamps, corr_func, corr_func_args={}):
+def calc_corr_mat(stamps, corr_func, corr_func_args={}, rescale=True):
     """
     Calculate a correlation matrix between the stamps.
 
@@ -138,7 +138,8 @@ def calc_corr_mat(stamps, corr_func, corr_func_args={}):
                             index=stamps.index, columns=stamps.index,
                             dtype=np.float)
     # rescale the stamps to max value = 1
-    stamps = stamps.apply(lambda x: x/np.nanmax(x))
+    if rescale == True:
+        stamps = stamps.apply(lambda x: x/np.nanmax(x))
     # calculate an upper triangular matrix of correlations
     other_stamps = list(stamps.index)
     for i, stamp_id in enumerate(corr_mat.index[:-1]):
@@ -278,3 +279,24 @@ class StarTarget:
         self.target_stamps = stamp_df.set_index('stamp_id').query('stamp_star_id == @star_id')['stamp_array']
         self.ref_stamps = stamp_df.set_index('stamp_id').query('stamp_star_id != @star_id')['stamp_array']
         self.psf_corr_mat = psf_corr_mat.dropna( axis=1, how='all')
+
+
+class SubtrManager:
+    """
+    Class to manage PSF subtraction for a self-contained set of stamps.
+    Initializes with a DBManager instance as argument. Optionally, calculate the PSF correlations
+    """
+
+    def __init__(self, db_manager, calc_corr_flag=True):
+        # calculate all three correlation matrices
+        self.db = db_manager
+        if calc_corr_flag == True:
+            calc_psf_corr()
+
+        def calc_psf_corr(self):
+            """
+            Compute the correlation matrices
+            """
+            self.corr_mse = calc_corr_mat(self.db_manager.fe_stamps_tab['stamp_id'], calc_refcube_mse)
+            self.corr_pcc = calc_corr_mat(self.db_manager.fe_stamps_tab['stamp_id'], calc_refcube_pcc)
+            self.corr_ssim = calc_corr_mat(self.db_manager.fe_stamps_tab['stamp_id'], calc_refcube_ssim)
