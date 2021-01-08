@@ -377,13 +377,11 @@ class DBSector(DBManager):
     This class holds a subset of star, point source, and stamp tables for a WFC3 detector sector.
     Basically it initializes a regular DBManager object and then filters down to the requested sector
     """
-    def __init__(self,
-                 sector_id,
-                 db_path=shared_utils.db_clean_file):
+    def __init__(self, sector_id, db_path=shared_utils.db_clean_file):
         """
         Give it the stars, ps, and stamps tables. All other tables are copied
         """
-        super().__init__(self, db_path=db_path)
+        DBManager.__init__(self, db_path=db_path)
         self.select_sector(sector_id)
         self.group_by_filter_epoch()
 
@@ -425,9 +423,9 @@ class DBSubset(DBManager):
         It is more generic than DBSector
         """
         # run the regular initialization
-        super().__init__(self, db_path=db_path)
+        DBManager.__init__(self, db_path=db_path)
 
-        self.get_db_subset()
+        self.get_db_subset(star_ids, ps_ids, stamp_ids)
 
     def get_db_subset(self, star_ids, ps_ids, stamp_ids):
         """

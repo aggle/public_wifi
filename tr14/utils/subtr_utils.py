@@ -243,10 +243,15 @@ def klip_subtr_table(targ_row, stamp_table, restore_scale=False, klip_args={}):
     target_star_id = targ_row['stamp_star_id']
     target_stamp = targ_row['stamp_array']
     refs_table = stamp_table.query('stamp_star_id != @target_star_id')
-
+    # get the ref IDs, which may be the index
+    try:
+        ref_ids = stamp_table['stamp_id']
+    except:
+        print("`stamp_id` not in the columns, cannot return references list")
+        ref_ids = None
     results =  klip_subtr_wrapper(target_stamp, refs_table,
                                   restore_scale, klip_args)
-    return results
+    return results, ref_ids
 
 
 def psf_model_from_basis(target, kl_basis, numbasis=None):
@@ -333,12 +338,28 @@ class SubtrManager:
         """
         if numbasis is None:
             numbasis = np.arange(1, self.db.stamps_tab.shape[0]-1, 20)
-        subtr_mapper = lambda x: klip_subtr_table(x, self.db.stamps_tab,
-                                                  klip_args={'numbasis': numbasis,
-                                                             'return_basis': True})
-        results = self.db.stamps_tab.set_index('stamp_id').apply(subtr_mapper, axis=1)
-        self.psf_subtr = results.apply(lambda x: x[0])
-        self.psf_model = results.apply(lambda x: x[1])
+        subtr_mapper = lambda x: self.subtr_table_apply(x, self.db.stamps_tab,
+                                                        klip_args={'numbasis': numbasis,
+                                                                   'return_basis': True})
+        results = self.db.stamps_tab.set_index('stamp_id', drop=False).apply(subtr_mapper, axis=1)
+        self.psf_subtr = results.apply(lambda x: x[0][0])
+        self.psf_model = results.apply(lambda x: x[0][1])
+        self.subtr_refs = results.apply(lambda x: x[1])
+
+    def subtr_table_apply(self, targ_row, stamp_table, restore_scale=False, klip_args={}):
+        """
+        Designed to use stamps_tab.apply to do klip subtraction to a whole table of stamps
+        Assumes return_basis is True; otherwise, fails
+        """
+        target_star_id = targ_row['stamp_star_id']
+        target_stamp = targ_row['stamp_array']
+        refs_table = stamp_table.query('stamp_star_id != @target_star_id')
+        # get the reference stamps
+        ref_ids = refs_table['stamp_id'].reset_index(drop=True)
+        #shared_utils.debug_print(ref_ids)
+        results =  klip_subtr_wrapper(target_stamp, refs_table,
+                                      restore_scale, klip_args)
+        return results, ref_ids
 
 
 
