@@ -234,6 +234,21 @@ def klip_subtr_wrapper(target_stamp, refs_table, restore_scale=False, klip_args=
     else:
         return kl_sub_img
 
+
+def klip_subtr_table(targ_row, stamp_table, restore_scale=False, klip_args={}):
+    """
+    Designed to use stamps_tab.apply to do klip subtraction to a whole table of stamps
+    Assumes return_basis is True; otherwise, fails
+    """
+    target_star_id = targ_row['stamp_star_id']
+    target_stamp = targ_row['stamp_array']
+    refs_table = stamp_table.query('stamp_star_id != @target_star_id')
+
+    results =  klip_subtr_wrapper(target_stamp, refs_table,
+                                  restore_scale, klip_args)
+    return results
+
+
 def psf_model_from_basis(target, kl_basis, numbasis=None):
     """
     Generate a model PSF from the KLIP basis vectors. See Soummer et al 2012.
@@ -291,12 +306,39 @@ class SubtrManager:
         # calculate all three correlation matrices
         self.db = db_manager
         if calc_corr_flag == True:
-            calc_psf_corr()
+            self.calc_psf_corr()
 
-        def calc_psf_corr(self):
-            """
-            Compute the correlation matrices
-            """
-            self.corr_mse = calc_corr_mat(self.db_manager.fe_stamps_tab['stamp_id'], calc_refcube_mse)
-            self.corr_pcc = calc_corr_mat(self.db_manager.fe_stamps_tab['stamp_id'], calc_refcube_pcc)
-            self.corr_ssim = calc_corr_mat(self.db_manager.fe_stamps_tab['stamp_id'], calc_refcube_ssim)
+    def calc_psf_corr(self):
+        """
+        Compute the correlation matrices
+        """
+        # set the stamp ID as the index
+        stamps = self.db.stamps_tab.set_index('stamp_id')['stamp_array']
+        self.corr_mse = calc_corr_mat(stamps, calc_refcube_mse)
+        self.corr_pcc = calc_corr_mat(stamps, calc_refcube_pcc)
+        self.corr_ssim = calc_corr_mat(stamps, calc_refcube_ssim)
+
+    def subtr_table(self, numbasis=None):
+        """
+        Do PSF subtraction on the whole table
+
+        Parameters
+        ----------
+        None
+
+        Output
+        ------
+        sets self.psf_subtr and self.psf_model
+
+        """
+        if numbasis is None:
+            numbasis = np.arange(1, self.db.stamps_tab.shape[0]-1, 20)
+        subtr_mapper = lambda x: klip_subtr_table(x, self.db.stamps_tab,
+                                                  klip_args={'numbasis': numbasis,
+                                                             'return_basis': True})
+        results = self.db.stamps_tab.set_index('stamp_id').apply(subtr_mapper, axis=1)
+        self.psf_subtr = results.apply(lambda x: x[0])
+        self.psf_model = results.apply(lambda x: x[1])
+
+
+
