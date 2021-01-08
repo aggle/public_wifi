@@ -171,10 +171,10 @@ class DBManager:
     def find_lookup_table(self, lkp1, lkp2):
         """
         Find the lookup table that matches lkp1 to lkp2, using the table names
-        lkp1 and lkp2 must be strings in the table name.
-        For a list of choices, see self.tables.keys()
+        lkp1 and lkp2 must be strings in the table names.
 
-        Output:
+        Output
+        ------
         lkp_table : pd.DataFrame or None
           a lookup table
 
@@ -352,7 +352,7 @@ class DBManager:
         self
 
         Output
-        ------
+        ------dbm_sec.stars_tab.query?
         assigns to self.fe_dict, which is a dict whose keys are the filter
         and epoch keys, and each value is a dict that stores the star, ps, and
         stamp tables for that filter and epoch combo
@@ -383,7 +383,7 @@ class DBSector(DBManager):
         """
         Give it the stars, ps, and stamps tables. All other tables are copied
         """
-        DBManager.__init__(self, db_path=db_path)
+        super().__init__(self, db_path=db_path)
         self.select_sector(sector_id)
         self.group_by_filter_epoch()
 
@@ -413,23 +413,42 @@ class DBSector(DBManager):
 class DBSubset(DBManager):
     """
     This class holds a subset of star, point source, and stamp tables.
-    All other tables should be copied over.
-    It is more generic 
+    All other tables contain their full versions.
+    It is more generic than DB Sector.
+    It accepts as arguments a list of star IDs, point source IDs, and stamp IDs.
     """
     def __init__(self,
-                 stars_tab, ps_tab, stamps_tab,
+                 star_ids, ps_ids, stamp_ids,
                  db_path=shared_utils.db_clean_file):
         """
         Give it the stars, ps, and stamps tables. All other tables are copied
         It is more generic than DBSector
         """
-        DBManager.__init__(self, db_path=db_path)
-        # remove old tables
-        del self.stars_tab, self.ps_tab, self.stamps_tab
-        # create new tables
-        self.stars_tab = stars_tab.copy()
-        self.table_dict['stars'] = self.stars_tab
-        self.ps_tab = ps_tab.copy()
-        self.table_dict['point_sources'] = self.ps_tab
-        self.stamps_tab = stamps_tab.copy()
-        self.table_dict['stamps'] = self.stamps_tab
+        # run the regular initialization
+        super().__init__(self, db_path=db_path)
+
+        self.get_db_subset()
+
+    def get_db_subset(self, star_ids, ps_ids, stamp_ids):
+        """
+        query the tables down to the reduced set and update the table list
+
+        Parameters
+        ----------
+        star_ids : list-like of star IDs
+        ps_ids : list-like of point source IDs
+        stamp_ids : list-like of stamp IDs
+
+        Output
+        ------
+        sets self.stars_tab, self.ps_tab, and self.stamps_tab,
+        and updates self.tables
+
+        """
+        self.stars_tab = self.stars_tab.query('star_id in @star_ids')
+        self.tables['stars'] = self.stars_tab
+        self.ps_tab = self.ps_tab.query('ps_id in @ps_ids')
+        self.tables['point_sources'] = self.ps_tab
+        self.stamps_tab = self.stamps_tab.query('stamp_id in @stamp_ids')
+        self.tables['stamps'] = self.stamps_tab
+
