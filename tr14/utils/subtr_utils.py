@@ -56,6 +56,15 @@ def calc_refcube_mse(targ, references):
 
     return mse
 
+# sometimes this can be helpful for plotting
+def rescale_mse(mse_scores):
+    """Remap linearly from 0 to 1"""
+    print("Warning: performing this operation breaks the symmetry of the "\
+          "correlation matrix. From now on be careful to only use *columns*.")
+    mse_scores = mse_scores - mse_scores.min()
+    mse_scores = mse_scores / mse_scores.max()
+    return mse_scores
+
 # Pearson correlation coefficient (PCC)
 def calc_refcube_pcc(targ, references):
     """
@@ -323,7 +332,7 @@ class SubtrManager:
         self.corr_pcc = calc_corr_mat(stamps, calc_refcube_pcc)
         self.corr_ssim = calc_corr_mat(stamps, calc_refcube_ssim)
 
-    def subtr_table(self, numbasis=None):
+    def perform_table_subtraction(self, numbasis=None):
         """
         Do PSF subtraction on the whole table
 
