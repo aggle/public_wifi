@@ -29,7 +29,7 @@ from pyklip import klip
 # these metrics are described in Ruane et al., 2019
 
 # Mean squared error (MSE)
-def calc_refcube_mse(targ, references):
+def calc_refcube_mse(targ, references, kw_args={}):
     """
     Calculate the pixel-wise mean squared error (MSE) for each reference
     compared to the target. Returns -log10(MSE) so that the largest values
@@ -66,7 +66,7 @@ def rescale_mse(mse_scores):
     return mse_scores
 
 # Pearson correlation coefficient (PCC)
-def calc_refcube_pcc(targ, references):
+def calc_refcube_pcc(targ, references, kw_args={}):
     """
     Compute the Pearson correlation coefficient (PCC) between the target and the refs
     PCC(a, b) = cov(a, b)/(std(a) std(b))
@@ -90,7 +90,7 @@ def calc_refcube_pcc(targ, references):
     return pcc
 
 # Structural similarity index metric (SSIM), with helper functions
-def calc_refcube_ssim(targ, references, win_size=3., kw_args={}):
+def calc_refcube_ssim(targ, references, kw_args={}):
     """
     Use the scikit-image library function to calculate the SSIM
 
@@ -112,16 +112,17 @@ def calc_refcube_ssim(targ, references, win_size=3., kw_args={}):
       Nref array of SSIM values between the target and the indicated reference image
 
     """
+    kw_args.setdefault('win_size', 3.)
     targ = targ.ravel()
     references = image_utils.flatten_image_axes(references)
-    ssim_vals = np.array([ssim(targ, r, win_size=win_size,
+    ssim_vals = np.array([ssim(targ, r,
                                use_sample_covariance=True,
                                **kw_args)
                           for r in references])
     return ssim_vals
 
 # this function applies the correlation functions to a stamp dataframe
-def calc_corr_mat(stamps, corr_func, corr_func_args={}, rescale=True):
+def calc_corr_mat(stamps, corr_func, corr_func_args={}, rescale=False):
     """
     Calculate a correlation matrix between the stamps.
 
@@ -133,6 +134,9 @@ def calc_corr_mat(stamps, corr_func, corr_func_args={}, rescale=True):
       a correlation function that accepts arguments as (targ, refs, **kwargs)
     corr_func_args : dict [{}]
       dictionary of keyword arguments to pass to the correlation function
+    rescale : bool [False]
+      if True, rescale all the stamps so the max flux is 1 before computing
+      their correlation
 
     Output
     ------
@@ -157,7 +161,7 @@ def calc_corr_mat(stamps, corr_func, corr_func_args={}, rescale=True):
         #other_stamps = list(corr_mat.index)
         other_stamps.pop(0)
         corr = corr_func(targ, np.stack(stamps[other_stamps], axis=0),
-                         **corr_func_args)
+                         kw_args=corr_func_args)
         corr_mat.loc[stamp_id, other_stamps] = corr
 
     # now fill in the empty half of the matrix - beware of NaN's
@@ -319,6 +323,14 @@ class SubtrManager:
     def __init__(self, db_manager, calc_corr_flag=True):
         # calculate all three correlation matrices
         self.db = db_manager
+
+        # correlation function arguments
+        self.corr_func_args_dict = {'mse': {},
+                                    'pcc': {},
+                                    'ssim': {'win_size': 5.}}
+        # klip arguments
+        self.klip_args_dict = {'return_numbasis': True}
+
         if calc_corr_flag == True:
             self.calc_psf_corr()
 
@@ -328,9 +340,12 @@ class SubtrManager:
         """
         # set the stamp ID as the index
         stamps = self.db.stamps_tab.set_index('stamp_id')['stamp_array']
-        self.corr_mse = calc_corr_mat(stamps, calc_refcube_mse)
-        self.corr_pcc = calc_corr_mat(stamps, calc_refcube_pcc)
-        self.corr_ssim = calc_corr_mat(stamps, calc_refcube_ssim)
+        self.corr_mse = calc_corr_mat(stamps, calc_refcube_mse,
+                                      self.corr_func_args_dict['mse'])
+        self.corr_pcc = calc_corr_mat(stamps, calc_refcube_pcc,
+                                      self.corr_func_args_dict['pcc'])
+        self.corr_ssim = calc_corr_mat(stamps, calc_refcube_ssim,
+                                       self.corr_func_args_dict['ssim'])
 
     def perform_table_subtraction(self, numbasis=None):
         """
@@ -370,5 +385,17 @@ class SubtrManager:
                                       restore_scale, klip_args)
         return results, ref_ids
 
+    def remove_nans_from_psf_subtr(self):
+        """
+        Sometimes the PSF subtraction table has columns that are entirely NaN. Remove them.
+        modifies self.psf_subtr in place
+        """
+        if not hasattr(self, 'psf_subtr'):
+            print("self.psf_subtr does not exist (yet?)")
+            raise AttributeError
+        filtfunc = lambda x: np.all(np.isnan(x))
+        drop_cols = self.psf_subtr.applymap(filtfunc).all(axis=0)
+        drop_cols = drop_cols[drop_cols].index
+        self.psf_subtr.drop(drop_cols, axis=1, inplace=True)
 
 
