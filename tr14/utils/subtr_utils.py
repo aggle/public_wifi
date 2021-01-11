@@ -112,7 +112,7 @@ def calc_refcube_ssim(targ, references, kw_args={}):
       Nref array of SSIM values between the target and the indicated reference image
 
     """
-    kw_args.setdefault('win_size', 3.)
+    kw_args.setdefault('win_size', 5.)
     targ = targ.ravel()
     references = image_utils.flatten_image_axes(references)
     ssim_vals = np.array([ssim(targ, r,
