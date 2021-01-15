@@ -403,33 +403,52 @@ class SubtrManager:
             numbasis = np.unique(numbasis.astype(np.int))
             self.klip_args_dict['numbasis'] = numbasis
             #numbasis = np.arange(1, self.db.stamps_tab.shape[0]-1, 20)
-        subtr_mapper = lambda x: self._subtr_table_apply(x,
-                                                        self.db.stamps_tab,
-                                                         klip_args=self.klip_args_dict)
+        subtr_mapper = lambda x: self._klip_table_apply(x,
+                                                        klip_args=self.klip_args_dict)
         results = self.db.stamps_tab.set_index('stamp_id', drop=False).apply(subtr_mapper, axis=1)
         self.psf_subtr = results.apply(lambda x: x.residuals)
         self.psf_model = results.apply(lambda x: x.models)
         self.subtr_refs = results.apply(lambda x: x.ref_ids).T#.apply(lambda x: pd.Series(x)).T
 
-    def _subtr_table_apply(self, targ_row, stamp_table, restore_scale=False, klip_args={}):
+    def _klip_table_apply(self, targ_row, stamp_table, restore_scale=False, klip_args={}):
         """
         Designed to use stamps_tab.apply to do klip subtraction to a whole table of stamps
         Assumes return_basis is True; otherwise, fails
         Returns a named tuple with fields residuals, models, and ref_ids
         """
         target_stamp = targ_row['stamp_array']
-        #refs_table = stamp_table.query('stamp_star_id != @target_star_id')
         # get the reference stamps
-        target_star_id = targ_row['stamp_star_id']
         ref_stamps = self._get_reference_stamps(targ_row['stamp_id'])
-        #ref_ids = ref_stamps.index#refs_table['stamp_id'].reset_index(drop=True)
         #shared_utils.debug_print(ref_ids)
-        # excellent use of namedtuple here!
+        # excellent use of namedtuple here, pat yourself on the back!
         results = namedtuple('klip_results', ('residuals', 'models'))
         results.ref_ids = pd.Series(ref_stamps.index)
         results.residuals, results.models =  klip_subtr_wrapper(target_stamp, ref_stamps,
                                                                 restore_scale, klip_args)
         return results
+
+    def _nmf_table_apply(self, targ_row, nmf_args={}):
+        """
+        Designed to be passed to stamps_table.apply to do NMF-based PSF
+        subtraction on a table of stamps.
+
+        Parameters
+        ----------
+        targ_row : pd.DataFrame row
+          the default argument passed from dataframe.apply
+        nmf_args : dict of arguments [self.nmf_arg_dict]
+
+        Output
+        ------
+        results : namedtuple
+          a namedtuple object with attributes
+          results.ref_ids - a list of reference stamps used
+          results.residuals - a dataframe of residuals
+          results.models - a dataframe of reconstructed PSF models
+
+        """
+        pass
+
 
     def remove_nans_from_psf_subtr(self):
         """
