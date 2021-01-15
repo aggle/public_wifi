@@ -5,6 +5,7 @@ Utilities for PSF subtraction:
 - KLIP PSF model reconstruction
 """
 
+from collections import namedtuple
 import numpy as np
 import pandas as pd
 
@@ -396,32 +397,38 @@ class SubtrManager:
 
         """
         if numbasis is None:
-            numbasis = np.arange(1, self.db.stamps_tab.shape[0]-1, 20)
+            # by default, use a log-spaced numbasis
+            numbasis = np.logspace(0, np.log10(self.db.stamps_tab.shape[0]-1), 20)
+            numbasis = np.unique(numbasis.astype(np.int))
+            #numbasis = np.arange(1, self.db.stamps_tab.shape[0]-1, 20)
         subtr_mapper = lambda x: self.subtr_table_apply(x,
                                                         self.db.stamps_tab,
                                                         klip_args={'numbasis': numbasis,
                                                                    'return_basis': True})
         results = self.db.stamps_tab.set_index('stamp_id', drop=False).apply(subtr_mapper, axis=1)
-        self.psf_subtr = results.apply(lambda x: x[0][0])
-        self.psf_model = results.apply(lambda x: x[0][1])
-        self.subtr_refs = results.apply(lambda x: x[1])
+        self.psf_subtr = results.apply(lambda x: x.residuals)
+        self.psf_model = results.apply(lambda x: x.models)
+        self.subtr_refs = results.apply(lambda x: x.ref_ids).T#.apply(lambda x: pd.Series(x)).T
 
     def subtr_table_apply(self, targ_row, stamp_table, restore_scale=False, klip_args={}):
         """
         Designed to use stamps_tab.apply to do klip subtraction to a whole table of stamps
         Assumes return_basis is True; otherwise, fails
+        Returns a named tuple with fields residuals, models, and ref_ids
         """
         target_stamp = targ_row['stamp_array']
         #refs_table = stamp_table.query('stamp_star_id != @target_star_id')
         # get the reference stamps
         target_star_id = targ_row['stamp_star_id']
         ref_stamps = self.get_reference_stamps(targ_row['stamp_id'])
-        ref_ids = ref_stamps.index#refs_table['stamp_id'].reset_index(drop=True)
+        #ref_ids = ref_stamps.index#refs_table['stamp_id'].reset_index(drop=True)
         #shared_utils.debug_print(ref_ids)
-        results =  klip_subtr_wrapper(target_stamp, ref_stamps,
-                                      restore_scale, klip_args)
-        # TODO this should return a defaultdict or namedclass instead of a tuple of tuples
-        return results, ref_ids
+        # excellent use of namedtuple here!
+        results = namedtuple('klip_results', ('residuals', 'models'))
+        results.ref_ids = pd.Series(ref_stamps.index)
+        results.residuals, results.models =  klip_subtr_wrapper(target_stamp, ref_stamps,
+                                                                restore_scale, klip_args)
+        return results
 
     def remove_nans_from_psf_subtr(self):
         """

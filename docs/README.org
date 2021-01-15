@@ -38,7 +38,7 @@ Next, create a subtraction manager instance, passing the database manager instan
 #+begin_src python
 subtrm = subtr_utils.SubtrManager(dbm_subtr)
 #+end_src
-There is an optional argument, ~calc_corr_flag=[True, False]~, that can switch on or off the calculation of the PSF correlation matrices (switch off if you want to use all the PSFs regardless of correlation score).
+There is an optional argument, ~calc_corr_flag=[True, False]~, that can switch on or off the calculation of the PSF correlation matrices (switch off if you want to use all the PSFs regardless of correlation score). More on this later.
 The DBManager instance can always be accessed by ~SubtrManager.db~.
 
 Finally, perform PSF subtraction using
@@ -49,7 +49,7 @@ This function assigns three new attributes to the SubtrManager instance:
 - ~subtrm.psf_subtr~ : the psf subtraction results
 - ~subtrm.psf_model~ : the corresponding PSF models
 - ~subtrm.subtr_refs~ : the list of references used to subtract each stamp
-These are all pandas DataFrames, whose index indicates the stamp that was the target for PSF subtraction. The column indicates the value of Kklip (aka ~numbasis~).
+~psf_subtr~ and ~psf_model~ are pandas DataFrames, whose index indicates the stamp that was the target for PSF subtraction. The column indicates the value of Kklip (aka ~numbasis~). ~subtr_refs~ is also a DataFrame, whose column indicates the target stamp. The entries of each column are the reference stamps used to build that target's model PSF, in no particular order.
 
 ** This is where we're at right now.
 We are still figuring out how to choose references and how to perform the photometry and analysis.
