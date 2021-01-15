@@ -1,0 +1,66 @@
+#+title: Trumpler 14 analysis user guide
+
+The final state of the Trumpler 14 analysis package will consist of the following independent components:
+
+1. *Database*
+2. *PSF subtraction*
+4. *Photometry and detection*
+5. *Completeness*
+
+Currently, only *Database* and *PSF subtraction* are implemented. See below for usage, and at the end of the file for a brief description of each component.
+
+* Usage
+This is going to be pretty bare-bones, reflecting the current state of the software.
+
+The database is managed by the ~db_manager.DBManager~ class, and the psf subtraction is managed by the ~subtr_utils.SubtrManager~ class. ~shared_utils~ holds various useful values like file paths to the database. Import the following modules from wherever the tr14 base folder is located:
+#+begin_src python
+tr14.utils.shared_utils
+tr14.utils.db_manager
+tr14.utils.subtr_utils
+#+end_src
+
+** Instantiating the database
+First, create an instance of the database manager. It takes one argument, which is a path to the file where the database is stored. You probably want the path stored at shared_utils.db_clean_file, which contains the database after preliminary cleaning for visual binaries, bad pixels, cosmics, etc:
+#+begin_src python
+db_master = db_manager.DBManager(data_path=shared_utils.db_clean_file)
+#+end_src
+db_master then reads all the available tables from memory and groups the point source detections into self-contained PSF subtraction units (that is, the groups of PSFs that will be used to subtract each other). The point sources are currently grouped by, in order, 'ps_filt_id' (the filter), 'ps_epoch_id' (the epoch), and  'sector_id' (the gridded location on the detector). These groups are stored in DBManager.subtr_groups, which is a pandas groupby object. Each group contains three columns -- the star, point source detection, and stamp identifiers that belong to a subtraction group.
+
+
+** Performing PSF subtraction
+To perform PSF subtraction on a subtraction group, first select one of the DBManager.subtr_group keys and pass the key to DBManager.create_subtr_subset_db(key). This function returns a new DBManager instance, containing only the subset of the database that corresponds to the subtraction group.
+For example:
+#+begin_src python
+key = list(dbm_master.subtr_groups.groups.keys())[0]
+dbm_subtr = dbm_master.create_subtr_subset_db(key)
+#+end_src
+Next, create a subtraction manager instance, passing the database manager instance as an argument:
+#+begin_src python
+subtrm = subtr_utils.SubtrManager(dbm_subtr)
+#+end_src
+There is an optional argument, ~calc_corr_flag=[True, False]~, that can switch on or off the calculation of the PSF correlation matrices (switch off if you want to use all the PSFs regardless of correlation score).
+The DBManager instance can always be accessed by ~SubtrManager.db~.
+
+Finally, perform PSF subtraction using
+#+begin_src python
+subtrm.perform_table_subtraction()
+#+end_src
+This function assigns three new attributes to the SubtrManager instance:
+- ~subtrm.psf_subtr~ : the psf subtraction results
+- ~subtrm.psf_model~ : the corresponding PSF models
+- ~subtrm.subtr_refs~ : the list of references used to subtract each stamp
+These are all pandas DataFrames, whose index indicates the stamp that was the target for PSF subtraction. The column indicates the value of Kklip (aka ~numbasis~).
+
+** This is where we're at right now.
+We are still figuring out how to choose references and how to perform the photometry and analysis.
+
+* Components
+
+** Database
+The Database component handles bookkeeping of the initial database of astrophysical objects.
+
+** PSF subtraction
+
+** Photometry and detection
+
+** Completeness
