@@ -24,11 +24,7 @@ First, create an instance of the database manager. It takes one argument, which 
 #+begin_src python
 db_master = db_manager.DBManager(data_path=shared_utils.db_clean_file)
 #+end_src
-<<<<<<< Updated upstream
-db_master then reads all the available tables from memory and groups the point source detections into self-contained PSF subtraction units (that is, the groups of PSFs that will be used to subtract each other). The point sources are currently grouped by, in order, 'ps_filt_id' (the filter), 'ps_epoch_id' (the epoch), and  'sector_id' (the gridded location on the detector). These groups are stored in ~DBManager.subtr_groups~, which is a pandas groupby object. Each group contains three columns -- the star (~star_id~), point source detection (~ps_id~), and stamp (~stamp_id~) identifiers that belong to a subtraction group. To create a subset of the database, ge tthe key and call ~DBManager.create_subtr_subset_db(key)~
-=======
-~db_master~ then reads all the available tables from memory and groups the point source detections into self-contained PSF subtraction units (that is, the groups of PSFs that will be used to subtract each other). The point sources are currently grouped by, in order, 'ps_filt_id' (the filter), 'ps_epoch_id' (the epoch), and  'sector_id' (the gridded location on the detector). These groups are stored in DBManager.subtr_groups, which is a pandas groupby object. Each group contains three columns -- the star, point source detection, and stamp identifiers that belong to a subtraction group.
->>>>>>> Stashed changes
+~db_master~ then reads all the available tables from memory and groups the point source detections into self-contained PSF subtraction units (that is, the groups of PSFs that will be used to subtract each other). The point sources are currently grouped by, in order, 'ps_filt_id' (the filter), 'ps_epoch_id' (the epoch), and  'sector_id' (the gridded location on the detector). These groups are stored in ~DBManager.subtr_groups~, which is a pandas groupby object. Each group contains three columns -- the star (~star_id~), point source detection (~ps_id~), and stamp (~stamp_id~) identifiers that belong to a subtraction group. To create a subset of the database, ge tthe key and call ~DBManager.create_subtr_subset_db(key)~
 
 
 ** Performing PSF subtraction
