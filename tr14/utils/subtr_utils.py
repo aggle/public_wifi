@@ -182,8 +182,8 @@ def klip_subtr_wrapper(target_stamp, refs_table, restore_scale=False, klip_args=
     ----------
     target_stamp: MxN np.array
       stamp to be subtracted, as an image
-    refs_table: pd.DataFrame
-      dataframe in the stamps_table format
+    refs_table: pd.Series
+      pandas series containing the reference stamps (index can be the reference IDs)
     restore_scale: bool [False]
       if True, put back the original flux scale of the target stamp. If False,
       then leave the KL-subtracted result as-is after the target and references
@@ -202,7 +202,7 @@ def klip_subtr_wrapper(target_stamp, refs_table, restore_scale=False, klip_args=
 
     """
     targ_stamp_flat = image_utils.flatten_image_axes(target_stamp)
-    ref_stamps_flat = image_utils.flatten_image_axes(np.stack(refs_table['stamp_array']))
+    ref_stamps_flat = image_utils.flatten_image_axes(np.stack(refs_table))
     # rescale target and references
     target_scale = np.nanmax(targ_stamp_flat, axis=-1, keepdims=True)
     ref_stamps_scale = np.nanmax(ref_stamps_flat, axis=-1, keepdims=True)
@@ -230,7 +230,7 @@ def klip_subtr_wrapper(target_stamp, refs_table, restore_scale=False, klip_args=
     kl_sub.index.name = 'numbasis'
     if return_basis == True:
         kl_basis = pd.Series(dict(zip(range(1, len(kl_basis)+1), kl_basis)))
-        kl_basis.index.name = 'kklip'
+        kl_basis.index.name = 'numbasis'
 
 
     # return the subtracted stamps as images
@@ -255,6 +255,7 @@ def klip_subtr_table(targ_row, stamp_table, restore_scale=False, klip_args={}):
     """
     target_star_id = targ_row['stamp_star_id']
     target_stamp = targ_row['stamp_array']
+    # replace this with the self.get_references() function that handles more casese
     refs_table = stamp_table.query('stamp_star_id != @target_star_id')
     # get the ref IDs, which may be the index
     try:
@@ -303,6 +304,7 @@ def psf_model_from_basis(target, kl_basis, numbasis=None):
 class StarTarget:
     """
     Collect all the stamps and PSF references for a unique star
+    This is not currently used.
     """
 
     def __init__(self, star_id, stamp_df, psf_corr_mat=None):
@@ -310,7 +312,6 @@ class StarTarget:
         Initialize the object with a list of targets and references
         """
         self.target_stamps = stamp_df.set_index('stamp_id').query('stamp_star_id == @star_id')['stamp_array']
-        self.ref_stamps = stamp_df.set_index('stamp_id').query('stamp_star_id != @star_id')['stamp_array']
         self.psf_corr_mat = psf_corr_mat.dropna( axis=1, how='all')
 
 
@@ -334,6 +335,7 @@ class SubtrManager:
         if calc_corr_flag == True:
             self.calc_psf_corr()
 
+
     def calc_psf_corr(self):
         """
         Compute the correlation matrices
@@ -346,6 +348,39 @@ class SubtrManager:
                                       self.corr_func_args_dict['pcc'])
         self.corr_ssim = calc_corr_mat(stamps, calc_refcube_ssim,
                                        self.corr_func_args_dict['ssim'])
+
+
+    def get_reference_stamps(self, targ_stamp_id):
+        """
+        Given a target stamp, find the list of appropriate reference stamps
+        using e.g. the star_id and the stamp_ref_flag value
+
+        Parameters
+        ----------
+        targ_stamp_id : str
+          the stamp_id of the PSF targeted for subtraction
+
+        Output
+        ------
+        ref_stamps : pd.Series
+          pd.Series of the reference stamp arrays, where the index is the stamp id
+
+        """
+        # first, make sure the input is a stamp id
+        if not isinstance(targ_stamp_id, str):
+            print(f"Error: input is not a string")
+            raise ValueError
+        if targ_stamp_id[0] != 'T':
+            print(f"Error: passed value of targ_stamp_id is not a valid "\
+                  f"stamp ID ({targ_stamp_id})")
+        # reject all stamps with a bad reference flag
+        ref_query = "stamp_ref_flag == True"
+        # reject all references that correspond to the target's parent star
+        targ_star_id = self.db.find_matching_id(targ_stamp_id, 'star')
+        ref_query += " and stamp_star_id != @targ_star_id"
+        ref_stamps = self.db.stamps_tab.query(ref_query)
+        return ref_stamps.set_index('stamp_id')['stamp_array']
+
 
     def perform_table_subtraction(self, numbasis=None):
         """
@@ -362,7 +397,8 @@ class SubtrManager:
         """
         if numbasis is None:
             numbasis = np.arange(1, self.db.stamps_tab.shape[0]-1, 20)
-        subtr_mapper = lambda x: self.subtr_table_apply(x, self.db.stamps_tab,
+        subtr_mapper = lambda x: self.subtr_table_apply(x,
+                                                        self.db.stamps_tab,
                                                         klip_args={'numbasis': numbasis,
                                                                    'return_basis': True})
         results = self.db.stamps_tab.set_index('stamp_id', drop=False).apply(subtr_mapper, axis=1)
@@ -375,14 +411,16 @@ class SubtrManager:
         Designed to use stamps_tab.apply to do klip subtraction to a whole table of stamps
         Assumes return_basis is True; otherwise, fails
         """
-        target_star_id = targ_row['stamp_star_id']
         target_stamp = targ_row['stamp_array']
-        refs_table = stamp_table.query('stamp_star_id != @target_star_id')
+        #refs_table = stamp_table.query('stamp_star_id != @target_star_id')
         # get the reference stamps
-        ref_ids = refs_table['stamp_id'].reset_index(drop=True)
+        target_star_id = targ_row['stamp_star_id']
+        ref_stamps = self.get_reference_stamps(targ_row['stamp_id'])
+        ref_ids = ref_stamps.index#refs_table['stamp_id'].reset_index(drop=True)
         #shared_utils.debug_print(ref_ids)
-        results =  klip_subtr_wrapper(target_stamp, refs_table,
+        results =  klip_subtr_wrapper(target_stamp, ref_stamps,
                                       restore_scale, klip_args)
+        # TODO this should return a defaultdict or namedclass instead of a tuple of tuples
         return results, ref_ids
 
     def remove_nans_from_psf_subtr(self):
