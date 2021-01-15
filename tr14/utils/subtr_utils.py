@@ -331,7 +331,8 @@ class SubtrManager:
                                     'pcc': {},
                                     'ssim': {'win_size': 5.}}
         # klip arguments
-        self.klip_args_dict = {'return_numbasis': True}
+        self.klip_args_dict = {'return_numbasis': True,
+                               'numbasis': None}
 
         if calc_corr_flag == True:
             self.calc_psf_corr()
@@ -351,7 +352,7 @@ class SubtrManager:
                                        self.corr_func_args_dict['ssim'])
 
 
-    def get_reference_stamps(self, targ_stamp_id):
+    def _get_reference_stamps(self, targ_stamp_id):
         """
         Given a target stamp, find the list of appropriate reference stamps
         using e.g. the star_id and the stamp_ref_flag value
@@ -400,17 +401,17 @@ class SubtrManager:
             # by default, use a log-spaced numbasis
             numbasis = np.logspace(0, np.log10(self.db.stamps_tab.shape[0]-1), 20)
             numbasis = np.unique(numbasis.astype(np.int))
+            self.klip_args_dict['numbasis'] = numbasis
             #numbasis = np.arange(1, self.db.stamps_tab.shape[0]-1, 20)
-        subtr_mapper = lambda x: self.subtr_table_apply(x,
+        subtr_mapper = lambda x: self._subtr_table_apply(x,
                                                         self.db.stamps_tab,
-                                                        klip_args={'numbasis': numbasis,
-                                                                   'return_basis': True})
+                                                         klip_args=self.klip_args_dict)
         results = self.db.stamps_tab.set_index('stamp_id', drop=False).apply(subtr_mapper, axis=1)
         self.psf_subtr = results.apply(lambda x: x.residuals)
         self.psf_model = results.apply(lambda x: x.models)
         self.subtr_refs = results.apply(lambda x: x.ref_ids).T#.apply(lambda x: pd.Series(x)).T
 
-    def subtr_table_apply(self, targ_row, stamp_table, restore_scale=False, klip_args={}):
+    def _subtr_table_apply(self, targ_row, stamp_table, restore_scale=False, klip_args={}):
         """
         Designed to use stamps_tab.apply to do klip subtraction to a whole table of stamps
         Assumes return_basis is True; otherwise, fails
@@ -420,7 +421,7 @@ class SubtrManager:
         #refs_table = stamp_table.query('stamp_star_id != @target_star_id')
         # get the reference stamps
         target_star_id = targ_row['stamp_star_id']
-        ref_stamps = self.get_reference_stamps(targ_row['stamp_id'])
+        ref_stamps = self._get_reference_stamps(targ_row['stamp_id'])
         #ref_ids = ref_stamps.index#refs_table['stamp_id'].reset_index(drop=True)
         #shared_utils.debug_print(ref_ids)
         # excellent use of namedtuple here!
