@@ -50,6 +50,14 @@ def copy_attrs(obj1, obj2):
 class DBManager:
 
     def __init__(self, db_path=shared_utils.db_clean_file):
+        """
+        Usage:
+        Initialize using the path to the database
+
+        Useful attributes
+        -----------------
+        self.subtr_groupby_keys : keys in self.ps_tab used to group objects for psf subtraction
+        """
         self.db_path = db_path
         # load the principle tables directly as class members
         self.tables = {} # list of loaded tables
@@ -61,8 +69,18 @@ class DBManager:
         # dicts of tables that group naturally together
         self.lookup_dict = self.load_lookup_tables()
         self.header_dict = self.load_header_tables()
-        # finally, group the subtraction subsets together!
-        self._do_subtr_groupby()
+        # finally, group the subtraction subsets together with the default keys
+        self.subtr_groupby_keys = ['ps_filt_id', 'ps_epoch_id', 'sector_id']
+        self.do_subtr_groupby(keys=self.subtr_groupby_keys)
+
+    @property
+    def subtr_groupby_keys(self):
+        return self._subtr_groupby_keys
+    @subtr_groupby_keys.setter
+    def subtr_groupby_keys(self, new_keys):
+        self._subtr_groupby_keys = new_keys
+        # and re-do the groupby automatically
+
 
     def load_table(self, key):
         """
@@ -443,7 +461,7 @@ class DBManager:
             self.fe_dict[dk]['stars'] = self.stars_tab.query('star_id in @k_stars')
 
 
-    def _do_subtr_groupby(self):
+    def do_subtr_groupby(self, keys=None):
         """
         Group the database into self-contained units for PSF subtraction.
         These quantities are as follows:
@@ -451,7 +469,9 @@ class DBManager:
 
         Parameters
         ----------
-        None
+        keys : str or list [self.subtr_groupby_keys]
+          key or list of keys in the point source table to use for grouping the
+          psf subtraction targets
 
         Output
         ------
@@ -460,15 +480,17 @@ class DBManager:
           that go together to make a database subset for PSF subtraction.
           use like subtr_groups.get_group(key) and pass the results to DBSubset
         """
+        if keys == None:
+            keys = self.subtr_groupby_keys
         ps_tab_sector = pd.merge(self.ps_tab,
                                  self.lookup_dict['lookup_point_source_sectors'],
                                  on='ps_id')
-        ps_gb = ps_tab_sector.groupby(['ps_filt_id', 'ps_epoch_id', 'sector_id'])['ps_id']
+        ps_gb = ps_tab_sector.groupby(keys)['ps_id']
         # now get the corresponding star and stamp groups
         subtr_groups = pd.merge(ps_gb.apply(lambda x: self.find_matching_id(x, 'star').reset_index()),
                                 ps_gb.apply(lambda x: self.find_matching_id(x, 'stamp').reset_index()),
                                 on='ps_id', left_index=True)
-        self.subtr_groups = subtr_groups.groupby(subtr_groups.index.names[:3])
+        self.subtr_groups = subtr_groups.groupby(keys)
 
     def create_subtr_subset_db(self, key):
         """
