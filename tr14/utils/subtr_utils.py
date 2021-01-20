@@ -5,9 +5,9 @@ Utilities for PSF subtraction:
 - KLIP PSF model reconstruction
 """
 
-from collections import namedtuple
 import numpy as np
 import pandas as pd
+from collections import namedtuple
 
 # RDI imports
 from scipy import stats
@@ -314,6 +314,10 @@ class SubtrManager:
         # calculate all three correlation matrices
         self.db = db_manager
 
+        # table for tracking references used
+        cols = pd.Index(self.db.stamps_tab['stamp_id'], name='targ_id')
+        indx = pd.Index(self.db.stamps_tab['stamp_id'], name='ref_id')
+        self.reference_table = pd.DataFrame(None, columns=columns, index=index, dtype=bool)
         # correlation function arguments
         self.corr_func_args_dict = {'mse': {},
                                     'pcc': {},
@@ -330,16 +334,21 @@ class SubtrManager:
 
     def calc_psf_corr(self):
         """
-        Compute the correlation matrices
+        Compute the correlation matrices. Sets self.corr_mats, a namedtuple
+        with all the matrices as attributes
         """
+        # initialize the contained to hold the correlation matrices
+        corr_mats = namedtuple('corr_mats', 'mse','pcc','ssim')
         # set the stamp ID as the index
         stamps = self.db.stamps_tab.set_index('stamp_id')['stamp_array']
-        self.corr_mse = calc_corr_mat(stamps, calc_refcube_mse,
-                                      self.corr_func_args_dict['mse'])
-        self.corr_pcc = calc_corr_mat(stamps, calc_refcube_pcc,
-                                      self.corr_func_args_dict['pcc'])
-        self.corr_ssim = calc_corr_mat(stamps, calc_refcube_ssim,
-                                       self.corr_func_args_dict['ssim'])
+        corr_mats.mse = calc_corr_mats.mat(stamps, calc_refcube_mse,
+                                      self.corr_mats.func_args_dict['mse'])
+        corr_mats.pcc = calc_corr_mats.mat(stamps, calc_refcube_pcc,
+                                      self.corr_mats.func_args_dict['pcc'])
+        corr_mats.ssim = calc_corr_mats.mat(stamps, calc_refcube_ssim,
+                                       self.corr_mats.func_args_dict['ssim'])
+        # finally, assign to the object
+        self.corr_mats = corr_mats
 
 
     def remove_nans_from_psf_subtr(self):
@@ -388,8 +397,7 @@ class SubtrManager:
         return ref_stamps.set_index('stamp_id')['stamp_array']
 
 
-
-    def peform_table_subtraction(self, func, func_args={}):
+    def perform_table_subtraction(self, func, func_args={}):
         """
         This seems like the perfect candidate for a decorator
         Apply the subtraction function to the whole table using table.apply()
@@ -402,18 +410,21 @@ class SubtrManager:
 
         Output
         ------
-        sets self.psf_subtr and self.psf_model
+        sets self.subtr_results, which contains the residuals, models, and references
 
         """
         subtr_mapper = lambda x: self._table_apply_wrapper(x, func, func_args)
-        results = self.db.stamps_tab.set_index('stamp_id', drop=False).apply(subtr_mapper, axis=1)
-        self.psf_subtr = results.apply(lambda x: x.residuals)
-        self.psf_model = results.apply(lambda x: x.models)
-        self.subtr_refs = results.apply(lambda x: x.ref_ids).T#.apply(lambda x: pd.Series(x)).T
-
-
-
+        agg_results = self.db.stamps_tab.set_index('stamp_id', drop=False).apply(subtr_mapper, axis=1)
+        results = namedtuple('subtr_results', ('residuals','models','references'))
+        results.residuals = results.apply(lambda x: x.residuals)
+        results.models = results.apply(lambda x: x.residuals)
+        results.references = results.apply(lambda x: x.residuals)
+        self.subtr_results = results
+        #self.psf_model = results.apply(lambda x: x.models)
+        #self.psf_subtr = results.apply(lambda x: x.residuals)
+        #self.subtr_refs = results.apply(lambda x: x.ref_ids).T
         
+
     def perform_table_subtraction_klip(self, numbasis=None):
         """
         Do PSF subtraction on the whole table
@@ -434,7 +445,7 @@ class SubtrManager:
             self.klip_args_dict['numbasis'] = numbasis
             #numbasis = np.arange(1, self.db.stamps_tab.shape[0]-1, 20)
         subtr_mapper = lambda x: self.subtr_klip(x,
-                                                 klip_args=self.klip_args_dict)
+                                                 kwargs=self.klip_args_dict)
         results = self.db.stamps_tab.set_index('stamp_id', drop=False).apply(subtr_mapper, axis=1)
         self.psf_subtr = results.apply(lambda x: x.residuals)
         self.psf_model = results.apply(lambda x: x.models)
@@ -465,6 +476,7 @@ class SubtrManager:
           2. models - the PSF models, by component
           3. residuals - PSF subtraction residuals (targ - models)
         """
+        targ_id = targ_row['stamp_id']
         targ_stamp = targ_row['stamp_array']
         # get the reference stamps
         ref_stamps = self._get_reference_stamps(targ_row['stamp_id'])
@@ -475,10 +487,13 @@ class SubtrManager:
         results.ref_ids = pd.Series(ref_stamps.index)
         # psf_subtraction
         results.residuals, results.models = func(targ_stamp, ref_stamps, func_args)
+        # update the reference table
+        self.reference_table[targ_id] = False
+        self.reference_table.loc[results.ref_ids, targ_id] = True
         return results
 
 
-    def subtr_klip(self, targ_row, stamp_table, restore_scale=False, kwargs={}):
+    def subtr_klip(self, targ_row, kwargs={}):
         """
         Designed to use stamps_tab.apply to do klip subtraction to a whole table of stamps
         Assumes return_basis is True; otherwise, fails
@@ -494,13 +509,14 @@ class SubtrManager:
         kwargs['restore_scale'] = kwargs.get('restore_scale', False)
         restore_scale = kwargs.pop('restore_scale')
         results.residuals, results.models =  klip_subtr_wrapper(target_stamp, ref_stamps,
-                                                                kwargs.pop('restore_scale'),
+                                                                restore_scale,
                                                                 kwargs)
         return results
 
+
     def subtr_nfm(self, targ, refs, kwargs={}):
         """
-        Docstring goes here
+        Perform NMF subtraction on one target and its references
 
         Parameters
         ----------
