@@ -24,7 +24,8 @@ First, create an instance of the database manager. It takes one argument, which 
 #+begin_src python
 db_master = db_manager.DBManager(data_path=shared_utils.db_clean_file)
 #+end_src
-~db_master~ then reads all the available tables from memory and groups the point source detections into self-contained PSF subtraction units (that is, the groups of PSFs that will be used to subtract each other). The point sources are currently grouped by, in order, 'ps_filt_id' (the filter), 'ps_epoch_id' (the epoch), and  'sector_id' (the gridded location on the detector). These groups are stored in ~DBManager.subtr_groups~, which is a pandas groupby object. Each group contains three columns -- the star (~star_id~), point source detection (~ps_id~), and stamp (~stamp_id~) identifiers that belong to a subtraction group. To create a subset of the database, ge tthe key and call ~DBManager.create_subtr_subset_db(key)~
+~db_master~ then reads all the available tables from memory and groups the point source detections into self-contained PSF subtraction units (that is, the groups of PSFs that will be used to subtract each other). The point sources are currently grouped by, in order, 'ps_filt_id' (the filter), 'ps_epoch_id' (the epoch), and  'sector_id' (the gridded location on the detector). These groups are stored in ~DBManager.subtr_groups~, which is a pandas groupby object. Each group contains three columns -- the star (~star_id~), point source detection (~ps_id~), and stamp (~stamp_id~) identifiers that belong to a subtraction group. To create a subset of the database, get the key and call ~DBManager.create_subtr_subset_db(key)~
+
 
 
 ** Performing PSF subtraction
@@ -55,11 +56,37 @@ This function assigns three new attributes to the SubtrManager instance:
 We are still figuring out how to choose references and how to perform the photometry and analysis.
 
 * Components
-
-** Database
+This section contains a description of the objects and tables in the database
+** Database manager
 The Database component handles bookkeeping of the initial database of astrophysical objects.
 
-** PSF subtraction
+** PSF subtraction manager
+PSF subtraction is handled by a class called SubtrManager, defined in utils.subtr_utils.py
+*** SubtrManager
+**** Attributes
+***** db
+The parent database that is being subtracted
+***** reference_table
+pd.DataFrame with the database's stamp_ids as indices and columns. The elements are True if the row stamp_id was used as a reference for the column stamp_id - that is, each column contains a list of the references used for the PSF subtraction.
+***** corr_func_args_dict
+Dictionary with keys 'mse', 'pcc', and 'ssim'. Each entry is a dict of kwargs that is passed to the corresponding correlation function
+***** klip_args_dict
+Dictionary of arguments for klip-based subtraction
+***** nmf_args_dict
+Dictionary of arguments for NMF-based subtraction
+***** corr_mats
+namedtuple of correlation matrices: corr_mats.{mse,pcc,ssim}
+**** Methods
+***** calc_corr_psfs()
+Calculates *all* the correlation matrices and stores results in self.corr_mats, a namedtuple.
+***** perform_table_subtraction()
+This performs PSF subtraction on the database in self.db.
+returns the results tuple with elements. Users should use this one, and pass the particular algorithm as argument, i.e.
+`SubtrManager.perform_table_subtraction(subtr_klip, SubtrManager.klip_args_dict)`
+***** subtr_klip()
+Function for performing KLIP subtraction.
+***** subtr_nmf()
+Function for performing NMF subtraction
 
 ** Photometry and detection
 
