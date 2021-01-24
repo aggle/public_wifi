@@ -366,3 +366,6 @@ def make_image_from_flat(flat, indices=None, shape=None, squeeze=True):
     if squeeze == True:
         img = np.squeeze(img)
     return img
+
+def mask_stamp(stamp, mask_rad):
+    pass

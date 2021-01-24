@@ -6,7 +6,6 @@ import configparser
 import re
 from pathlib import Path
 
-
 # universal debug printer
 def debug_print(debug_str='', debug_flag=True):
     """
@@ -81,7 +80,8 @@ db_subcat_file = load_config_path("db_subcat_file")
 db_clean_file =  load_config_path("db_clean_file")
 # composite image
 #composite_image_path = load_config_path("composite_img_file")
-
+# correlation matrix
+full_corr_mat_file = load_config_path("full_corr_path")
 
 # gaia catalog and source matches
 align_path = load_config_path("align_path")
