@@ -293,6 +293,32 @@ class DBManager:
         matching_ids = lkp_tab.set_index(start_id_type+"_id").loc[ids, want_this_id+"_id"]
         return matching_ids
 
+    def find_stamp_mag(self, stamp_id):
+       """
+       Given a stamp id or list of stamps, find their corresponding magnitudes
+       from the point source table.
+
+       Parameters
+       ----------
+       stamp_id : str
+         stamp ID of the form T000000
+
+       Output
+       ------
+       mags : float or series
+         if one stamp_id is passed, then one float
+         if multiple stamp_ids are passed, then series indexed by the stamp_id
+
+       """
+       if isinstance(stamp_id, str):
+           stamp_id = pd.Series(stamp_id)
+       ps_ids = self.find_matching_id(stamp_id, 'ps').reset_index()
+       df = pd.merge(left=ps_ids, right=self.ps_tab, on='ps_id')
+       mags = df.set_index('stamp_id')['ps_mag']
+       if mags.size == 1:
+           mags = mags.values[0]
+       return mags
+
 
     def set_reference_quality_flag(self, stamp_ids, flag=True):
         """
