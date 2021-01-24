@@ -8,6 +8,7 @@ Utilities for PSF subtraction:
 import numpy as np
 import pandas as pd
 from collections import namedtuple
+import functools
 
 # RDI imports
 from scipy import stats
@@ -317,7 +318,7 @@ class SubtrManager:
         # table for tracking references used
         cols = pd.Index(self.db.stamps_tab['stamp_id'], name='targ_id')
         indx = pd.Index(self.db.stamps_tab['stamp_id'], name='ref_id')
-        self.reference_table = pd.DataFrame(None, columns=columns, index=index, dtype=bool)
+        self.reference_table = pd.DataFrame(None, columns=cols, index=indx, dtype=bool)
         # correlation function arguments
         self.corr_func_args_dict = {'mse': {},
                                     'pcc': {},
@@ -338,15 +339,15 @@ class SubtrManager:
         with all the matrices as attributes
         """
         # initialize the contained to hold the correlation matrices
-        corr_mats = namedtuple('corr_mats', 'mse','pcc','ssim')
+        corr_mats = namedtuple('corr_mats', ('mse','pcc','ssim'))
         # set the stamp ID as the index
         stamps = self.db.stamps_tab.set_index('stamp_id')['stamp_array']
-        corr_mats.mse = calc_corr_mats.mat(stamps, calc_refcube_mse,
-                                      self.corr_mats.func_args_dict['mse'])
-        corr_mats.pcc = calc_corr_mats.mat(stamps, calc_refcube_pcc,
-                                      self.corr_mats.func_args_dict['pcc'])
-        corr_mats.ssim = calc_corr_mats.mat(stamps, calc_refcube_ssim,
-                                       self.corr_mats.func_args_dict['ssim'])
+        corr_mats.mse = calc_corr_mat(stamps, calc_refcube_mse,
+                                      self.corr_func_args_dict['mse'])
+        corr_mats.pcc = calc_corr_mat(stamps, calc_refcube_pcc,
+                                      self.corr_func_args_dict['pcc'])
+        corr_mats.ssim = calc_corr_mat(stamps, calc_refcube_ssim,
+                                       self.corr_func_args_dict['ssim'])
         # finally, assign to the object
         self.corr_mats = corr_mats
 
@@ -365,7 +366,7 @@ class SubtrManager:
         self.psf_subtr.drop(drop_cols, axis=1, inplace=True)
 
 
-    def _get_reference_stamps(self, targ_stamp_id):
+    def get_reference_stamps(self, targ_stamp_id, ids_only=False):
         """
         Given a target stamp, find the list of appropriate reference stamps
         using e.g. the star_id and the stamp_ref_flag value
@@ -374,7 +375,8 @@ class SubtrManager:
         ----------
         targ_stamp_id : str
           the stamp_id of the PSF targeted for subtraction
-
+        ids_only : bool [False]
+          if True, return only the stamp labels, not the arrays
         Output
         ------
         ref_stamps : pd.Series
@@ -388,12 +390,23 @@ class SubtrManager:
         if targ_stamp_id[0] != 'T':
             print(f"Error: passed value of targ_stamp_id is not a valid "\
                   f"stamp ID ({targ_stamp_id})")
+        # this is the table that will be queried
+        # start with the standard stamps table
+        query_table = self.db.stamps_tab
+
         # reject all stamps with a bad reference flag
         ref_query = "stamp_ref_flag == True"
         # reject all references that correspond to the target's parent star
         targ_star_id = self.db.find_matching_id(targ_stamp_id, 'star')
         ref_query += " and stamp_star_id != @targ_star_id"
-        ref_stamps = self.db.stamps_tab.query(ref_query)
+        # reject all references that have |dmag| > 1
+        # add the ps table
+        
+        
+        # finally, apply the query!
+        ref_stamps = query_table.query(ref_query)
+        if ids_only == True:
+            return ref_stamps['stamp_id']
         return ref_stamps.set_index('stamp_id')['stamp_array']
 
 
@@ -416,9 +429,9 @@ class SubtrManager:
         subtr_mapper = lambda x: self._table_apply_wrapper(x, func, func_args)
         agg_results = self.db.stamps_tab.set_index('stamp_id', drop=False).apply(subtr_mapper, axis=1)
         results = namedtuple('subtr_results', ('residuals','models','references'))
-        results.residuals = results.apply(lambda x: x.residuals)
-        results.models = results.apply(lambda x: x.residuals)
-        results.references = results.apply(lambda x: x.residuals)
+        results.residuals = agg_results.apply(lambda x: x.residuals)
+        results.models = agg_results.apply(lambda x: x.models)
+        results.references = agg_results.apply(lambda x: x.ref_ids)
         self.subtr_results = results
         #self.psf_model = results.apply(lambda x: x.models)
         #self.psf_subtr = results.apply(lambda x: x.residuals)
@@ -479,7 +492,7 @@ class SubtrManager:
         targ_id = targ_row['stamp_id']
         targ_stamp = targ_row['stamp_array']
         # get the reference stamps
-        ref_stamps = self._get_reference_stamps(targ_row['stamp_id'])
+        ref_stamps = self.get_reference_stamps(targ_row['stamp_id'])
         #ref_stamps = ref_stamps.apply(np.ravel)
         #shared_utils.debug_print(ref_ids)
         # excellent use of namedtuple here, pat yourself on the back!
@@ -488,12 +501,11 @@ class SubtrManager:
         # psf_subtraction
         results.residuals, results.models = func(targ_stamp, ref_stamps, func_args)
         # update the reference table
-        self.reference_table[targ_id] = False
+        self.reference_table[targ_id] = False # reset column to False
         self.reference_table.loc[results.ref_ids, targ_id] = True
         return results
 
-
-    def subtr_klip(self, targ_row, kwargs={}):
+   def subtr_klip(self, targ_row, kwargs={}):
         """
         Designed to use stamps_tab.apply to do klip subtraction to a whole table of stamps
         Assumes return_basis is True; otherwise, fails
@@ -501,7 +513,7 @@ class SubtrManager:
         """
         target_stamp = targ_row['stamp_array']
         # get the reference stamps
-        ref_stamps = self._get_reference_stamps(targ_row['stamp_id'])
+        ref_stamps = self.get_reference_stamps(targ_row['stamp_id'])
         #shared_utils.debug_print(ref_ids)
         # excellent use of namedtuple here, pat yourself on the back!
         results = namedtuple('klip_results', ('residuals', 'models'))
