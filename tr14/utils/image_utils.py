@@ -367,5 +367,34 @@ def make_image_from_flat(flat, indices=None, shape=None, squeeze=True):
         img = np.squeeze(img)
     return img
 
-def mask_stamp(stamp, mask_rad):
-    pass
+def make_stamp_mask(shape, mask_dim, invert=False, return_ind=False):
+    """
+    Make a square mask on the middle of the stamp. 1's on the outside, 0's in the middle
+
+    Parameters
+    ----------
+    shape : tuple of stamp shape
+    mask_dim : int
+      size of the mask (one side of the square)
+    invert : bool [False]
+      inver the max
+    return_ind : bool [False]
+      if True, return the indices of the pixels you want to keep
+      instead of the mask itself
+
+    Output
+    ------
+    NxN binary mask with 1 on the outside and 0 on the inside
+
+    """
+    shape = np.array(shape)
+    center = np.floor(shape/2.).astype(np.int)
+    mask_rad = np.floor(mask_dim/2).astype(np.int)
+    mask = np.ones(shape)
+    mask[center[0]-mask_rad:center[0]+mask_rad+1,
+         center[1]-mask_rad:center[0]+mask_rad+1] = 0
+    if invert == True:
+        mask = np.abs(mask - 1)
+    if return_ind == True:
+        mask = np.where(mask == 1)
+    return mask
