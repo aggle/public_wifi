@@ -25,7 +25,9 @@ from sklearn.decomposition import NMF
 # pyklip
 sys.path.append(shared_utils.load_config_path('pyklip_path', as_str=True))
 from pyklip import klip
-
+# NMF
+sys.path.append(shared_utils.load_config_path('nmf_path').as_posix())
+from NonnegMFPy import nmf as NMFPy
 
 ###################
 # PSF correlation #
@@ -178,7 +180,7 @@ def calc_corr_mat(stamps, corr_func, corr_func_args={}, rescale=False):
 # KLIP subtraction #
 ####################
 
-def klip_subtr_wrapper(target_stamp, refs_table, restore_scale=False, klip_args={}):
+def klip_subtr_wrapper(target_stamp, refs_table, klip_args={}):
     """
     Wrapper for RDI klip subtraction so you can pass in a table without extra processing
 
@@ -188,10 +190,6 @@ def klip_subtr_wrapper(target_stamp, refs_table, restore_scale=False, klip_args=
       stamp to be subtracted, as an image
     refs_table: pd.Series
       pandas series containing the reference stamps (index can be the reference IDs)
-    restore_scale: bool [False]
-      if True, put back the original flux scale of the target stamp. If False,
-      then leave the KL-subtracted result as-is after the target and references
-      have been scaled to max_val = 1
     klip_args : dict [{}]
       dictionary of optional arguments passed to pyklip.klip.klip_math
 
@@ -208,16 +206,13 @@ def klip_subtr_wrapper(target_stamp, refs_table, restore_scale=False, klip_args=
     targ_stamp_flat = image_utils.flatten_image_axes(target_stamp)
     ref_stamps_flat = image_utils.flatten_image_axes(np.stack(refs_table))
     # rescale target and references
-    target_scale = np.nanmax(targ_stamp_flat, axis=-1, keepdims=True)
-    ref_stamps_scale = np.nanmax(ref_stamps_flat, axis=-1, keepdims=True)
     targ_stamp_flat = targ_stamp_flat #/ target_scale
     ref_stamps_flat = ref_stamps_flat #* (target_scale / ref_stamps_scale)
     # apply KLIP
     kl_max = np.array([len(ref_stamps_flat)-1])
-    numbasis = klip_args.get('numbasis', kl_max)
-    # kl_sub, kl_basis = klip.klip_math(targ_stamp_flat, ref_stamps_flat,
-    #                                   numbasis = klip_args.get('numbasis', kl_max),
-    #                                  return_basis = klip_args.get('return_basis', True))
+    #numbasis = klip_args.get('numbasis', kl_max)
+    numbasis = np.arange(1, len(ref_stamps_flat))
+    shared_utils.debug_print(f"{kl_max}, {numbasis}", False)
     return_basis = klip_args.get('return_basis', True)
     klip_results = klip.klip_math(targ_stamp_flat, ref_stamps_flat,
                                   numbasis = numbasis,
@@ -235,41 +230,15 @@ def klip_subtr_wrapper(target_stamp, refs_table, restore_scale=False, klip_args=
     if return_basis == True:
         kl_basis = pd.Series(dict(zip(range(1, len(kl_basis)+1), kl_basis)))
         kl_basis.index.name = 'numbasis'
-
-
     # return the subtracted stamps as images
     kl_sub_img = kl_sub.apply(image_utils.make_image_from_flat)
     if return_basis == True:
         kl_basis_img = kl_basis.apply(image_utils.make_image_from_flat)
-    if restore_scale == True:
-        kl_sub_img = kl_sub_img * target_scale
-        if return_basis == True:
-            kl_basis_img = kl_basis_img * target_scale
 
     if return_basis == True:
         return kl_sub_img, kl_basis_img
     else:
         return kl_sub_img
-
-
-def klip_subtr_table(targ_row, stamp_table, restore_scale=False, klip_args={}):
-    """
-    Designed to use stamps_tab.apply to do klip subtraction to a whole table of stamps
-    Assumes return_basis is True; otherwise, fails
-    """
-    target_star_id = targ_row['stamp_star_id']
-    target_stamp = targ_row['stamp_array']
-    # replace this with the self.get_references() function that handles more casese
-    refs_table = stamp_table.query('stamp_star_id != @target_star_id')
-    # get the ref IDs, which may be the index
-    try:
-        ref_ids = stamp_table['stamp_id']
-    except:
-        print("`stamp_id` not in the columns, cannot return references list")
-        ref_ids = None
-    results =  klip_subtr_wrapper(target_stamp, refs_table,
-                                  restore_scale, klip_args)
-    return results, ref_ids
 
 
 def psf_model_from_basis(target, kl_basis, numbasis=None):
@@ -305,6 +274,15 @@ def psf_model_from_basis(target, kl_basis, numbasis=None):
     return np.squeeze(psf_model)
 
 
+class ZeroRefsError(Exception):
+    """Raised when there are zero references found"""
+    # Constructor method
+    def __init__(self, value):
+        self.value = value
+        # __str__ display function
+    def __str__(self):
+        return(repr(self.value))
+
 class SubtrManager:
     """
     Class to manage PSF subtraction for a self-contained set of stamps.
@@ -332,7 +310,27 @@ class SubtrManager:
         if calc_corr_flag == True:
             self.calc_psf_corr()
 
+    ###############
+    # stamp masks #
+    ###############
+    @property
+    def stamp_mask(self):
+        return self.__stamp_mask
+    @stamp_mask.setter
+    def stamp_mask(self, newval):
+        """
+        Set a new mask but do not apply it to the stamps
+        """
+        self.__stamp_mask = newval
+        self.stamp_mask_ind = np.where(newval == 1)
 
+    @property
+    def stamp_mask_ind(self):
+        return self.__stamp_mask_ind
+
+    ###########
+    # methods #
+    ###########
     def calc_psf_corr(self):
         """
         Compute the correlation matrices. Sets self.corr_mats, a namedtuple
@@ -366,10 +364,11 @@ class SubtrManager:
         self.psf_subtr.drop(drop_cols, axis=1, inplace=True)
 
 
-    def get_reference_stamps(self, targ_stamp_id, ids_only=False):
+    def get_reference_stamps(self, targ_stamp_id, ids_only=False, dmag_max=1):
         """
         Given a target stamp, find the list of appropriate reference stamps
         using e.g. the star_id and the stamp_ref_flag value
+        Raises an exception if no references are found
 
         Parameters
         ----------
@@ -377,6 +376,9 @@ class SubtrManager:
           the stamp_id of the PSF targeted for subtraction
         ids_only : bool [False]
           if True, return only the stamp labels, not the arrays
+        dmag_max : int [1]
+          absolute delta magnitude limit on references
+
         Output
         ------
         ref_stamps : pd.Series
@@ -390,19 +392,29 @@ class SubtrManager:
         if targ_stamp_id[0] != 'T':
             print(f"Error: passed value of targ_stamp_id is not a valid "\
                   f"stamp ID ({targ_stamp_id})")
-        # this is the table that will be queried
-        # start with the standard stamps table
-        query_table = self.db.stamps_tab
 
+        # construct a table with all the necessary query information
+        # start with the standard stamps table
+        query_table = self.db.stamps_tab.copy()
+        # merge it with the ps_table
+        query_table = query_table.merge(self.db.find_matching_id(query_table['stamp_id'], 'ps'),
+                                        on='stamp_id')
+        query_table = query_table.merge(self.db.ps_tab, on='ps_id')
+
+        # apply the dmag cut
+        targ_mag = self.db.find_stamp_mag(targ_stamp_id)
+        dmag_bool = query_table['ps_mag'].apply(lambda x: np.abs(x - targ_mag) <= dmag_max)
+        query_table = query_table.loc[dmag_bool]
         # reject all stamps with a bad reference flag
         ref_query = "stamp_ref_flag == True"
+
         # reject all references that correspond to the target's parent star
+        # add the stars table
+        query_table = query_table.merge(self.db.find_matching_id(query_table['stamp_id'], 'star'),
+                                        on='stamp_id')
+        query_table = query_table.merge(self.db.stars_tab, on='star_id')
         targ_star_id = self.db.find_matching_id(targ_stamp_id, 'star')
         ref_query += " and stamp_star_id != @targ_star_id"
-        # reject all references that have |dmag| > 1
-        # add the ps table
-        
-        
         # finally, apply the query!
         ref_stamps = query_table.query(ref_query)
         if ids_only == True:
@@ -426,16 +438,27 @@ class SubtrManager:
         sets self.subtr_results, which contains the residuals, models, and references
 
         """
+        results = namedtuple('subtr_results', ('residuals','models','references', 'failed'))
         subtr_mapper = lambda x: self._table_apply_wrapper(x, func, func_args)
         agg_results = self.db.stamps_tab.set_index('stamp_id', drop=False).apply(subtr_mapper, axis=1)
-        results = namedtuple('subtr_results', ('residuals','models','references'))
         results.residuals = agg_results.apply(lambda x: x.residuals)
         results.models = agg_results.apply(lambda x: x.models)
         results.references = agg_results.apply(lambda x: x.ref_ids)
+        
+        # subtractions that failed are NaN across the entire row
+        failed_references = list(results.references[results.references.isna().all(axis=1)].index)
+        failed_models = list(results.models[results.references.isna().all(axis=1)].index)
+        failed_residuals = list(results.residuals[results.residuals.isna().all(axis=1)].index)
+        # uniquify
+        results.failed = list(set(failed_residuals + failed_models + failed_references))
+        
+        # drop the failed subtractions
+        results.references.dropna(axis=0, how='all', inplace=True)
+        results.models.dropna(axis=0, how='all', inplace=True)
+        results.residuals.dropna(axis=0, how='all', inplace=True)
+
+        # return results
         self.subtr_results = results
-        #self.psf_model = results.apply(lambda x: x.models)
-        #self.psf_subtr = results.apply(lambda x: x.residuals)
-        #self.subtr_refs = results.apply(lambda x: x.ref_ids).T
         
 
     def perform_table_subtraction_klip(self, numbasis=None):
@@ -489,78 +512,124 @@ class SubtrManager:
           2. models - the PSF models, by component
           3. residuals - PSF subtraction residuals (targ - models)
         """
+        results = namedtuple('results', ('ref_ids', 'residuals', 'models'))
+
         targ_id = targ_row['stamp_id']
         targ_stamp = targ_row['stamp_array']
         # get the reference stamps
-        ref_stamps = self.get_reference_stamps(targ_row['stamp_id'])
-        #ref_stamps = ref_stamps.apply(np.ravel)
-        #shared_utils.debug_print(ref_ids)
+        ref_stamps = self.get_reference_stamps(targ_row['stamp_id'], dmag_max=1)
+        # proceed to PSF subtraction
         # excellent use of namedtuple here, pat yourself on the back!
-        results = namedtuple('results', ('ref_ids', 'residuals', 'models'))
         results.ref_ids = pd.Series(ref_stamps.index)
         # psf_subtraction
-        results.residuals, results.models = func(targ_stamp, ref_stamps, func_args)
+        try:
+            results.residuals, results.models = func(targ_stamp, ref_stamps, func_args)
+        except ZeroRefsError as e:
+            results.residuals, results.models = (pd.Series(np.nan),)*2
         # update the reference table
         self.reference_table[targ_id] = False # reset column to False
         self.reference_table.loc[results.ref_ids, targ_id] = True
         return results
 
-   def subtr_klip(self, targ_row, kwargs={}):
+
+    def subtr_klip(self, targ, refs, kwargs={}):
         """
         Designed to use stamps_tab.apply to do klip subtraction to a whole table of stamps
         Assumes return_basis is True; otherwise, fails
         Returns a named tuple with fields residuals, models, and ref_ids
         """
-        target_stamp = targ_row['stamp_array']
-        # get the reference stamps
-        ref_stamps = self.get_reference_stamps(targ_row['stamp_id'])
+        try:
+            assert(len(refs) > 0)
+        except AssertionError:
+            raise ZeroRefsError("Error: No references given!")
+        #target_stamp = targ_row['stamp_array']
+        ## get the reference stamps
+        #ref_stamps = self.get_reference_stamps(targ_row['stamp_id'], dmag_max=1)
         #shared_utils.debug_print(ref_ids)
         # excellent use of namedtuple here, pat yourself on the back!
         results = namedtuple('klip_results', ('residuals', 'models'))
-        results.ref_ids = pd.Series(ref_stamps.index)
-        kwargs['restore_scale'] = kwargs.get('restore_scale', False)
-        restore_scale = kwargs.pop('restore_scale')
-        results.residuals, results.models =  klip_subtr_wrapper(target_stamp, ref_stamps,
-                                                                restore_scale,
-                                                                kwargs)
-        return results
+        if kwargs == {}:
+            kwargs = self.klip_args_dict
+        residuals, models =  klip_subtr_wrapper(targ, refs,
+                                                kwargs)
+        return residuals, models
 
 
-    def subtr_nfm(self, targ, refs, kwargs={}):
+    def subtr_nmf(self, targ, refs, kwargs={}):
         """
         Perform NMF subtraction on one target and its references
 
         Parameters
         ----------
-        targ : target stamp
+        targ : 2-D target stamp
         refs : pd.Series of reference stamps
         kwargs : {}
           other arguments to pass to sklearn's NMF
 
         Output
         ------
-        residuals, psf_models
+        tuple with residuals and psf_models
         """
-        # set default arguments
-        for k, default in self.nmf_args_dict.items():
-            kwargs[k] = kwargs.get(k, default)
         # prep reference images
-        # drop refs with negative values
-        neg_stamps = refs[refs.apply(lambda x: np.any(x < 0))].index
-        #shared_utils.debug_print(f"Neg stamps: {len(neg_stamps)}")
-        refs = refs.drop(neg_stamps, inplace=False)
+        try:
+            assert(len(refs) > 0)
+        except AssertionError:
+            raise ZeroRefsError("Error: No references given!")
+        shared_utils.debug_print(f'Nrefs = {len(refs)}, continuing...', False)
         # flatten
         refs_flat = np.stack(refs.apply(np.ravel))
         # generate the PSF model from the transformed data and components
-        nmf_model = NMF(n_components=targ.size, **kwargs)
-        trans_data = nmf_model.fit_transform(refs_flat)
-        nmf_components = nmf_model.components_
-        psf_models = image_utils.make_image_from_flat(np.dot(trans_data, nmf_components))
+        # TODO: loop over components and generate in an ordered way
+        npix, nrefs = refs_flat.shape
+        # first component
+        #W_ini = np.random.rand(npix, nrefs)
+        #H_ini = np.random.rand(nrefs, npix)
+        #g = NMFPy.NMF(refs_flat, n_components=1)
+        #for i in range(1, nrefs+1):
+        #    pass
+        g = NMFPy.NMF(refs_flat)
+        g.SolveNMF(verbose=False)
+        psf_models = image_utils.make_image_from_flat(np.dot(g.W, g.H))
         residuals = targ - psf_models
         # add an index
         residuals = pd.Series({i+1: r for i, r in enumerate(residuals)})
         psf_models = pd.Series({i+1: r for i, r in enumerate(psf_models)})
 
         return residuals, psf_models
+
+
+def subtr_nmf_sklearn(targ, refs, kwargs={}):
+    """
+    Perform NMF subtraction on one target and its references
+
+    Parameters
+    ----------
+    targ : target stamp
+    refs : pd.Series of reference stamps
+    kwargs : {}
+      other arguments to pass to sklearn's NMF
+
+    Output
+    ------
+    residuals, psf_models
+    """
+    # prep reference images
+    # drop refs with negative values
+    neg_stamps = refs[refs.apply(lambda x: np.any(x < 0))].index
+    #shared_utils.debug_print(f"Neg stamps: {len(neg_stamps)}")
+    refs = refs.drop(neg_stamps, inplace=False)
+    # flatten
+    refs_flat = np.stack(refs.apply(np.ravel))
+    # generate the PSF model from the transformed data and components
+    nmf_model = NMF(n_components=targ.size, **kwargs)
+    trans_data = nmf_model.fit_transform(refs_flat)
+    nmf_components = nmf_model.components_
+    psf_models = image_utils.make_image_from_flat(np.dot(trans_data, nmf_components))
+    residuals = targ - psf_models
+    # add an index
+    residuals = pd.Series({i+1: r for i, r in enumerate(residuals)})
+    psf_models = pd.Series({i+1: r for i, r in enumerate(psf_models)})
+
+    return residuals, psf_models
 
 
