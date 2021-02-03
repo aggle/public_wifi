@@ -10,42 +10,6 @@ import pandas as pd
 from . import shared_utils
 from . import table_utils
 
-def copy_attrs(obj1, obj2):
-    """
-    WARNING WARNING WARNING: COPIED ATTRIBUTES SEEM TO KEEP TRACK OF WHAT INSTANCE THEY CAME FROM
-    Do not use this method until this issue is resolved.
-    Copy attributes from object 1 to object 2
-
-    Parameters
-    ----------
-    obj1 : object
-      copy attributes *from* here
-    obj2 : object
-      copy attributes *to* here
-
-    Output
-    ------
-    modifies obj2 in-place
-    """
-    #for name, attr in obj1.__dict__.items():
-    #    try:
-    #        setattr(obj2, name, attr).copy()
-    #    except AttributeError:
-    #        setattr(obj2, name, attr)
-    #    shared_utils.debug_print(f"{name} set", False)
-    for name in dir(obj1):
-        if name.startswith('__'):
-            # don't move internal attributes
-            # be careful if you set these!
-            continue
-        try:
-            obj1_attr = getattr(obj1, name).copy()
-        except AttributeError:
-            obj1_attr = getattr(obj1, name)
-        finally:
-            setattr(obj2, name, obj1_attr)
-            shared_utils.debug_print(f"{name} set", True)
-
 
 class DBManager:
 
@@ -397,6 +361,23 @@ class DBManager:
         sector_df = self.lookup_dict['lookup_point_source_sectors'].query(query_str)
         return sector_df
 
+    def get_stamp_headers(self, stamp_id):
+        """
+        Given a stamp_id, find the exposure it came from and pull out all the relevant headers
+        
+        Parameters
+        ----------
+        stamp_id : str with format T000000
+        
+        Output
+        ------
+        stamp_headers : dict
+          dictionary; keyword is the header identifier and value is a pd.Series
+          of the keywords and values
+
+        """
+        ps_id = self.find_matching_id(stamp_id, 'ps')
+        exp_id = None
 
     def query_table(self, table, query_str, **kwargs):
         """
@@ -517,6 +498,7 @@ class DBManager:
                                 ps_gb.apply(lambda x: self.find_matching_id(x, 'stamp').reset_index()),
                                 on='ps_id', left_index=True)
         self.subtr_groups = subtr_groups.groupby(keys)
+        self.subtr_groupby_keys = keys
 
     def create_subtr_subset_db(self, key):
         """
@@ -533,58 +515,18 @@ class DBManager:
 
         """
         group = self.subtr_groups.get_group(key)
-        return DBSubset(group['star_id'],
-                        group['ps_id'],
-                        group['stamp_id'],
-                        db_master=None, db_path=self.db_path)
-
-class DBSector(DBManager):
-    """
-    This class holds a subset of star, point source, and stamp tables for a WFC3 detector sector.
-    Basically it initializes a regular DBManager object and then filters down to the requested sector
-    """
-    def __init__(self, sector_id, db_master=None, db_path=shared_utils.db_clean_file):
-        """
-        Give it the stars, ps, and stamps tables. All other tables are copied
-        """
-        #if db_master is not None:
-        #    # copy the attributes over
-        #    copy_attrs(db_master, self)
-        #else:
-        # run the regular initialization
-        DBManager.__init__(self, db_path=db_path)
-        self.select_sector(sector_id)
-        self.group_by_filter_epoch()
-        self._cut_lookup_tables_to_local()
-
-    def select_sector(self, sector_id):
-        """
-        Given a sector ID, return only the point sources, stamps, and stars in that sector
-
-        Output:
-        None; sets self.star_tab, self.ps_tab, and self.stamps_tab
-        """
-        # point sources
-        sec_ps_ids = self.find_sector(sector_id = sector_id)['ps_id']
-        idx = self.ps_tab.query('ps_id not in @sec_ps_ids').index
-        self.ps_tab.drop(idx, axis=0, inplace=True)
-        # now stamps
-        stamp_ids = self.find_matching_id(self.ps_tab['ps_id'].values, 'stamp')
-        idx = self.stamps_tab.query("stamp_id not in @stamp_ids").index
-        self.stamps_tab.drop(idx, axis=0, inplace=True)
-        # now stars
-        star_ids = self.find_matching_id(self.ps_tab['ps_id'].values, 'star')
-        idx = self.stars_tab.query("star_id not in @star_ids").index
-        self.stars_tab.drop(idx, axis=0, inplace=True)
-
-
-
+        key_dict = dict(zip(self.subtr_groupby_keys, key))
+        dbm_sub = DBSubset(group['star_id'],
+                           group['ps_id'],
+                           group['stamp_id'],
+                           db_master=None, db_path=self.db_path)
+        dbm_sub.keys = key_dict
+        return dbm_sub
 
 class DBSubset(DBManager):
     """
     This class holds a subset of star, point source, and stamp tables.
     All other tables contain their full versions.
-    It is more generic than DB Sector.
     It accepts as arguments a list of star IDs, point source IDs, and stamp IDs.
     if db_master is given (i.e. not None), uses the passed DBManager instance
     to initialize instead of initializing from scratch
@@ -602,10 +544,11 @@ class DBSubset(DBManager):
         #    copy_attrs(db_master, self)
         #else:
         # run the regular initialization
-        DBManager.__init__(self, db_path=db_path)
-
+        super().__init__(db_path=db_path)
         self.get_db_subset(star_ids, ps_ids, stamp_ids)
         self._cut_lookup_tables_to_local()
+        # if the subset was made by filtering the ps table with a groupby, give keys here
+        self.keys = None
 
     def get_db_subset(self, star_ids, ps_ids, stamp_ids):
         """
@@ -630,3 +573,42 @@ class DBSubset(DBManager):
         self.stamps_tab = self.stamps_tab.query('stamp_id in @stamp_ids')
         self.tables['stamps'] = self.stamps_tab
 
+
+class DBSector(DBManager):
+    """
+    This class holds a subset of star, point source, and stamp tables for a WFC3 detector sector.
+    Basically it initializes a regular DBManager object and then filters down to the requested sector
+    """
+    def __init__(self, sector_id, db_master=None, db_path=shared_utils.db_clean_file):
+        """
+        Give it the stars, ps, and stamps tables. All other tables are copied
+        """
+        #if db_master is not None:
+        #    # copy the attributes over
+        #    copy_attrs(db_master, self)
+        #else:
+        # run the regular initialization
+        super().__init__(db_path=db_path)
+        self.select_sector(sector_id)
+        self.group_by_filter_epoch()
+        self._cut_lookup_tables_to_local()
+
+    def select_sector(self, sector_id):
+        """
+        Given a sector ID, return only the point sources, stamps, and stars in that sector
+
+        Output:
+        None; sets self.star_tab, self.ps_tab, and self.stamps_tab
+        """
+        # point sources
+        sec_ps_ids = self.find_sector(sector_id = sector_id)['ps_id']
+        idx = self.ps_tab.query('ps_id not in @sec_ps_ids').index
+        self.ps_tab.drop(idx, axis=0, inplace=True)
+        # now stamps
+        stamp_ids = self.find_matching_id(self.ps_tab['ps_id'].values, 'stamp')
+        idx = self.stamps_tab.query("stamp_id not in @stamp_ids").index
+        self.stamps_tab.drop(idx, axis=0, inplace=True)
+        # now stars
+        star_ids = self.find_matching_id(self.ps_tab['ps_id'].values, 'star')
+        idx = self.stars_tab.query("star_id not in @star_ids").index
+        self.stars_tab.drop(idx, axis=0, inplace=True)
