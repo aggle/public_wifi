@@ -81,35 +81,6 @@ def initialize_table(table_name, nrows):
 
 
 
-def write_table_json(table, key, kwargs={}, verbose=True):
-    """
-    Store a table as a JSON in the shared_utils.table_path folder
-
-    Parameters
-    ----------
-    table : pd.DataFrame
-      pandas DataFrame (or Series) containing the data you want to store
-    key : str
-      the file stem to use
-    kwargs : dict [{}]
-      any keyword arguments to pass to pd.DataFrame.to_json
-    verbose : bool [True]
-      print some output
-
-    Output
-    -------
-    Nothing; writes to file
-    """
-    filename = shared_utils.table_path / f"{key}.json"
-    if filename.exists() == True:
-        print(f"Warning: clobbering current instance of {key} table.")
-    if hasattr(table, "to_json"):
-        table.to_json(key, **kwargs)
-        if verbose == True:
-            print(f"Table {key} written to {filename.as_posix()}")
-    else:
-        print(f"Error: table does not have `.to_json()` method.")
-
 def write_table(table, key, kwargs={}, db_file=shared_utils.db_clean_file, verbose=True):
     """
     Add a table to the DB file `shared_utils.db_clean_file`. Really just a simple
@@ -153,30 +124,6 @@ def write_table(table, key, kwargs={}, db_file=shared_utils.db_clean_file, verbo
             """
 
 
-def load_table_json(table_key):
-    """
-    Load a table given the key. Available table keys can be found with list_available_tables()
-
-    Parameters
-    ----------
-    table_key : str
-      name of the table (i.e. everything but the path and the .json extension
-
-    Output
-    ------
-    table : pd.DataFrame
-
-    """
-    table_name = Path(shared_utils.table_path) / f"{table_key}.json"
-    try:
-        assert(table_name.exists())
-    except AssertionError:
-        print(f"Table `{table_key}` not found: {table_name} does not exist.")
-        return None
-    table = pd.read_json(table_name)
-    return table
-
-
 def load_table(key, db_file=shared_utils.db_clean_file):
     """
     Load a table.
@@ -210,26 +157,6 @@ def load_table(key, db_file=shared_utils.db_clean_file):
             df = None
 
     return df
-
-
-def list_available_tables_json(return_list=False):
-    """
-    Print a list of available tables
-    Parameters
-    ----------
-    return_list: bool [False]
-      if True, instead of printing out the table names, return a list.
-
-    Output
-    ------
-    table_names : list [optional]
-      a list of available keys
-    """
-    tables = list(shared_utils.table_path.glob("*json"))
-    for t in tables:
-        print(t.stem)
-    if return_list == True:
-        return tables
 
 
 def list_available_tables(return_list=False, db_file=shared_utils.db_clean_file):
@@ -281,8 +208,8 @@ def get_file_name_from_file_id(file_id):
 Helpers for getting file and filter names.
 Since these queries are run often, this simplifies the process.
 """
-file_mapper = load_table_json("lookup_files")
-filter_mapper = load_table_json("lookup_filters")
+file_mapper = load_table("lookup_files")
+filter_mapper = load_table("lookup_filters")
 
 
 def get_file_name_from_exp_id(exp_id, root=False):
@@ -487,38 +414,6 @@ def load_header(extname='pri', db_file=shared_utils.db_clean_file):
         print(f"{extname} not one of {all_headers}, please try again.")
         return None
     df = load_table(f"hdr_{extname.lower()}", db_file=db_file)
-    return df
-
-
-def load_header_json(extname='pri'):
-    """
-    Load the right header file
-
-    Parameters
-    ----------
-    extname : str [pri]
-      shorthand name for the extension whose dataframe you want
-      options are: all, pri, sci, err, dq, samp, and time
-
-    Output
-    ------
-    df : pd.DataFrame
-      a dataframe with the right header selected (or a dict of dataframes)
-    """
-    # special case
-    if extname == 'all':
-        # return *all* the headers
-        print("Returning all headers.")
-        dfs = {e.lower(): pd.read_json(shared_utils.headers_path / f"hdr_{e.lower()}.json")
-               for e in header_utils.all_headers}
-        return dfs
-    # otherwise, check that the input is OK
-    try:
-        assert(extname.upper() in header_utils.all_headers)
-    except AssertionError:
-        print(f"{extname} not on of {header_utils.all_headers}, please try again.")
-        return None
-    df = pd.read_json(shared_utils.headers_path / f"hdr_{extname.lower()}.json")
     return df
 
 
