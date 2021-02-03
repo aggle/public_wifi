@@ -9,7 +9,7 @@ import random
 from tr14.utils import subtr_utils
 
 
-# common resources
-db_file = subtr_utils.shared_utils.db_clean_file
-db_mast = subtr_utils.db_manager.DBManager(db_file)
+
+def test_subtr_utils():
+    """I don't know what I'm doing so figure this out here"""
 
