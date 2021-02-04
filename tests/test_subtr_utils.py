@@ -17,11 +17,20 @@ def test_subtr_utils(subtr_mgr):
 class TestNMF():
     """Suite of tests for NMF subtraction"""
     #self.subtr_mgr = subtr_mgr
-
-    def test_subtr_mgr_seq_nmf(self, subtr_mgr):
-        """Test sequential NMF"""
+    
+    def test_nmf_default(self, subtr_mgr):
+        """Test NMF works with default arguments"""
         targ_id, targ_stamp = subtr_mgr.db.stamps_tab.iloc[100][['stamp_id', 'stamp_array']]
         ref_stamps = subtr_mgr.get_reference_stamps(targ_id, dmag_max=1)
         residuals, models = subtr_mgr.subtr_nmf(targ_stamp, ref_stamps)
-        #assert (residuals is not None) and (models is not None)
         assert subtr_utils.np.stack(residuals).shape == subtr_utils.np.stack(models).shape
+
+    #@pytest.mark.skip("Not yet implemented")
+    def test_nmf_sequential(self, subtr_mgr):
+        """Test ordered NMF"""
+        targ_id, targ_stamp = subtr_mgr.db.stamps_tab.iloc[100][['stamp_id', 'stamp_array']]
+        ref_stamps = subtr_mgr.get_reference_stamps(targ_id, dmag_max=1)
+        residuals, models = subtr_mgr.subtr_nmf(targ_stamp, ref_stamps,
+                                                {'ordered': True, 'n_components': 5})
+        assert subtr_utils.np.stack(residuals).shape == subtr_utils.np.stack(models).shape
+

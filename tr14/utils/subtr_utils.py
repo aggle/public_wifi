@@ -304,8 +304,9 @@ class SubtrManager:
         # klip arguments
         self.klip_args_dict = {'return_numbasis': True,
                                'numbasis': None}
-        self.nmf_args_dict = {'init': 'random',
-                              'random_state': 0}
+        self.nmf_args_dict = {'verbose': False,
+                              'n_components': 10,
+                              'ordered': False}
 
         if calc_corr_flag == True:
             self.calc_psf_corr()
@@ -564,7 +565,7 @@ class SubtrManager:
         targ : 2-D target stamp
         refs : pd.Series of reference stamps
         kwargs : {}
-          other arguments to pass to sklearn's NMF
+          other arguments, some to pass to NonnegNMFPy's NMFPy.SolveNMF
 
         Output
         ------
@@ -576,20 +577,52 @@ class SubtrManager:
         except AssertionError:
             raise ZeroRefsError("Error: No references given!")
         shared_utils.debug_print(f'Nrefs = {len(refs)}, continuing...', False)
+
+        # synchronize the global argument dictionary and the passed one
+        # self.nmf_args_dict serves as a record; kwargs is used here
+        self.nmf_args_dict.update(kwargs)
+        kwargs.update(self.nmf_args_dict)
+
         # flatten
         refs_flat = np.stack(refs.apply(np.ravel))
         # generate the PSF model from the transformed data and components
-        # TODO: loop over components and generate in an ordered way
-        npix, nrefs = refs_flat.shape
-        # first component
-        #W_ini = np.random.rand(npix, nrefs)
-        #H_ini = np.random.rand(nrefs, npix)
-        #g = NMFPy.NMF(refs_flat, n_components=1)
-        #for i in range(1, nrefs+1):
-        #    pass
-        g = NMFPy.NMF(refs_flat)
-        g.SolveNMF(verbose=False)
-        psf_models = image_utils.make_image_from_flat(np.dot(g.W, g.H))
+        nrefs, npix = refs_flat.shape
+
+        # get the number of free parameters
+        if kwargs.get('n_components', None) is None:
+            kwargs['n_components'] = nrefs
+        n_components = kwargs.pop('n_components')
+
+        try:
+            ordered = kwargs.pop('ordered')
+        except KeyError:
+            ordered = False
+        if ordered == True:
+            # this bit copied from Bin's nmf_imaging (https://github.com/seawander/nmf_imaging)
+            # initialize
+            W_ini = np.random.rand(nrefs, nrefs)
+            H_ini = np.random.rand(nrefs, npix)
+            g_refs = NMFPy.NMF(refs_flat, n_components=1)
+            W_ini[:, :1] = g_refs.W[:]
+            H_ini[:1, :] = g_refs.H[:]
+            for n in range(1, n_components+1):
+                print("\t" + str(n) + " of " + str(n_components))
+                W_ini[:, :(n-1)] = np.copy(g_refs.W)
+                W_ini = np.array(W_ini, order = 'F') #Fortran ordering
+                H_ini[:(n-1), :] = np.copy(g_refs.H)
+                H_ini = np.array(H_ini, order = 'C') #C ordering, row elements contiguous in memory.
+                g_refs = NMFPy.NMF(refs_flat, W=W_ini[:, :n], H=H_ini[:n, :], n_components=n)
+                chi2 = g_refs.SolveNMF(**kwargs)
+        else:
+            g_refs = NMFPy.NMF(refs_flat, n_components=n_components)
+            g_refs.SolveNMF(**kwargs)
+        # now you have to find the coefficients to scale the components to your target
+        g_targ = NMFPy.NMF(targ.ravel()[None, :], H=g_refs.H, n_components=n_components)
+        g_targ.SolveNMF(W_only=True)
+        # create the models by component using some linalg tricks
+        W = np.tile(g_targ.W, g_targ.W.shape[::-1])
+        psf_models = np.dot(np.tril(W), g_targ.H)
+        psf_models = image_utils.make_image_from_flat(psf_models)
         residuals = targ - psf_models
         # add an index
         residuals = pd.Series({i+1: r for i, r in enumerate(residuals)})
