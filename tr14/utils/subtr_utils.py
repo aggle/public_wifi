@@ -212,7 +212,7 @@ def klip_subtr_wrapper(target_stamp, refs_table, klip_args={}):
     kl_max = np.array([len(ref_stamps_flat)-1])
     #numbasis = klip_args.get('numbasis', kl_max)
     numbasis = np.arange(1, len(ref_stamps_flat))
-    shared_utils.debug_print(f"{kl_max}, {numbasis}", False)
+    shared_utils.debug_print(False, f"{kl_max}, {numbasis}")
     return_basis = klip_args.get('return_basis', True)
     klip_results = klip.klip_math(targ_stamp_flat, ref_stamps_flat,
                                   numbasis = numbasis,
@@ -306,7 +306,7 @@ class SubtrManager:
                                'numbasis': None}
         self.nmf_args_dict = {'verbose': False,
                               'n_components': 10,
-                              'ordered': False}
+                              'ordered': True}
 
         if calc_corr_flag == True:
             self.calc_psf_corr()
@@ -546,7 +546,7 @@ class SubtrManager:
         #target_stamp = targ_row['stamp_array']
         ## get the reference stamps
         #ref_stamps = self.get_reference_stamps(targ_row['stamp_id'], dmag_max=1)
-        #shared_utils.debug_print(ref_ids)
+        
         # excellent use of namedtuple here, pat yourself on the back!
         results = namedtuple('klip_results', ('residuals', 'models'))
         if kwargs == {}:
@@ -576,7 +576,7 @@ class SubtrManager:
             assert(len(refs) > 0)
         except AssertionError:
             raise ZeroRefsError("Error: No references given!")
-        shared_utils.debug_print(f'Nrefs = {len(refs)}, continuing...', False)
+        shared_utils.debug_print(False, f'Nrefs = {len(refs)}, continuing...')
 
         # synchronize the global argument dictionary and the passed one
         # self.nmf_args_dict serves as a record; kwargs is used here
@@ -630,6 +630,136 @@ class SubtrManager:
 
         return residuals, psf_models
 
+    def get_targets_references_by_star(self, targ_star, dmag=1):
+        """Used for when you want to do the subtraction by star, not by target"""
+        full_table = self.db.join_all_tables()
+        targ_group = full_table.query('star_id == @targ_star')
+        targ_stamps = targ_group.set_index('stamp_id')['stamp_array']
+        # select all the *other* stars
+        ref_stars = full_table.query('star_id != @targ_star')
+        
+        # select by magnitude
+        mag_llim = targ_group['ps_mag'].min() - dmag
+        mag_ulim = targ_group['ps_mag'].max() + dmag
+        ref_stars = ref_stars.query('ps_mag <= @mag_ulim and ps_mag >= @mag_llim')
+        
+        # drop bad references
+        ref_stars = ref_stars.query('stamp_ref_flag == True')
+        
+        ref_stamps = ref_stars.set_index('stamp_id')['stamp_array']
+        return targ_stamps, ref_stamps        
+    
+    def subtr_nmf_one_star(self, targ_star, kwargs={}, ref_args={}):
+        """
+        Same as subtr_nmf except it operates grouping by star ID, since
+        all the detections of the same star will in principle use the same
+        reference stamps
+        Speeds up by almost an order of magnitude
+        Still needs a wrapper in the end to organize the output into a single table
+
+        Parameters
+        ----------
+        targ_star : star_id of the target star
+        ref_args : dict of arguments to pass to get_targets_references_by_star
+        kwargs : dict of NMF arguments
+
+        Output
+        ------
+        results : named tuple
+          tuple has attributes residuals, models, and references. Each has a dataframe
+          of the results
+        """
+        targ_stamps, ref_stamps = self.get_targets_references_by_star(targ_star)
+
+        # build sequenial NMF model
+        try:
+            assert(len(ref_stamps) > 0)
+        except AssertionError:
+            raise ZeroRefsError("Error: No references given!")
+        shared_utils.debug_print(False, f'Nrefs = {len(ref_stamps)}, continuing...')
+
+        # synchronize the global argument dictionary and the passed one
+        # self.nmf_args_dict serves as a record; kwargs is used here
+
+        self.nmf_args_dict.update(kwargs)
+        kwargs.update(self.nmf_args_dict)
+
+        # flatten
+        refs_flat = np.stack(ref_stamps.apply(np.ravel))
+        # generate the PSF model from the transformed data and components
+        nrefs, npix = refs_flat.shape
+        # get the number of free parameters
+        if kwargs.get('n_components', None) is None:
+            kwargs['n_components'] = nrefs
+        n_components = kwargs.pop('n_components')
+
+        try:
+            ordered = kwargs.pop('ordered')
+        except KeyError:
+            ordered = False
+        if ordered == True:
+            # this bit copied from Bin's nmf_imaging (https://github.com/seawander/nmf_imaging)
+            # initialize
+            W_ini = np.random.rand(nrefs, nrefs)
+            H_ini = np.random.rand(nrefs, npix)
+            g_refs = NMFPy.NMF(refs_flat, n_components=1)
+            W_ini[:, :1] = g_refs.W[:]
+            H_ini[:1, :] = g_refs.H[:]
+            for n in range(1, n_components+1):
+                print("\t" + str(n) + " of " + str(n_components))
+                W_ini[:, :(n-1)] = np.copy(g_refs.W)
+                W_ini = np.array(W_ini, order = 'F') #Fortran ordering
+                H_ini[:(n-1), :] = np.copy(g_refs.H)
+                H_ini = np.array(H_ini, order = 'C') #C ordering, row elements contiguous in memory.
+                g_refs = NMFPy.NMF(refs_flat, W=W_ini[:, :n], H=H_ini[:n, :], n_components=n)
+                chi2 = g_refs.SolveNMF(**kwargs)
+        else:
+            g_refs = NMFPy.NMF(refs_flat, n_components=n_components)
+            g_refs.SolveNMF(**kwargs)
+
+        # now you have to find the coefficients to scale the components to your targets
+        g_targ = NMFPy.NMF(np.stack(targ_stamps.apply(np.ravel)), H=g_refs.H, n_components=n_components)
+        g_targ.SolveNMF(W_only=True)
+        # create the models by component using some linalg tricks
+        W = np.array([np.tile(i[None], i[None].shape[::-1]) for i in g_targ.W])
+        psf_models = np.dot(np.tril(W), g_targ.H)
+        psf_models = image_utils.make_image_from_flat(psf_models)
+
+        # convert to series and compute residuals
+        psf_models = pd.Series({i: j for i, j in zip(targ_stamps.index, psf_models)})
+        residuals = targ_stamps - psf_models
+        # now convert to dataframes with the stamp on the column and the component on the index
+        dict_func = lambda x: dict(zip(np.arange(1, n_components+1), x))
+        psf_models = pd.DataFrame.from_dict(psf_models.apply(dict_func).to_dict(), orient='index')
+        residuals = pd.DataFrame.from_dict(residuals.apply(dict_func).to_dict(), orient='index')
+        references = pd.Series(ref_stamps.index)
+        Results = namedtuple('Results', ('residuals', 'models', 'references'))
+        results = Results(residuals=residuals,
+                          models=psf_models,
+                          references=references)
+        return results
+
+    def subtr_nmf_by_star(self, nmf_args={}):
+        """
+        This function aggregates the results from subtr_nmf_one_star
+        Sets self.subtr_resultnd
+        """
+        # list of stars
+        stars = self.db.stars_tab['star_id'].unique()
+        #print(stars)
+        residuals, models, references = {}, {}, {}
+        for star in stars:
+            result = self.subtr_nmf_one_star(star, kwargs=nmf_args)
+            residuals[star] = result.residuals
+            models[star] = result.models
+            references[star] = result.references
+
+        Results = namedtuple('Results', ('residuals', 'models', 'references'))
+        all_results = Results(residuals=pd.concat(residuals), 
+                              models=pd.concat(models), 
+                              references=pd.concat(references))
+        self.subtr_results = all_results
+
 
 def subtr_nmf_sklearn(targ, refs, kwargs={}):
     """
@@ -649,7 +779,7 @@ def subtr_nmf_sklearn(targ, refs, kwargs={}):
     # prep reference images
     # drop refs with negative values
     neg_stamps = refs[refs.apply(lambda x: np.any(x < 0))].index
-    #shared_utils.debug_print(f"Neg stamps: {len(neg_stamps)}")
+    
     refs = refs.drop(neg_stamps, inplace=False)
     # flatten
     refs_flat = np.stack(refs.apply(np.ravel))

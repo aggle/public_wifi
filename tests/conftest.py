@@ -19,6 +19,7 @@ _subset_key = ('F2', # filter ID
 @pytest.fixture()
 def dbm_mast():
     """Database Manager with the master catalog"""
+    _dbm_mast = db_manager.DBManager(db_manager.shared_utils.db_clean_file)
     return _dbm_mast
 
 @pytest.fixture()

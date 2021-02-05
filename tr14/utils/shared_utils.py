@@ -7,7 +7,7 @@ import re
 from pathlib import Path
 
 # universal debug printer
-def debug_print(debug_str='', debug_flag=True):
+def debug_print(debug_flag=True, *debug_args):
     """
     Easy-to-enable/disable function for debug printing.
 
@@ -16,14 +16,13 @@ def debug_print(debug_str='', debug_flag=True):
     debug_flag : bool [True]
       Turns printing on and off. You can set a flag at the top of the module, or
       turn on/off each statement individually.
-    debug_str : str ['']
+    debug_args : arbitrary number of arguments, they get passed to print()
       Optional string to print. If empty, just prints 'DEBUG'
     """
-    if not isinstance(debug_str, str):
-        debug_str = str(debug_str)
     if debug_flag == True:
-        debug_str = 'DEBUG | ' + debug_str
-        print(debug_str)
+        print('START DEBUG ----- ')
+        print(debug_args)
+        print('END DEBUG ----- ')
     else:
         pass
 

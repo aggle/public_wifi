@@ -10,9 +10,19 @@ from tr14.utils import db_manager
 
 # OK, I don't know how to test classes. 
 
-def test_dbm_init(dbm_mast):
-    """Test that all the attributes get initialized"""
-    list_of_attrs = ['db_path', 'tables', 'stars_tab', 'ps_tab', 'stamps_tab',
-                     'grid_defs_tab', 'comp_status_tab', 'lookup_dict',
-                     'header_dict', 'subtr_groupby_keys']
-    
+class TestMerge():
+    """"Suite of tests for merging tables and related"""
+
+    def test_join_all_tables(self, dbm_mast):
+        """Join the star, ps, and stamp tables"""
+
+        full_table = dbm_mast.join_all_tables()
+        # the table should be as long as the longest table
+        assert len(full_table) == max([len(dbm_mast.stars_tab),
+                                       len(dbm_mast.ps_tab),
+                                       len(dbm_mast.stamps_tab)])
+        # the table should contain all the columns
+        all_columns = list(dbm_mast.stars_tab.columns) +\
+            list(dbm_mast.ps_tab.columns) +\
+            list(dbm_mast.stamps_tab.columns)
+        assert all([i in all_columns for i in full_table.columns])

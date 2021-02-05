@@ -119,6 +119,23 @@ class DBManager:
             else:
                 print("Error: cannot currently store non-pandas types")
 
+    def update_table(self, key, row, verbose=True):
+        """
+        TODO
+        Update a table entry to disk
+
+        Parameters
+        ----------
+        key : the table key in the HDF file
+        row : the dataframe row with the full index and columns to update
+        verbose : bool [True] toggle extra printing
+
+        Output
+        ------
+        writes to file
+
+        """
+        pass 
 
     def list_available_tables(self, return_list=False):
         """
@@ -256,6 +273,30 @@ class DBManager:
             return None
         matching_ids = lkp_tab.set_index(start_id_type+"_id").loc[ids, want_this_id+"_id"]
         return matching_ids
+
+    def join_all_tables(self):
+        """
+        Merge the stamp, star, and point source tables
+
+        Parameters
+        ----------
+        None
+
+        Output
+        ------
+        full_table : pd.DataFrame
+          the full merged table!
+
+        """
+        stars_ps = self.find_matching_id(self.stars_tab['star_id'], 'ps').reset_index()
+        ps_stamps = self.find_matching_id(self.ps_tab['ps_id'], 'stamp').reset_index()
+        # merge the IDs
+        full_table = self.stars_tab.merge(stars_ps, on='star_id') # add ps_id
+        full_table = full_table.merge(ps_stamps, on='ps_id') # add stamp_id
+        # merge the tables
+        full_table = full_table.merge(self.ps_tab, on='ps_id').merge(self.stamps_tab, on='stamp_id')
+        shared_utils.debug_print(False, self.stars_tab.shape, full_table.shape)
+        return full_table
 
     def find_stamp_mag(self, stamp_id):
        """
@@ -432,7 +473,7 @@ class DBManager:
             id_names = [i+'_id' for i in pair]
             query_str = ' and '.join([f'{i} in @self.{t}.{i}' for t, i in zip(tab_names, id_names)])
             cut_table = self.lookup_dict[lkp_name].query(query_str).copy()
-            shared_utils.debug_print(cut_table.shape, False)
+            shared_utils.debug_print(False, cut_table.shape)
             cut_tables[lkp_name] = cut_table
             #self.lookup_dict[lkp_name].update(cut_table)
         self.lookup_dict.update(cut_tables)
