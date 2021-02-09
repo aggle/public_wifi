@@ -54,6 +54,7 @@ class TestNMF():
         n_stamps = len(subtr_mgr.db.find_matching_id(star, 'stamp'))
 
         assert subtr_results.models.shape == (n_stamps, n_components)
+        assert subtr_results.residuals.shape == (n_stamps, n_components)
 
     @pytest.mark.nmf_star
     def test_subtr_nmf_by_star(self, subtr_mgr):
@@ -70,3 +71,4 @@ class TestNMF():
         n_stamps = len(subtr_mgr.db.stamps_tab)
 
         assert subtr_results.models.shape == (n_stamps, n_components)
+        assert subtr_results.residuals.shape == (n_stamps, n_components)
