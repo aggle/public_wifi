@@ -355,7 +355,7 @@ def get_stamp_from_id(ident, stamp_df=None):
     if ident[0] == 'S':
         ident.replace("S","T")
 
-    if stamp_df == None:
+    if stamp_df is None:
         stamp_df = load_table('stamps')
     stamp_array = stamp_df.set_index('stamp_id').loc[ident, 'stamp_array']
     return stamp_array
