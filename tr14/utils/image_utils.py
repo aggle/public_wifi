@@ -1,5 +1,6 @@
 """
-This file contains utilities for image manipulation: cutting stamps, rotations and reflections, computing indices, etc.
+This file contains utilities for image manipulation: cutting stamps, rotations and reflections,
+computing indices, etc.
 """
 
 from functools import reduce
@@ -367,7 +368,7 @@ def make_image_from_flat(flat, indices=None, shape=None, squeeze=True):
         img = np.squeeze(img)
     return img
 
-def make_stamp_mask(shape, mask_dim, invert=False, return_ind=False):
+def make_stamp_mask(shape, mask_dim, invert=False, return_ind=False, nan=False):
     """
     Make a square mask on the middle of the stamp. 1's on the outside, 0's in the middle
 
@@ -381,10 +382,12 @@ def make_stamp_mask(shape, mask_dim, invert=False, return_ind=False):
     return_ind : bool [False]
       if True, return the indices of the pixels you want to keep
       instead of the mask itself
+    nan : bool [False]
+      if True, use np.nan instead of 0
 
     Output
     ------
-    NxN binary mask with 1 on the outside and 0 on the inside
+    NxN binary mask with 1 on the outside and 0 (or nan) on the inside
 
     """
     shape = np.array(shape)
@@ -395,6 +398,8 @@ def make_stamp_mask(shape, mask_dim, invert=False, return_ind=False):
          center[1]-mask_rad:center[0]+mask_rad+1] = 0
     if invert == True:
         mask = np.abs(mask - 1)
+    if nan == True:
+        mask[mask==0] = np.nan
     if return_ind == True:
         mask = np.where(mask == 1)
     return mask
