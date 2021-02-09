@@ -3,6 +3,9 @@ __pycache__
 # ignore notebooks and associated files
 tr14/*ipynb
 tr14/.ipynb_checkpoints/
+tr14/.ipynb_checkpoints/*
+tr14/.ipynb_checkpoints/*ipynb
+tr14/.ipynb_checkpoints/*py
 tr14/notebooks/*ipynb
 
 # don't track figures
