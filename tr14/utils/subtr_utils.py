@@ -29,6 +29,9 @@ from pyklip import klip
 sys.path.append(shared_utils.load_config_path('nmf_path').as_posix())
 from NonnegMFPy import nmf as NMFPy
 
+# Results object
+Results = namedtuple('Results', ('residuals', 'models', 'references'))
+
 ###################
 # PSF correlation #
 ###################
@@ -248,9 +251,9 @@ def psf_model_from_basis(target, kl_basis, numbasis=None):
     Parameters
     ----------
     target : np.array
-      the target PSF, 2-D
+      the target PSF, 1-D
     kl_basis : np.array
-      Nklip x Nrows x Ncols array
+      Nklip x Npix array
     numbasis : int or np.array [None]
       number of Kklips to use. Default is None, meaning use all the KL vectors
 
@@ -267,7 +270,7 @@ def psf_model_from_basis(target, kl_basis, numbasis=None):
         numbasis = np.array([numbasis])
     numbasis = numbasis.astype(np.int)
 
-    coeffs = np.inner(target.ravel(), image_utils.flatten_image_axes(kl_basis))
+    coeffs = np.inner(target, kl_basis)
     psf_model = kl_basis * np.expand_dims(coeffs, [i+1 for i in range(kl_basis.ndim-1)])
     psf_model = np.array([np.sum(psf_model[:k], axis=0) for k in numbasis])
 
@@ -637,18 +640,19 @@ class SubtrManager:
         targ_stamps = targ_group.set_index('stamp_id')['stamp_array']
         # select all the *other* stars
         ref_stars = full_table.query('star_id != @targ_star')
-        
+
         # select by magnitude
         mag_llim = targ_group['ps_mag'].min() - dmag
         mag_ulim = targ_group['ps_mag'].max() + dmag
         ref_stars = ref_stars.query('ps_mag <= @mag_ulim and ps_mag >= @mag_llim')
-        
+
         # drop bad references
         ref_stars = ref_stars.query('stamp_ref_flag == True')
-        
+
         ref_stamps = ref_stars.set_index('stamp_id')['stamp_array']
-        return targ_stamps, ref_stamps        
-    
+        return targ_stamps, ref_stamps
+
+
     def subtr_nmf_one_star(self, targ_star, kwargs={}, ref_args={}):
         """
         Same as subtr_nmf except it operates grouping by star ID, since
@@ -680,7 +684,6 @@ class SubtrManager:
 
         # synchronize the global argument dictionary and the passed one
         # self.nmf_args_dict serves as a record; kwargs is used here
-
         self.nmf_args_dict.update(kwargs)
         kwargs.update(self.nmf_args_dict)
 
@@ -732,34 +735,164 @@ class SubtrManager:
         dict_func = lambda x: dict(zip(np.arange(1, n_components+1), x))
         psf_models = pd.DataFrame.from_dict(psf_models.apply(dict_func).to_dict(), orient='index')
         residuals = pd.DataFrame.from_dict(residuals.apply(dict_func).to_dict(), orient='index')
-        references = pd.Series(ref_stamps.index)
-        Results = namedtuple('Results', ('residuals', 'models', 'references'))
+        references = pd.DataFrame.from_dict({targ: ref_stamps.index for targ in targ_stamps.index},
+                                            orient='index')
         results = Results(residuals=residuals,
                           models=psf_models,
                           references=references)
         return results
 
-    def subtr_nmf_by_star(self, nmf_args={}):
+    def subtr_nmf_by_star(self, nmf_args={}, return_results=False):
         """
         This function aggregates the results from subtr_nmf_one_star
-        Sets self.subtr_resultnd
+        Sets self.subtr_results
         """
         # list of stars
         stars = self.db.stars_tab['star_id'].unique()
         #print(stars)
         residuals, models, references = {}, {}, {}
         for star in stars:
-            result = self.subtr_nmf_one_star(star, kwargs=nmf_args)
+            result = self.subtr_nmf_one_star(star, kwargs=nmf_args, return_results=return_results)
             residuals[star] = result.residuals
             models[star] = result.models
-            references[star] = result.references
+            references[star] = result.references 
 
-        Results = namedtuple('Results', ('residuals', 'models', 'references'))
-        all_results = Results(residuals=pd.concat(residuals), 
-                              models=pd.concat(models), 
-                              references=pd.concat(references))
+        all_results = Results(residuals=pd.concat(residuals, names=['star_id', 'stamp_id']),
+                              models=pd.concat(models, names=['star_id', 'stamp_id']),
+                              references=pd.concat(references, names=['star_id', 'stamp_id']))
         self.subtr_results = all_results
+        if return_results == True:
+            return all_results
 
+    def subtr_by_star(self, subtr_func, arg_dict, return_results=False):
+        """
+        Aggregator for results for the subtraction functions
+
+        Parameters
+        ----------
+        func : the subtraction function, takes only the name of a star (and other arguments)
+        arg_dict : dictionary of keyword arguments
+        return_results : bool [False]
+          if True, return the results tuple. Otherwise, just sets self.subtr_results
+
+        Output
+        ------
+        named tuple of results with attributes residuals, models, references
+
+        """
+        # list of stars
+        stars = self.db.stars_tab['star_id'].unique()
+        #print(stars)
+        residuals, models, references = {}, {}, {}
+        for star in stars:
+            result = subtr_func(star, kwargs=arg_dict)
+            residuals[star] = result.residuals
+            models[star] = result.models
+            references[star] = result.references 
+        
+        all_results = Results(residuals=pd.concat(residuals, names=['star_id', 'stamp_id']),
+                              models=pd.concat(models, names=['star_id', 'stamp_id']),
+                              references=pd.concat(references, names=['star_id', 'stamp_id']))
+        self.subtr_results = all_results
+        if return_results == True:
+            return all_results
+
+
+    def subtr_klip_one_star(self, targ_star, kwargs={}, ref_args={}):
+        """
+        Perform KLIP subtraction on all the stamps for one star. Since stamps
+        of the same star share the same references, this computes the Z_k's for
+        a star and then projects all the star stamps onto them.
+
+        Parameters
+        ----------
+        targ_star : star ID of the target (S000000)
+        kwargs : {}
+         dict of args to pass to KLIP subtraction. Default: self.klip_args_dict
+        ref_args : {}
+         dict of args to pass to get_targets_references_by_star, like dmag cut.
+
+        Output
+        ------
+        results : named tuple
+          tuple has attributes residuals, models, and references. Each has a dataframe
+          of the results
+
+        """
+        targ_stamps, ref_stamps = self.get_targets_references_by_star(targ_star)
+
+        # build sequenial NMF model
+        try:
+            assert(len(ref_stamps) > 0)
+        except AssertionError:
+            raise ZeroRefsError("Error: No references given!")
+        shared_utils.debug_print(False, f'Nrefs = {len(ref_stamps)}, continuing...')
+
+        # synchronize the global argument dictionary and the passed one
+        # self.klip_args_dict serves as a record; kwargs is used here
+        self.klip_args_dict.update(kwargs)
+        kwargs.update(self.klip_args_dict)
+
+        # flatten
+        targ_stamps_flat = targ_stamps.apply(image_utils.flatten_image_axes)
+        ref_stamps_flat = image_utils.flatten_image_axes(np.stack(ref_stamps))
+
+        # apply KLIP
+        kl_max = np.array([len(ref_stamps_flat)-1])
+        #numbasis = klip_args.get('numbasis', kl_max)
+        numbasis = np.arange(1, len(ref_stamps_flat)-1)
+        shared_utils.debug_print(False, f"{kl_max}, {numbasis}")
+        return_basis = True
+        klip_results = targ_stamps_flat.apply(lambda x: klip.klip_math(x,
+                                                                       ref_stamps_flat,
+                                                                       numbasis = numbasis,
+                                                                       return_basis = return_basis))
+        # subtraction results
+        residuals = klip_results.apply(lambda x: pd.Series(dict(zip(numbasis, x[0].T))))
+        residuals = residuals.applymap(image_utils.make_image_from_flat)
+        # generate PSF models and store in dataframe
+        # klip basis
+        klip_basis = klip_results.apply(lambda x: pd.Series(dict(zip(numbasis, x[1]))))
+        model_gen_df = pd.merge(targ_stamps_flat, klip_basis, left_index=True, right_index=True)
+        psf_models = model_gen_df.apply(lambda x: psf_model_from_basis(x['stamp_array'],
+                                                                       np.stack(x[numbasis]),
+                                                                       numbasis=numbasis),
+                                        axis=1)
+        psf_models = psf_models.apply(lambda x: pd.Series(dict(zip(numbasis, x))))
+        psf_models = psf_models.applymap(image_utils.make_image_from_flat)
+
+        # references
+        references = pd.DataFrame.from_dict({targ: ref_stamps.index for targ in targ_stamps.index},
+                                            orient='index')
+
+        results = Results(residuals=residuals,
+                          models=psf_models,
+                          references=references)
+        return results
+
+
+    def subtr_klip_by_star(self, klip_args={}, return_results=False):
+        """
+        This function aggregates the results from subtr_klip_one_star
+        Sets self.subtr_results
+        """
+        # list of stars
+        stars = self.db.stars_tab['star_id'].unique()
+        #print(stars)
+        residuals, models, references = {}, {}, {}
+        for star in stars:
+            result = self.subtr_klip_one_star(star, kwargs=klip_args)
+            residuals[star] = result.residuals
+            models[star] = result.models
+            references[star] = result.references 
+
+        
+        all_results = Results(residuals=pd.concat(residuals, names=['star_id', 'stamp_id']),
+                              models=pd.concat(models, names=['star_id', 'stamp_id']),
+                              references=pd.concat(references, names=['star_id', 'stamp_id']))
+        self.subtr_results = all_results
+        if return_results == True:
+            return all_results
 
 def subtr_nmf_sklearn(targ, refs, kwargs={}):
     """
