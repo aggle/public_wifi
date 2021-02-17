@@ -59,3 +59,7 @@ def test_lookup_from_id():
     Test that you get the right subset of a table
     """
     ps_table = table_utils.load_table('point_sources')
+
+
+def test_write_table():
+    pass
