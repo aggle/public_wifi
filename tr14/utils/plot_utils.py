@@ -304,3 +304,114 @@ def plot_correlation_matrix(subtr_man, which='mse', ax=None):
 
     return fig
  
+
+def plot_sky_context(star_id, stars_table, img_size=61,
+                     show_neighbors=False, neighbors_table=None,
+                     ax=None):
+    """
+    Given a star identifier, show the scene on-sky
+
+    Parameters
+    ----------
+    star_id : star identifier for the target star
+    stars_table : stars table
+    img_size : int [61] size of the field to show, pix
+    neighbors : bool [False] if True, label neighbors
+    neighbor_tab : pd.DataFrame [None] star table used for looking up neighbors. if None, use stars_table
+    ax : matplotlib axis [None] optional axis to draw on
+    Output
+    ------
+    fig : plt.Figure instance
+      if ax is given, returns a reference to the parent figure
+    """
+
+    if ax == None:
+      fig, ax = plt.subplots(1, 1)
+    else:
+      fig = ax.get_figure()
+
+    ax.set_title(f"{star_id} context on sky")
+    ax.set_xlabel("RA [pix]")
+    ax.set_ylabel("Dec [pix]")
+
+    mast_ind = image_utils.get_master_stamp_ind(star_id,
+                                                stamp_shape=img_size,
+                                                df=stars_table,
+                                                extra_row=True)
+    ylim = mast_ind[0][[0, -1]][:, 0]
+    xlim = mast_ind[1][:, [0, -1]][0]
+    img = fits.getdata(shared_utils.load_config_path("composite_img_file"))
+    img = img[mast_ind[0, :-1, :-1], mast_ind[1, :-1, :-1]]
+    ax.pcolor(mast_ind[1]+0.5,
+              mast_ind[0]+0.5,
+              img,
+              norm=mpl.colors.LogNorm())
+
+    db_star_pos = stars_table.query("star_id == @star_id")[['u_mast', 'v_mast']].squeeze()
+    ax.scatter(*db_star_pos, marker='*', s=100, c='y', linewidths=1, edgecolors='k')
+
+    # neighbors
+    if show_neighbors is True:
+        nbr_query = "u_mast >= @xlim[0] and u_mast <= @xlim[1] "\
+            "and v_mast >= @ylim[0] and v_mast <= @ylim[1] "\
+            "and star_id != @star_id"
+        if not isinstance(neighbors_table, pd.DataFrame):
+            neighbors_table = stars_table
+        nbrs = neighbors_table.query(nbr_query)
+        for i, nbr  in nbrs.iterrows():
+            nbr_pos = nbr[['u_mast', 'v_mast']].squeeze()
+            ax.scatter(*nbr_pos, marker='o', s=100, c='none', linewidths=1, edgecolors='w')
+            ax.scatter(*nbr_pos, marker='x', s=50, c='k', linewidths=1)
+
+    stamp_dim = 11
+    rectangle = plt.Rectangle(db_star_pos-stamp_dim/2, stamp_dim, stamp_dim, 
+                              fc='none',ec="white", transform=ax.transData)
+    ax.add_patch(rectangle)
+    ax.set_aspect('equal')
+
+    return fig
+
+def show_detector_scene(ps_table, target_ps_ids=None, alt_ps_table=None, ax=None):
+    """
+    Show the scene on the detector
+
+    Parameters
+    ----------
+    ps_table : the point source table to draw from
+    targ_ps_ids : point source ids [None]
+      if given, plant a marker on the average position of this/these ps IDs
+    alt_ps_table : [None]
+      alternate ps table; plot all point sources that appear only in this one
+    ax : plt.axis [None]
+      optional: provide the axis to draw on
+
+    Output
+    ------
+    fig : plt.Figure instance
+      if ax is given, returns a reference to the parent figure
+    """
+    if ax == None:
+      fig, ax = plt.subplots(1, 1)
+    else:
+      fig = ax.get_figure()
+
+    ax.scatter(ps_table['ps_x_exp'], ps_table['ps_y_exp'], marker='.', 
+               s=ps_table['ps_phot'], 
+               c=ps_table['ps_mag'], cmap=mpl.cm.magma_r)
+
+
+    target_locs = ps_table.set_index('ps_id').loc[target_ps_ids, ['ps_x_exp', 'ps_y_exp']]
+    ax.scatter(target_locs['ps_x_exp'].mean(),
+               target_locs['ps_y_exp'].mean(),
+               marker='*', s=400, c='none', edgecolors='y', linewidths=2,
+               label='target star')
+
+   #all_sec_ids = [i for i in alt_ps_table['ps_id'] if i not in ps_table['ps_id']]
+   #all_star_pos = dbm_raw.join_all_tables().query("ps_id in @all_sec_ids").groupby('star_id')[['ps_x_exp', 'ps_y_exp']].mean()
+   #ax.scatter(all_star_pos['ps_x_exp'], all_star_pos['ps_y_exp'], marker='x', s=20, c='k', label='cut detections')
+
+    ax.set_aspect('equal')
+
+    ax.legend()
+
+    return fig
