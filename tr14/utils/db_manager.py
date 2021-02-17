@@ -70,7 +70,7 @@ class DBManager:
         try:
             df = pd.read_hdf(self.db_path, key)
         except KeyError:
-            print(f"Error: Key `{key}` not found in {str(db_file)}")
+            print(f"Error: Key `{key}` not found in {str(self.db_path)}")
             df = None
         self.tables[key] = df
         return df
@@ -237,14 +237,27 @@ class DBManager:
         ids : string or list-like
           identifiers you want to look up
         want_this_id : str
-          'star','stamp', 'ps', etc - the kind of identifier you want
+          The kind of identifier you wish to return.
+          'S' : star, 'P': point source, 'T': stamp
+          obsolete: 'star','stamp', 'ps', etc - the kind of identifier you want
 
         Output
         ------
         targ_ids : str or list-like
           the corresponding identifiers
         """
+        want_this_id = want_this_id.upper()
+
         id_dict = {'S': 'star', 'P': 'ps', 'T': 'stamp'}
+        di_dict = {v: k for k, v in id_dict.items()} # reversed
+
+        try:
+            assert want_this_id in id_dict.keys()
+        except AssertionError:
+            print(f"Error: Please provide one of {list(id_dict.keys())}")
+            print(f"You provided: {want_this_id}.")
+            return ids
+
         # which kind of identifier do you have?
         if isinstance(ids, str):
             id_lead = ids[0]
@@ -259,19 +272,27 @@ class DBManager:
                 return ids
             id_lead = id_lead[0]
 
+        # if you accidentally ask for the same kind of ID that you provide,
+        # return the ids
+        if id_lead.upper() == want_this_id.upper():
+            #print("find_matching_id: same type of ID requested as provided.")
+            return ids
+
+
         start_id_type = id_dict[id_lead]
 
         # which kind do you want?
-        if want_this_id == 'point_sources':
-            want_this_id = 'ps'
+        requested_id = id_dict[want_this_id]
+        #if want_this_id == 'point_sources':
+        #    want_this_id = 'ps'
 
-        lkp_tab = self.find_lookup_table(start_id_type, want_this_id)
+        lkp_tab = self.find_lookup_table(start_id_type, requested_id)
         try:
             assert isinstance(lkp_tab, pd.DataFrame)
         except AssertionError:
             print("No lookup table found, exiting...")
             return None
-        matching_ids = lkp_tab.set_index(start_id_type+"_id").loc[ids, want_this_id+"_id"]
+        matching_ids = lkp_tab.set_index(start_id_type+"_id").loc[ids, requested_id+"_id"]
         return matching_ids
 
     def join_all_tables(self):
@@ -288,8 +309,8 @@ class DBManager:
           the full merged table!
 
         """
-        stars_ps = self.find_matching_id(self.stars_tab['star_id'], 'ps').reset_index()
-        ps_stamps = self.find_matching_id(self.ps_tab['ps_id'], 'stamp').reset_index()
+        stars_ps = self.find_matching_id(self.stars_tab['star_id'], 'P').reset_index()
+        ps_stamps = self.find_matching_id(self.ps_tab['ps_id'], 'T').reset_index()
         # merge the IDs
         full_table = self.stars_tab.merge(stars_ps, on='star_id') # add ps_id
         full_table = full_table.merge(ps_stamps, on='ps_id') # add stamp_id
@@ -317,7 +338,7 @@ class DBManager:
        """
        if isinstance(stamp_id, str):
            stamp_id = pd.Series(stamp_id)
-       ps_ids = self.find_matching_id(stamp_id, 'ps').reset_index()
+       ps_ids = self.find_matching_id(stamp_id, 'P').reset_index()
        df = pd.merge(left=ps_ids, right=self.ps_tab, on='ps_id')
        mags = df.set_index('stamp_id')['ps_mag']
        if mags.size == 1:
@@ -402,23 +423,63 @@ class DBManager:
         sector_df = self.lookup_dict['lookup_point_source_sectors'].query(query_str)
         return sector_df
 
-    def get_stamp_headers(self, stamp_id):
+    def find_header_key(self, ident, key, header='SCI'):
         """
-        Given a stamp_id, find the exposure it came from and pull out all the relevant headers
-        
+        Given a point source or stamp identifier, find the exposure it came
+        from and pull out the requested header keywords
+
         Parameters
         ----------
-        stamp_id : str with format T000000
-        
+        ident : str or list of str
+          either a point source or stamp identifier
+        key : str
+          a valid header keyword. If "*", return all values in the header
+        header : str [SCI]
+          which header to read from?
+
         Output
         ------
-        stamp_headers : dict
-          dictionary; keyword is the header identifier and value is a pd.Series
-          of the keywords and values
+        header_values : pd.DataFrame
+          returns a dataframe of the requested keywords along with the associated identifiers
+          and exposure IDs
 
         """
-        ps_id = self.find_matching_id(stamp_id, 'ps')
-        exp_id = None
+        # make sure it's a valid header
+        try:
+            hdr_df = self.header_dict['hdr_'+header.lower()]
+        except KeyError:
+            print(f"Error: Header {header} not found.")
+            print(f"Choices are: {' '.join(i.split('_')[1].upper() for i in dbm.header_dict.keys())}")
+            raise KeyError
+
+        # make sure it's a valid key
+        if key == '*':
+            key = list(hdr_df.columns)
+        if isinstance(key, str):
+            key = [key]
+        try:
+            # use set logic
+            assert set(key).issubset(hdr_df.columns)
+        except AssertionError:
+            print(f"Error: {key} is not a valid key for header {header}.")
+            raise AssertionError
+
+        # ident needs to be a list too
+        if isinstance(ident, str):
+            ident = [ident]
+        # remove duplicate identifiers
+        ident = list(set(ident))
+        ps_id = self.find_matching_id(ident, 'p')
+        exp_id = self.ps_tab.set_index('ps_id').loc[ps_id, 'ps_exp_id']
+        file_name = self.lookup_dict['lookup_files'].set_index('file_id').loc[exp_id, 'file_name']
+        file_name = file_name.apply(lambda x: x.split('_flt')[0])
+        hdr_rows = hdr_df.query("rootname in @file_name").drop_duplicates()
+        # return the header, along with the identifiers
+        hdr_rows = hdr_rows.merge(file_name.reset_index(), left_on='rootname', right_on='file_name')
+        hdr_rows = hdr_rows.merge(exp_id.reset_index(), left_on='file_id', right_on='ps_exp_id')
+        hdr_rows = hdr_rows.merge(ps_id.reset_index())
+        return hdr_rows[['ps_exp_id'] + list(ps_id.reset_index().columns) + key]
+
 
     def query_table(self, table, query_str, **kwargs):
         """
@@ -503,9 +564,9 @@ class DBManager:
                      [''.join(k) for k in sorted(fe_groups.groups.keys())]):
             k_ps = fe_groups.get_group(k)
             self.fe_dict[dk]['ps'] = self.ps_tab.query('ps_id in @k_ps')
-            k_stamps = self.find_matching_id(k_ps, 'stamp')
+            k_stamps = self.find_matching_id(k_ps, 'T')
             self.fe_dict[dk]['stamps'] = self.stamps_tab.query('stamp_id in @k_stamps')
-            k_stars = self.find_matching_id(k_ps, 'star')
+            k_stars = self.find_matching_id(k_ps, 'S')
             self.fe_dict[dk]['stars'] = self.stars_tab.query('star_id in @k_stars')
 
 
@@ -535,8 +596,8 @@ class DBManager:
                                  on='ps_id')
         ps_gb = ps_tab_sector.groupby(keys)['ps_id']
         # now get the corresponding star and stamp groups
-        subtr_groups = pd.merge(ps_gb.apply(lambda x: self.find_matching_id(x, 'star').reset_index()),
-                                ps_gb.apply(lambda x: self.find_matching_id(x, 'stamp').reset_index()),
+        subtr_groups = pd.merge(ps_gb.apply(lambda x: self.find_matching_id(x, 'S').reset_index()),
+                                ps_gb.apply(lambda x: self.find_matching_id(x, 'T').reset_index()),
                                 on='ps_id', left_index=True)
         self.subtr_groups = subtr_groups.groupby(keys)
         self.subtr_groupby_keys = keys
@@ -646,10 +707,10 @@ class DBSector(DBManager):
         idx = self.ps_tab.query('ps_id not in @sec_ps_ids').index
         self.ps_tab.drop(idx, axis=0, inplace=True)
         # now stamps
-        stamp_ids = self.find_matching_id(self.ps_tab['ps_id'].values, 'stamp')
+        stamp_ids = self.find_matching_id(self.ps_tab['ps_id'].values, 'T')
         idx = self.stamps_tab.query("stamp_id not in @stamp_ids").index
         self.stamps_tab.drop(idx, axis=0, inplace=True)
         # now stars
-        star_ids = self.find_matching_id(self.ps_tab['ps_id'].values, 'star')
+        star_ids = self.find_matching_id(self.ps_tab['ps_id'].values, 'S')
         idx = self.stars_tab.query("star_id not in @star_ids").index
         self.stars_tab.drop(idx, axis=0, inplace=True)
