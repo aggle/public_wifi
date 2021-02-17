@@ -6,6 +6,11 @@ How to interact with the tables
 The data tables are by default stored in `tr14/data/tables/db.hdf5`. This path can be changed by editing `tr14/tr14/config.ini`.
 HDF (Hierarchical Data Format) files are capable of storing different tables in the same file, accessed by a unique "key" for each table. Use the functions described below for interacting with the tables. 
 Since the tables are python pandas DataFrames, which can be slightly weird to store in HDF format, I exclusively use the pandas library to read from/write to the database file. The functions below are intended to do this safely and consistently with the particular data used in the Tr14 project.
+*** Some notes on reading/writing to tables
+It's important to be able to access individual table entries for updating values on disk. 
+HDF5 needs datasets to all have the same type, and also that type should be a native HDF5 type. However, the database tables contain columns that have different types, posing a problem.
+A possible solution arises from the fact that each column of a dataframe has the same type. This suggests that the database file should be organized hierarchically, with the name of the table being the top-most level, and the next level being the column name. Then a dataset can be created for each *column*. However, a major problem is presented by columns of type "object", which must be processed further. At the moment, some "object"-type columns hold strings, and others hold numerical arrays.
+
 
 ** List available tables
 Print a list of the keywords for the tables stored in `db.hdf5`. For documentation of these tables and their entries, see the [[file:list_of_tables.org][List of Tables]].
