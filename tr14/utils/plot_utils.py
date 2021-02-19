@@ -159,7 +159,7 @@ def cube_scroller(df,
     else:
         # otherwise, assume it's a point sources table
         for i, row in df.iterrows():
-            s, ind =  get_stamp_from_ps_row(row, **stamp_args, return_img_ind=True)
+            s, ind =  image_utils.get_stamp_from_ps_row(row, **stamp_args, return_img_ind=True)
             ind[0] = np.tile(ind[0], (ind[0].size, 1)).T
             ind[1] = np.tile(ind[1], (ind[1].size, 1))
             stamps.append(s)
