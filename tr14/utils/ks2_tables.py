@@ -67,7 +67,7 @@ def make_stars_table(mast_cat):
     stars_table[['u_mast','v_mast']] = frtn2py_ind(stars_table[['u_mast',
                                                                 'v_mast']])
     # add the membership column
-    stars_table['clust_memb'] = None
+    stars_table['clust_memb'] = False
     # compute magnitudes
     for i in ks2_utils.ks2_filtermapper['filt_id']:
         # mag
