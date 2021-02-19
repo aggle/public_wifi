@@ -6,9 +6,11 @@ manipulation of the data tables (stars, point sources, stamps, etc)
 import re
 from pathlib import Path
 import pandas as pd
+import warnings
 
 from . import shared_utils
 from . import table_utils
+
 
 
 class DBManager:
@@ -94,13 +96,6 @@ class DBManager:
         -------
         Nothing; writes to file
         """
-        # first, check if table exists
-        try:
-            assert(key in self.tables.keys())
-        except AssertionError:
-            print(f"Error: Table {key} not found, quitting.")
-            return
-
         # option to write all the tables using recursion. will this work?????
         if key == 'all':
             for k in self.tables.keys():
@@ -108,6 +103,13 @@ class DBManager:
                 return
 
         # write a single table
+        # first, check if table exists
+        try:
+            assert(key in self.tables.keys())
+        except AssertionError:
+            print(f"Error: Table {key} not found, quitting.")
+            return
+        table = self.tables[key]
         # this throws a performance warning when you store python objects with
         # mixed or complex types in an HDF file, but I want to ignore those
         with warnings.catch_warnings() as w:
