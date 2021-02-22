@@ -28,7 +28,7 @@ config = configparser.ConfigParser()
 def load_table_definition(table_name):
     """
     Load a path from the config file. Also handles case of key not found
-    
+
     Parameters
     ----------
     table_name : str
@@ -79,84 +79,110 @@ def initialize_table(table_name, nrows):
 
 
 
-
-
-def write_table(table, key, kwargs={}, db_file=shared_utils.db_clean_file, verbose=True):
+def write_table(table_name, df, pk=None, table_file=shared_utils.db_clean_file):
     """
-    Add a table to the DB file `shared_utils.db_clean_file`. Really just a simple
-    wrapper so I don't have to keep typing shared_utils.db_clean_file every time
-    I need to write something
+    Write a table to file
 
     Parameters
     ----------
-    table : pd.DataFrame
-      pandas DataFrame (or Series) containing the data you want to store
-    key : str
-      key for the table in the HSF file
-    kwargs : dict [{}]
-      any keyword arguments to pass to pd.DataFrame.to_hdf for DataFrames and
-      Series, or to h5py.File for non-pandas objects
-    db_file : str or Path [shared_utils.db_clean_file]
-      path to the database file
-    verbose : bool [True]
-      print some output
-    Output
-    -------
-    Nothing; writes to file
-    """
-    # this throws a performance warning when you store python objects with
-    # mixed or complex types in an HDF file, but I want to ignore those
-    with warnings.catch_warnings() as w:
-        kwargs['mode'] = kwargs.get("mode", 'a')
-        if hasattr(table, 'to_hdf'):
-            table.to_hdf(db_file, key=key, **kwargs)
-            if verbose == True:
-                print(f"Table {key} written to {str(db_file)}")
-        else:
-            print("Error: cannot currently store non-pandas types")
-            """
-            with h5py.File(db_file, **kwargs) as store:
-                try:
-                    store[key] = table
-                except KeyError:
-                    grp = store.create_group(key)
-                store.close()
-            """
-
-
-def load_table(key, db_file=shared_utils.db_clean_file):
-    """
-    Load a table.
-
-    Parameters
-    ----------
-    key : string or list
-    db_file : path to the database file that holds the table
+    table_name : str
+      the table's key to use in the HDF file
+    df : pd.DataFrame
+      the dataframe with the table
+    pk : str [None]
+      (optional) the name of the table's primary key
+    table_file : str or pathlib.Path
+      the filename to write to
 
     Output
     ------
-    df : pd.DataFrame or dict of dataframes
-      the table (or, if `key` is a list, then a dict of dataframes)
-    """
-    # df = None
-    if isinstance(key, list):
-        df = {}
-        for k in key:
-            # drop the leading /, if relevant
-            if k[0] == '/': k = k[1:]
-            try:
-                df[k] = pd.read_hdf(db_file, k)
-            except KeyError:
-                print(f"Error: Key `{key}` not found in {str(db_file)}")
-                df[k] = None
-    else:
-        try:
-            df = pd.read_hdf(db_file, key)
-        except KeyError:
-            print(f"Error: Key `{key}` not found in {str(db_file)}")
-            df = None
+    Writes the table to the specified file, creating the file if necessary.
 
+    """
+    table_file = Path(table_file)
+    mode='a'
+    try:
+        assert table_file.exists()
+    except AssertionError:
+        print(f"File {table_file} not found; creating.")
+        mode='w'
+    with h5py.File(table_file, mode=mode) as f:
+        try:
+            g = f.create_group(table_name)
+        except ValueError: # group already exists
+            print(f"Error: key '{table_name}' in {table_file} already exists; doing nothing.")
+            return
+        # set the primary key
+        if isinstance(pk, str):
+            g.attrs['primary_key'] = pk
+        for c in df.columns:
+            col = df[c]
+            orig_dtype = col.dtype
+            col = np.stack(col.values) # trust numpy's automatic type conversion
+            # Strings must be treated specially in HDF5
+            if isinstance(col[0], str):
+                col = col.astype(h5py.string_dtype('utf-8'))
+            g.create_dataset(c, data=col, dtype=col.dtype, chunks=True)
+        f.flush()
+    print(f"Wrote '{table_name}' to {table_file}")
+
+
+def load_table(table_name, table_file=shared_utils.db_clean_file):
+    """
+    Load a table into a dataframe
+
+    Parameters
+    ----------
+    table_name : str
+      the key under which the table is stored
+    table_file : str or pathlib.Path
+      the file to read from
+
+    Output
+    ------
+
+    """
+    with h5py.File(table_file, 'r') as f:
+        try:
+            g = f.get('/'+table_name)
+        except ValueError: # table not found
+            print(f"Table '{table_name}' not found. Available tables are:")
+            print('\n'.join(g for g in f))
+            return
+        df = pd.DataFrame.from_dict({k: list(g[k][...]) for k in g})
+    print(f"Loaded '{table_name}' from {table_file}")
     return df
+
+def update_table(table_name, pk_name, pk_val, column, val, table_file='default'):
+    """
+    Update table value
+
+    Parameters
+    ----------
+    table_name : str
+      key under which the table is stored in the hdf5 file
+    pk_name : str
+      name of the table column with the primary key (serves as a proxy for the index)
+    pk_val : str or list
+      primary key value (can be list-like)
+    column : str
+      the column to update
+    val : the new value (can be list-like; must be single-valued or same shape as pk_val)
+    table_file : path to the table file
+
+    Output
+    ------
+    None, writes updated values to file
+    """
+    if np.ndim(pk_val) == 0:
+        pk_val = [pk_val]
+    with h5py.File(table_file, 'r+') as f:
+        pks = list(f[f'{table_name}/{pk_name}'][...]) # primary keys
+        idx = [pks.index(i) for i in pk_val] # indices of keys to update
+        f[f'{table_name}/{column}'][idx] = val
+    f.close()
+    print(f"Updated '{table_name}' in {table_file}")
+
 
 
 def list_available_tables(return_list=False, db_file=shared_utils.db_clean_file):
@@ -173,14 +199,14 @@ def list_available_tables(return_list=False, db_file=shared_utils.db_clean_file)
     table_names : list [optional]
       a list of available keys
     """
-    with pd.HDFStore(db_file, mode='r') as store:
-        table_names = sorted(store.keys())
-        if return_list == False:
-            print(f"Available tables in {db_file}:")
-            print('\n'.join(table_names))
-        store.close()
+    with h5py.File(db_file, mode='r') as f:
+        table_names = sorted(f.keys())
+    f.close()
     if return_list == True:
         return table_names
+    else:
+        print(f"Available tables in {db_file}:")
+        print('\n'.join(table_names))
 
 
 
@@ -735,3 +761,87 @@ def set_reference_quality_flag(stamp_ids, flag=True, stamp_table=None):
     ind = stamp_table.query("stamp_id in @stamp_ids").index
     stamp_table.loc[ind, 'stamp_ref_flag'] = flag
     # done
+
+
+##################
+#### Old stuff ###
+##################
+class OldFuncs:
+    """Dumping ground for old functions you want to keep around"""
+
+    def write_table(table, key, kwargs={}, db_file=shared_utils.db_clean_file, verbose=True):
+        """
+        Add a table to the DB file `shared_utils.db_clean_file`. Really just a simple
+        wrapper so I don't have to keep typing shared_utils.db_clean_file every time
+        I need to write something
+
+        Parameters
+        ----------
+        table : pd.DataFrame
+          pandas DataFrame (or Series) containing the data you want to store
+        key : str
+          key for the table in the HSF file
+        kwargs : dict [{}]
+          any keyword arguments to pass to pd.DataFrame.to_hdf for DataFrames and
+          Series, or to h5py.File for non-pandas objects
+        db_file : str or Path [shared_utils.db_clean_file]
+          path to the database file
+        verbose : bool [True]
+          print some output
+        Output
+        -------
+        Nothing; writes to file
+        """
+        # this throws a performance warning when you store python objects with
+        # mixed or complex types in an HDF file, but I want to ignore those
+        with warnings.catch_warnings() as w:
+            kwargs['mode'] = kwargs.get("mode", 'a')
+            if hasattr(table, 'to_hdf'):
+                table.to_hdf(db_file, key=key, **kwargs)
+                if verbose == True:
+                    print(f"Table {key} written to {str(db_file)}")
+            else:
+                print("Error: cannot currently store non-pandas types")
+                """
+                with h5py.File(db_file, **kwargs) as store:
+                    try:
+                        store[key] = table
+                    except KeyError:
+                        grp = store.create_group(key)
+                    store.close()
+                """
+
+
+    def load_table(key, db_file=shared_utils.db_clean_file):
+        """
+        Load a table.
+
+        Parameters
+        ----------
+        key : string or list
+        db_file : path to the database file that holds the table
+
+        Output
+        ------
+        df : pd.DataFrame or dict of dataframes
+          the table (or, if `key` is a list, then a dict of dataframes)
+        """
+        # df = None
+        if isinstance(key, list):
+            df = {}
+            for k in key:
+                # drop the leading /, if relevant
+                if k[0] == '/': k = k[1:]
+                try:
+                    df[k] = pd.read_hdf(db_file, k)
+                except KeyError:
+                    print(f"Error: Key `{key}` not found in {str(db_file)}")
+                    df[k] = None
+        else:
+            try:
+                df = pd.read_hdf(db_file, key)
+            except KeyError:
+                print(f"Error: Key `{key}` not found in {str(db_file)}")
+                df = None
+
+        return df
