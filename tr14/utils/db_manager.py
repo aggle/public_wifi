@@ -5,6 +5,7 @@ manipulation of the data tables (stars, point sources, stamps, etc)
 
 import re
 from pathlib import Path
+import h5py
 import pandas as pd
 import warnings
 
@@ -27,14 +28,15 @@ class DBManager:
         self.db_path = db_path
         # load the principle tables directly as class members
         self.tables = {} # list of loaded tables
-        self.stars_tab = self.load_table('stars')
-        self.ps_tab = self.load_table('point_sources')
-        self.stamps_tab = self.load_table('stamps')
-        self.grid_defs_tab = self.load_table('grid_sector_definitions')
-        self.comp_status_tab = self.load_table('companion_status')
         # dicts of tables that group naturally together
         self.lookup_dict = self.load_lookup_tables()
         self.header_dict = self.load_header_tables()
+        # data tables
+        self.stars_tab = self.load_table('stars', verbose=True)
+        self.ps_tab = self.load_table('point_sources', verbose=True)
+        self.stamps_tab = self.load_table('stamps', verbose=True)
+        self.grid_defs_tab = self.load_table('grid_sector_definitions', verbose=True)
+        self.comp_status_tab = self.load_table('companion_status', verbose=True)
         # finally, group the subtraction subsets together with the default keys
         self.subtr_groupby_keys = ['ps_filt_id', 'ps_epoch_id', 'sector_id']
         self.do_subtr_groupby(keys=self.subtr_groupby_keys)
@@ -48,7 +50,7 @@ class DBManager:
         # and re-do the groupby automatically
 
 
-    def load_table(self, key):
+    def load_table(self, key, verbose=False):
         """
         Load a table.
 
@@ -70,7 +72,7 @@ class DBManager:
             except:
                 pass
         try:
-            df = pd.read_hdf(self.db_path, key)
+            df = table_utils.load_table(key, self.db_path, verbose=verbose)
         except KeyError:
             print(f"Error: Key `{key}` not found in {str(self.db_path)}")
             df = None
@@ -78,7 +80,7 @@ class DBManager:
         return df
 
 
-    def write_table(self, key, verbose=True, kwargs={}):
+    def write_table(self, key, table=None, verbose=False):
         """
         Write a table to the class DB file
 
@@ -86,11 +88,10 @@ class DBManager:
         ----------
         key : str
           key for the table in the HDF file and in the class self.tables dict
+        table : pd.DataFrame [None]
+          the table to write. if None, use the key to look it up in self.tables
         verbose : bool [True]
           print some output
-        kwargs : dict [{}]
-          any keyword arguments to pass to pd.DataFrame.to_hdf for DataFrames and
-          Series, or to h5py.File for non-pandas objects
 
         Output
         -------
@@ -98,9 +99,9 @@ class DBManager:
         """
         # option to write all the tables using recursion. will this work?????
         if key == 'all':
-            for k in self.tables.keys():
-                self.write_table(k)
-                return
+            for k, table in self.tables.items():
+                self.write_table(k, table=table, verbose=verbose)
+            return
 
         # write a single table
         # first, check if table exists
@@ -109,35 +110,46 @@ class DBManager:
         except AssertionError:
             print(f"Error: Table {key} not found, quitting.")
             return
-        table = self.tables[key]
+        if table is None:
+            table = self.tables[key]
         # this throws a performance warning when you store python objects with
         # mixed or complex types in an HDF file, but I want to ignore those
         with warnings.catch_warnings() as w:
             kwargs['mode'] = kwargs.get("mode", 'a')
-            if hasattr(self.tables[key], 'to_hdf'):
-                table.to_hdf(self.db_path, key=key, **kwargs)
-                if verbose == True:
-                    print(f"Table {key} written to {str(self.db_path)}")
-            else:
-                print("Error: cannot currently store non-pandas types")
+            # if hasattr(self.tables[key], 'to_hdf'):
+            #     table.to_hdf(self.db_path, key=key, **kwargs)
+            #     if verbose == True:
+            #         print(f"Table {key} written to {str(self.db_path)}")
+            # else:
+            #     print("Error: cannot currently store non-pandas types")
+            table_utils.write_table(key, table, db_file=self.db_path, verbose=verbose)
 
-    def update_table(self, key, row, verbose=True):
+
+    def update_table(self, key, pk_name, pk_val, column, val,
+                     verbose=False):
         """
-        TODO
         Update a table entry to disk
 
         Parameters
         ----------
-        key : the table key in the HDF file
-        row : the dataframe row with the full index and columns to update
-        verbose : bool [True] toggle extra printing
+        key : str
+          key under which the table is stored in the hdf5 file
+        pk_name : str
+          name of the table column with the primary key (serves as a proxy for the index)
+        pk_val : str or list
+          primary key value (can be list-like)
+        column : str
+          the column to update
+        val : the new value (can be list-like; must be single-valued or same shape as pk_val)
+        table_file : path to the table file
 
         Output
         ------
-        writes to file
-
+        None, writes updated values to file
         """
-        pass 
+        table_utils.update_table(key, pk_name, pk_val, column, val,
+                                 db_file=self.db_path, verbose=verbose)
+
 
     def list_available_tables(self, return_list=False):
         """
@@ -154,12 +166,12 @@ class DBManager:
         table_names : list [optional]
           a list of available keys
         """
-        with pd.HDFStore(self.db_path, mode='r') as store:
-            table_names = sorted(store.keys())
+        with h5py.File(self.db_path, mode='r') as f:
+            table_names = sorted(f.keys())
             if return_list == False:
                 print(f"Available tables in {self.db_path}:")
                 print('\t'+'\n\t'.join(table_names))
-                store.close()
+            f.close()
         if return_list == True:
             return table_names
 
@@ -184,11 +196,17 @@ class DBManager:
         ------
         lkp_dict : dictionary of lookup tables
         """
-        with pd.HDFStore(self.db_path, mode='r') as store:
-            lkp_dict = {key[1:]: store[key] for key in store.keys()
-                        if key.startswith('/lookup')}
-            return lkp_dict
-
+        # with pd.HDFStore(self.db_path, mode='r') as store:
+        #with h5py.File(self.db_path, mode='r') as f:
+        #     lkp_dict = {key: f[key] for key in f.keys()
+        #                 if key.startswith('lookup')}
+        # return lkp_dict
+        # get list of keys
+        with h5py.File(self.db_path, mode='r') as f:
+            keys = [key for key in f.keys() if key.startswith('lookup')]
+        # load keys into dict
+        lkp_dict = {key: self.load_table(key) for key in keys}
+        return lkp_dict
 
     def load_header_tables(self):
         """
@@ -202,11 +220,15 @@ class DBManager:
         ------
         hdr_dict : dictionary of header tables
         """
-        with pd.HDFStore(self.db_path, mode='r') as store:
-            hdr_dict = {key[1:]: store[key] for key in store.keys()
-                        if key.startswith('/hdr')}
-            return hdr_dict
-
+        #with h5py.File(self.db_path, mode='r') as f: # pd.HDFStore(self.db_path, mode='r') as store:
+        #    hdr_dict = {key: f[key] for key in f.keys()
+        #                if key.startswith('hdr')}
+        #return hdr_dict
+        with h5py.File(self.db_path, mode='r') as f:
+            keys = [key for key in f.keys() if key.startswith('hdr')]
+            # load keys into dict
+        hdr_dict = {key: self.load_table(key) for key in keys}
+        return hdr_dict
 
     def find_lookup_table(self, lkp1, lkp2):
         """
