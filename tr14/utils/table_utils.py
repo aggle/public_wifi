@@ -79,19 +79,19 @@ def initialize_table(table_name, nrows):
 
 
 
-def write_table(table_name, df, pk=None, table_file=shared_utils.db_clean_file):
+def write_table(key, df, pk=None, db_file=shared_utils.db_clean_file, verbose=False):
     """
     Write a table to file
 
     Parameters
     ----------
-    table_name : str
+    key : str
       the table's key to use in the HDF file
     df : pd.DataFrame
       the dataframe with the table
     pk : str [None]
       (optional) the name of the table's primary key
-    table_file : str or pathlib.Path
+    db_file : str or pathlib.Path
       the filename to write to
 
     Output
@@ -99,18 +99,18 @@ def write_table(table_name, df, pk=None, table_file=shared_utils.db_clean_file):
     Writes the table to the specified file, creating the file if necessary.
 
     """
-    table_file = Path(table_file)
+    db_file = Path(db_file)
     mode='a'
     try:
-        assert table_file.exists()
+        assert db_file.exists()
     except AssertionError:
-        print(f"File {table_file} not found; creating.")
+        print(f"File {db_file} not found; creating.")
         mode='w'
-    with h5py.File(table_file, mode=mode) as f:
+    with h5py.File(db_file, mode=mode) as f:
         try:
-            g = f.create_group(table_name)
+            g = f.create_group(key)
         except ValueError: # group already exists
-            print(f"Error: key '{table_name}' in {table_file} already exists; doing nothing.")
+            print(f"Error: key '{key}' in {db_file} already exists; doing nothing.")
             return
         # set the primary key
         if isinstance(pk, str):
@@ -124,42 +124,45 @@ def write_table(table_name, df, pk=None, table_file=shared_utils.db_clean_file):
                 col = col.astype(h5py.string_dtype('utf-8'))
             g.create_dataset(c, data=col, dtype=col.dtype, chunks=True)
         f.flush()
-    print(f"Wrote '{table_name}' to {table_file}")
+    if verbose == True:
+        print(f"Wrote '{key}' to {db_file}")
 
 
-def load_table(table_name, table_file=shared_utils.db_clean_file):
+def load_table(key, db_file=shared_utils.db_clean_file, verbose=False):
     """
     Load a table into a dataframe
 
     Parameters
     ----------
-    table_name : str
+    key : str
       the key under which the table is stored
-    table_file : str or pathlib.Path
+    db_file : str or pathlib.Path
       the file to read from
 
     Output
     ------
 
     """
-    with h5py.File(table_file, 'r') as f:
+    with h5py.File(db_file, 'r') as f:
         try:
-            g = f.get('/'+table_name)
+            g = f.get('/'+key)
         except ValueError: # table not found
-            print(f"Table '{table_name}' not found. Available tables are:")
+            print(f"Table '{key}' not found. Available tables are:")
             print('\n'.join(g for g in f))
             return
         df = pd.DataFrame.from_dict({k: list(g[k][...]) for k in g})
-    print(f"Loaded '{table_name}' from {table_file}")
+    if verbose == True:
+        print(f"Loaded '{key}' from {db_file}")
     return df
 
-def update_table(table_name, pk_name, pk_val, column, val, table_file='default'):
+def update_table(key, pk_name, pk_val, column, val,
+                 db_file=shared_utils.db_clean_file, verbose=True):
     """
     Update table value
 
     Parameters
     ----------
-    table_name : str
+    key : str
       key under which the table is stored in the hdf5 file
     pk_name : str
       name of the table column with the primary key (serves as a proxy for the index)
@@ -168,7 +171,7 @@ def update_table(table_name, pk_name, pk_val, column, val, table_file='default')
     column : str
       the column to update
     val : the new value (can be list-like; must be single-valued or same shape as pk_val)
-    table_file : path to the table file
+    db_file : path to the table file
 
     Output
     ------
@@ -176,12 +179,13 @@ def update_table(table_name, pk_name, pk_val, column, val, table_file='default')
     """
     if np.ndim(pk_val) == 0:
         pk_val = [pk_val]
-    with h5py.File(table_file, 'r+') as f:
-        pks = list(f[f'{table_name}/{pk_name}'][...]) # primary keys
+    with h5py.File(db_file, 'r+') as f:
+        pks = list(f[f'{key}/{pk_name}'][...]) # primary keys
         idx = [pks.index(i) for i in pk_val] # indices of keys to update
-        f[f'{table_name}/{column}'][idx] = val
+        f[f'{key}/{column}'][idx] = val
     f.close()
-    print(f"Updated '{table_name}' in {table_file}")
+    if verbose:
+        print(f"Updated '{key}' in {db_file}")
 
 
 
