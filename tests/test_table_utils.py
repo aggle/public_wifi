@@ -61,5 +61,35 @@ def test_lookup_from_id():
     ps_table = table_utils.load_table('point_sources')
 
 
-def test_write_table():
-    pass
+# # generate some fake data
+# @pytest.mark.parametrize()
+# def test_write_read_update_tables(tmpdir, table_name, table, pk_name):
+#     """
+#     Test that you can write, read, and update tables
+#     """
+#     tables = pd.Data
+#     test_file = tmpdir.join("test_db.hdf5")
+
+#     table_utils.write_table(table_name, table, test_file)
+#     # check that the table exists
+#     with h5py.File(test_file, mode='r') as f:
+#         # make sure the group was written
+#         assert table_name in f.keys()
+#         # make sure the columns were written
+#         assert all([i in f['/'+table_name].keys() for i in table.columns])
+#         assert all([len(f['/'+table_name + '/' + i][...]) > 0 for i in table.columns])
+
+#     # now update the table
+#     # choose 2 columns at random, not the primary key
+#     columns = table.columns.drop(pk_name)
+#     cols = random.choices(columns, k=2)
+#     dtypes = [type(table[col].values[0]) for col in cols]
+#     new_vals = [dtype(np.random.rand()) for dtype in dtypes]
+#     # choose 2 rows
+#     rows = sorted(random.choices(table[pk_name].values, k=2))
+#     for col, val in zip(cols, new_vals):
+#         table_utils.update_table(table_name, pk_name, rows, col, val, table_file=test_file)
+#     # now assert that the new table has the new values
+#     new_table = table_utils.load_table(table_name, test_file)
+
+#     assert all(new_table.set_index(pk_name).loc[rows, cols] == new_vals)
