@@ -591,10 +591,12 @@ class SubtrManager:
         # generate the PSF model from the transformed data and components
         nrefs, npix = refs_flat.shape
 
+
         # get the number of free parameters
         if kwargs.get('n_components', None) is None:
             kwargs['n_components'] = nrefs
         n_components = kwargs.pop('n_components')
+
 
         try:
             ordered = kwargs.pop('ordered')
@@ -609,7 +611,8 @@ class SubtrManager:
             W_ini[:, :1] = g_refs.W[:]
             H_ini[:1, :] = g_refs.H[:]
             for n in range(1, n_components+1):
-                print("\t" + str(n) + " of " + str(n_components))
+                if verbose == True:
+                    print("\t" + str(n) + " of " + str(n_components))
                 W_ini[:, :(n-1)] = np.copy(g_refs.W)
                 W_ini = np.array(W_ini, order = 'F') #Fortran ordering
                 H_ini[:(n-1), :] = np.copy(g_refs.H)
@@ -691,6 +694,10 @@ class SubtrManager:
         refs_flat = np.stack(ref_stamps.apply(np.ravel))
         # generate the PSF model from the transformed data and components
         nrefs, npix = refs_flat.shape
+
+        # verbosity
+        verbose = kwargs.get('verbose', False)
+
         # get the number of free parameters
         if kwargs.get('n_components', None) is None:
             kwargs['n_components'] = nrefs
@@ -709,7 +716,8 @@ class SubtrManager:
             W_ini[:, :1] = g_refs.W[:]
             H_ini[:1, :] = g_refs.H[:]
             for n in range(1, n_components+1):
-                print("\t" + str(n) + " of " + str(n_components))
+                if verbose == True:
+                    print("\t" + str(n) + " of " + str(n_components))
                 W_ini[:, :(n-1)] = np.copy(g_refs.W)
                 W_ini = np.array(W_ini, order = 'F') #Fortran ordering
                 H_ini[:(n-1), :] = np.copy(g_refs.H)
@@ -751,7 +759,7 @@ class SubtrManager:
         stars = self.db.stars_tab['star_id'].unique()
         #print(stars)
         residuals, models, references = {}, {}, {}
-        for star in stars:
+        for i, star in enumerate(stars):
             result = self.subtr_nmf_one_star(star, kwargs=nmf_args, return_results=return_results)
             residuals[star] = result.residuals
             models[star] = result.models
@@ -784,12 +792,13 @@ class SubtrManager:
         stars = self.db.stars_tab['star_id'].unique()
         #print(stars)
         residuals, models, references = {}, {}, {}
-        for star in stars:
+        for i, star in enumerate(stars):
             result = subtr_func(star, kwargs=arg_dict)
             residuals[star] = result.residuals
             models[star] = result.models
             references[star] = result.references 
-        
+            print(f"{i+1}/{len(stars)} stars complete")
+
         all_results = Results(residuals=pd.concat(residuals, names=['star_id', 'stamp_id']),
                               models=pd.concat(models, names=['star_id', 'stamp_id']),
                               references=pd.concat(references, names=['star_id', 'stamp_id']))
