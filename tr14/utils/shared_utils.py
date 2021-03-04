@@ -54,6 +54,7 @@ def load_config_path(key, as_str=False):
     """
     # reread the file whenever the function is called so you don't have to
     # reload the entire module if the config file gets updated
+    config = configparser.ConfigParser()
     config.read(config_file)
     key = key.upper()
     path = Path(config['PATHS'][key]).resolve()
@@ -165,3 +166,52 @@ def find_column(columns, qstr):
         return matches[0]
     else:
         return None
+
+
+def read_instrument_config(cfg_name=None, key=None, dtype=None):
+    """
+    Pull the value for 'key' from the instrument configuration file.
+    Run with no parameters for a list of files, or with only a file name
+    for a list of keys.
+
+    Parameters
+    ----------
+    cfg_name : [''] The name (not full path) of the configuration file.
+      If empty, list the available files
+    key : [None] The key whose value you want to pull.
+      If empty, list the available keys
+    dtype : [None] if provided, try to conver the output to this type.
+      Otherwise, output will be a string
+
+    Output
+    ------
+    the value stored at `key` in `cfg_name`
+
+    """
+    path = load_config_path('instrument_path')
+    try:
+        file_path = path / cfg_name
+        assert file_path.exists() and (cfg_name is not None)
+    except (AssertionError, TypeError):
+        files = path.glob('*')
+        print("Available instrument configuration files:")
+        for f in sorted(files):
+            print(f"\t{f.name}")
+        return
+
+    # file exists, read it
+    config = configparser.ConfigParser()
+    config.read(file_path)
+    try:
+        value = config.get('Properties', key)
+    except (KeyError, AttributeError, configparser.NoOptionError):
+        print("Available keys:")
+        for key in config['Properties']:
+            print(f"\t{key}")
+        return
+    if dtype is not None:
+        try:
+            value = dtype(value)
+        except:
+            print(f"Error, cannot convert `{key}` value `{value}` to {str(dtype)}, returning string")
+    return value
