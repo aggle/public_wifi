@@ -9,6 +9,9 @@ import h5py
 import pandas as pd
 import warnings
 
+from astropy.wcs import WCS
+from astropy.io import fits
+
 from . import shared_utils
 from . import table_utils
 
@@ -504,32 +507,29 @@ class DBManager:
         hdr_rows = hdr_rows.merge(ps_id.reset_index())
         return hdr_rows[['ps_exp_id'] + list(ps_id.reset_index().columns) + key]
 
-
-    def query_table(self, table, query_str, **kwargs):
+    def get_wcs_header(self, obj_id):
         """
-        Interface for processing table queries, so you don't access the tables directly.
-        So far, not working because cannot pass variables to the query string
+        Given an identifier (star, point source, stamp), get the corresponding WCS headers
 
         Parameters
         ----------
-        table : pd.DataFrame
-          the table (an object member) to query
-        query_str : str
-          the query string to pass to table.query
-        kwargs : any arguments that need to be passed to the query
+        obj_id : star, point source, or stamp id (or IDs)
 
         Output
         ------
-        query_results : pd.DataFrame
-          results of the query
-        """
-        #for kw in kwargs:
-        #    print(kw)
-        # make all the variables in kwargs into local variables
-        #for k, val in kwargs.items():
-        #    exec(key+"=val")
-        return table.query(query_str)
+        series with obj_id as the index and corresponding wcs as the values
 
+        """
+        if isinstance(obj_id, str):
+            obj_id = [obj_id]
+        # get the point source IDs
+        ps_ids = self.find_matching_id(obj_id, 'P')
+        # exp_ids
+        exp_ids = self.ps_tab.set_index('ps_id')['ps_exp_id']
+        file_names = exp_ids.apply(table_utils.get_file_name_from_exp_id)
+        wcs = file_names.apply(lambda x: WCS(fits.getheader(shared_utils.get_data_file(x), 'SCI')))
+        wcs.index = ps_ids.index
+        return wcs
 
     def _cut_lookup_tables_to_local(self):
         """
@@ -648,6 +648,7 @@ class DBManager:
                            db_master=None, db_path=self.db_path)
         dbm_sub.keys = key_dict
         return dbm_sub
+
 
 class DBSubset(DBManager):
     """
