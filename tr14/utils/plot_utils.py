@@ -368,6 +368,8 @@ def plot_sky_context(star_id, stars_table, img_size=61,
                               fc='none',ec="white", transform=ax.transData)
     ax.add_patch(rectangle)
     ax.set_aspect('equal')
+    ax.set_xlim(xlim[0], xlim[1]+1)
+    ax.set_ylim(ylim[0], ylim[1]+1)
 
     return fig
 
