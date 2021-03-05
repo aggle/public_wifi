@@ -207,7 +207,7 @@ def cube_scroller_plot_slider(cube, title, scroll_title='',
 
     Output
     ------
-    bokeh application
+    bokeh figure, slider widget, and the that stores the data
     """
     TOOLS='' # no tools, for now
 
@@ -245,7 +245,7 @@ def cube_scroller_plot_slider(cube, title, scroll_title='',
                            title=scroll_title,
                            orientation='horizontal')
     slider.on_change('value', callback)
-    return plot, slider
+    return plot, slider, cds
 
 def cube_scroller_app(cube, title, scroll_title='', cmap_class=bkmdls.LinearColorMapper):
     """
@@ -268,7 +268,7 @@ def cube_scroller_app(cube, title, scroll_title='', cmap_class=bkmdls.LinearColo
 
     """
     def app(doc):
-        plot, slider = cube_scroller_plot_slider(cube, title, scroll_title, cmap_class)
+        plot, slider, cds = cube_scroller_plot_slider(cube, title, scroll_title, cmap_class)
 
         doc.add_root(bklyts.column(slider, plot))
 
@@ -286,10 +286,103 @@ def cube_scroller_app(cube, title, scroll_title='', cmap_class=bkmdls.LinearColo
         """, Loader=yaml.FullLoader))
     return app
 
+
+def df_scroller_app(df, title, scroll_title='', cmap_class=bkmdls.LinearColorMapper, plot_size=400):
+    """
+    Make an app to scroll through a dataframe. Assume the cubes are stored column-wise. 
+    Select the cube (column) to scroll though using a select widget.
+    Returns the app; display using bokeh.io.show
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+      pandas.DataFrame object whose entries are arrays
+    title : str
+      title to put on the plot
+    scroll_title : str ['']
+      title for the scroll bar
+    cmap_class : bokeh.models.ColorMapper class [bkmdls.LinearColorMapper]
+      a color mapper for scaling the images
+
+    Output
+    ------
+    bokeh application
+
+    """
+    def app(doc):
+        TOOLS='' # no tools, for now
+
+        data = df.copy()
+
+        # initialize image
+        column = data.columns[0]
+        img = data.loc[data.index[0], column]
+        cds = bkmdls.ColumnDataSource(data={'image':[img],
+                                                'x': [-0.5], 'y': [-0.5],
+                                                'dw': [img.shape[0]], 'dh': [img.shape[1]]})
+        color_mapper = cmap_class(palette='Magma256',
+                                  low=np.nanmin(img),
+                                  high=np.nanmax(img))
+
+        title_string = lambda title, column: f"{title} :: {column}"
+
+        plot = figure(title=title_string(title, column),
+                      plot_height=plot_size, plot_width=plot_size,
+                      tools=TOOLS)
+        g = plot.image(image='image',
+                       x='x', y='y', dw='dw', dh='dh',
+                       color_mapper=color_mapper,
+                       source=cds)
+        # color bar
+        color_bar = bkmdls.ColorBar(color_mapper=color_mapper, label_standoff=12)
+        plot.add_layout(color_bar, 'right')
+
+        # interactions
+        def slider_callback(attr, old, new):
+            img = data[column][data.index[new]]
+            cds.data = {'image':[img],
+                        'x': [-0.5], 'y': [-0.5],
+                        'dw': [img.shape[0]], 'dh': [img.shape[1]]}
+            color_mapper.update(low=np.nanmin(img), high=np.nanmax(img))
+
+        slider = bkmdls.Slider(start=0, end=data.index.size-1, value=0, step=1,
+                                   title=scroll_title,
+                                   orientation='horizontal')
+        slider.on_change('value', slider_callback)
+
+        def select_callback(attr, old, new):
+            column = new
+            print(old, new, column)
+            img = data.loc[data.index[slider.value], column]
+            cds.data = {'image':[img],
+                        'x': [-0.5], 'y': [-0.5],
+                        'dw': [img.shape[0]], 'dh': [img.shape[1]]}
+            color_mapper.update(low=np.nanmin(img), high=np.nanmax(img))
+            plot.title.text = title_string(title, column)
+        selector = bkmdls.Select(title='Target stamp', 
+                                     value=data.columns[0],
+                                     options=[str(i) for i in data.columns])
+        selector.on_change('value', select_callback)
+
+        doc.add_root(bklyts.row(selector, bklyts.column(plot, slider)))
+
+        doc.theme = Theme(json=yaml.load("""
+            attrs:
+                Figure:
+                    background_fill_color: white
+                    outline_line_color: white
+                    toolbar_location: above
+                    height: 500
+                    width: 800
+                Grid:
+                    grid_line_dash: [6, 4]
+                    grid_line_color: white
+        """, Loader=yaml.FullLoader))
+    return app
+
+
 def generate_inspector(star_id,
                        dbm, alt_dbm, # for the sky and detector scene plots
-                       #snr_stamps, residual_stamps, model_stamps, # for the cube scrollers
-                       #reference_stamps=None, # the reference images
                        subtr_results_dict=None, # subtraction results object
                        snr_maps=None, # SNR maps
                        plot_size_unit=100):
@@ -319,7 +412,6 @@ def generate_inspector(star_id,
         subtr_results_dict[k].values[bool_df] = np.nan
 
     def app(doc):
-
         # sky scene, detector scene, and the target star's stamps
         plot_size = 5*plot_size_unit
         p_sky = show_sky_scene(star_id, dbm=dbm, alt_dbm=alt_dbm,
@@ -330,28 +422,133 @@ def generate_inspector(star_id,
                                    plot_size=plot_size)
 
         # reference stamps used to assemble the model PSF
-        reference_ids = subtr_results_dict['references'].loc[star_id].dropna(how='all', axis=1).drop_duplicates()
-        reference_ids = reference_ids.values.ravel()
+        reference_ids = subtr_results_dict['references'].loc[star_id].dropna(how='all', axis=1)
+        reference_ids = reference_ids.drop_duplicates().values.ravel()
         reference_stamps = dbm.stamps_tab.set_index('stamp_id').loc[reference_ids, 'stamp_array']
-        refs_plot, refs_slider = cube_scroller_plot_slider(reference_stamps,
-                                                           'Reference stamps',
-                                                           cmap_class=bkmdls.LogColorMapper,
-                                                           plot_size=5*plot_size_unit)
+        refs_plot, refs_slider, refs_cds = cube_scroller_plot_slider(reference_stamps,
+                                                                     'Reference stamps',
+                                                                     cmap_class=bkmdls.LogColorMapper,
+                                                                     plot_size=5*plot_size_unit)
         refs_col = bklyts.column(refs_plot, refs_slider)
 
         # load the widgets that depend on the stamp selection
-        # make a selector widget to choose the stamp to inspect
         target_stamp_ids = list(dbm.find_matching_id(star_id, 'T'))
-        target_stamp_id = target_stamp_ids[0]
+        target_stamp_id = column = target_stamp_ids[0]
+        
+        # initialize stamp dataframes, putting the stamp IDs in the columns
+        scroller_keys =  ['snr', 'residuals', 'models']
+        stamp_dict = {k: subtr_results_dict[k].loc[star_id].dropna(how='all', axis=1).T
+                      for k in scroller_keys}
+
+        # initialize the images
+        img_dict = {k: df.loc[df.index[0], column]
+                    for k, df in stamp_dict.items()}
+
+        # put them into ColumnDataSources
+        cds_dict = {k: bkmdls.ColumnDataSource(data={'image':[img],
+                                                     'x': [-0.5], 'y': [-0.5],
+                                                     'dw': [img.shape[0]], 'dh': [img.shape[1]]})
+                    for k, img in img_dict.items()}
+        # initialize the color mappers
+        color_mapper_dict = {
+            'snr':  bkmdls.LinearColorMapper(palette='Magma256',
+                                             low=np.nanmin(img_dict['snr']),
+                                             high=np.nanmax(img_dict['snr'])),
+            'residuals':  bkmdls.LinearColorMapper(palette='Magma256',
+                                             low=np.nanmin(img_dict['residuals']),
+                                             high=np.nanmax(img_dict['residuals'])),
+            'models':  bkmdls.LogColorMapper(palette='Magma256',
+                                             low=np.nanmin(img_dict['models']),
+                                             high=np.nanmax(img_dict['models'])),
+        }
+
+        title_string = lambda title, column: f"{title} :: {column}"
+        # initialize the actual plots
+        TOOLS=''
+        plot_dict = {k: figure(title=title_string(k.upper(), column),
+                               plot_height=plot_size, plot_width=plot_size,
+                               tools=TOOLS)
+                     for k in stamp_dict.keys()}
+        for k, plot in plot_dict.items():
+            plot.image(image='image',
+                       x='x', y='y', dw='dw', dh='dh',
+                       color_mapper=color_mapper_dict[k],
+                       source=cds_dict[k])
+            # color bar
+            color_bar = bkmdls.ColorBar(color_mapper=color_mapper_dict[k],
+                                        label_standoff=12)
+            plot.add_layout(color_bar, 'right')
+
+        # make the sliders
+        def make_slider_callback(key): # generator for slider callback functions
+            def slider_callback(attr, old, new):
+                img = stamp_dict[key][column][stamp_dict[key].index[new]]
+                cds_dict[key].data = {'image':[img],
+                                      'x': [-0.5], 'y': [-0.5],
+                                      'dw': [img.shape[0]], 'dh': [img.shape[1]]}
+                color_mapper_dict[key].update(low=np.nanmin(img), high=np.nanmax(img))
+            return slider_callback
+        slider_callback_dict = {k: make_slider_callback(k) for k in stamp_dict.keys()}
+        slider_dict = {k: bkmdls.Slider(start=0, end=stamps.index.size-1, value=0, step=1,
+                                        title='N_component: ',
+                                        orientation='horizontal')
+                       for k, stamps in stamp_dict.items()}
+        for k, slider in slider_dict.items():
+            slider.on_change('value', slider_callback_dict[k])
+
+        # combine them for the layout
+        scroller_columns = {k: bklyts.column(plot_dict[k], slider_dict[k])
+                            for k in scroller_keys}
+
+
+        # make the target stamp selector
+        def select_callback(attr, old, new):
+            column = new
+            for k in scroller_keys:
+                stamp_col = stamp_dict[k]
+                index = stamp_dict[k].index[slider_dict[k].value]
+                img_dict[k] = stamp_dict[k].loc[index, column]
+                img = img_dict[k]
+                cds_dict[k].data = {'image':[img],
+                                    'x': [-0.5], 'y': [-0.5],
+                                    'dw': [img.shape[0]], 'dh': [img.shape[1]]}
+                color_mapper_dict[k].update(low=np.nanmin(img), high=np.nanmax(img))
+                plot_dict[k].title.text = title_string(k.upper(), column)
+        stamp_selector = bkmdls.Select(title='Target stamp',
+                                       value=column,
+                                       options=[str(i) for i in target_stamp_ids])
+        stamp_selector.on_change('value', select_callback)
+
+
+        """
+        # make the SNR, residual, and PSF model sliders
+        plot_size = 4*plot_size_unit
+        snr_plot, snr_slider, snr_cds = cube_scroller_plot_slider(snr_stamps,
+                                                                  'SNR',
+                                                                  'Ncomponent index',
+                                                                  bkmdls.LinearColorMapper,
+                                                                  plot_size=plot_size)
+        resid_plot, resid_slider, resid_cds = cube_scroller_plot_slider(residual_stamps,
+                                                                        'Residuals',
+                                                                        'Ncomponent index',
+                                                                        bkmdls.LinearColorMapper,
+                                                                        plot_size=plot_size)
+        model_plot, model_slider, model_cds = cube_scroller_plot_slider(model_stamps,
+                                                                        'PSF Model',
+                                                                        'Ncomponent index',
+                                                                        bkmdls.LogColorMapper,
+                                                                        plot_size=plot_size)
+
+        snr_col = bklyts.column(snr_plot, snr_slider)
+        resid_col = bklyts.column(resid_plot, resid_slider)
+        model_col = bklyts.column(model_plot, model_slider)
+        cube_row = bklyts.row(snr_col, resid_col, model_col) # all together now
+
+
+        # make a selector widget to choose the stamp to inspect
         select_target_stamp_id = bkmdls.Select(title='Target stamp',
                                                value=target_stamp_id,
                                                options=target_stamp_ids)
-
-        # initialize stamps
-        snr_stamps = subtr_results_dict['snr'].loc[star_id, target_stamp_id].dropna()
-        residual_stamps = subtr_results_dict['residuals'].loc[star_id, target_stamp_id].dropna()
-        model_stamps = subtr_results_dict['models'].loc[star_id, target_stamp_id].dropna()
-
         # create the update rule
         def update_target_stamp(attrname, old, new):
             target_stamp_id = select_target_stamp_id.value
@@ -362,40 +559,18 @@ def generate_inspector(star_id,
 
         select_target_stamp_id.on_change('value', update_target_stamp)
 
-        # make the SNR, residual, and PSF model sliders
-        plot_size = 4*plot_size_unit
-        snr_plot, snr_slider = cube_scroller_plot_slider(snr_stamps,
-                                                         'SNR',
-                                                         'Ncomponent index',
-                                                         bkmdls.LinearColorMapper,
-                                                         plot_size=plot_size)
-        resid_plot, resid_slider = cube_scroller_plot_slider(residual_stamps,
-                                                             'Residuals',
-                                                             'Ncomponent index',
-                                                             bkmdls.LinearColorMapper,
-                                                             plot_size=plot_size)
-        model_plot, model_slider = cube_scroller_plot_slider(model_stamps,
-                                                             'PSF Model',
-                                                             'Ncomponent index',
-                                                             bkmdls.LogColorMapper,
-                                                             plot_size=plot_size)
 
-        snr_col = bklyts.column(snr_plot, snr_slider)
-        resid_col = bklyts.column(resid_plot, resid_slider)
-        model_col = bklyts.column(model_plot, model_slider)
-        cube_row = bklyts.row(snr_col, resid_col, model_col) # all together now
-
-
-        # generate the layout
-        #lyt = bklyts.layout([
-        #    [[p_sky, p_trg],
-        #    [p_det, refs_col]],
-        #    [[select_target_stamp_id,  output_target_stamp_id]],[cube_col],
-        #])
         lyt = bklyts.column(
             bklyts.row(p_sky, p_det, p_trg, refs_col),
             bklyts.row(select_target_stamp_id, cube_row)
         )
+        """
+        lyt = bklyts.column(
+            bklyts.row(p_sky, p_det, p_trg, refs_col),
+            bklyts.row(stamp_selector,
+                       scroller_columns['snr'], scroller_columns['residuals'], scroller_columns['models'])
+        )
+
         doc.add_root(lyt)
 
         doc.theme = Theme(json=yaml.load("""
