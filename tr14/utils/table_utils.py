@@ -454,7 +454,7 @@ def lookup_from_id(ident,
                    lookup_table, target_table,
                    column=None):
     """
-    This fucntion is intended to run underneath wrappers that target particular table combinations
+    This function is intended to run underneath wrappers that target particular table combinations
     Parameters
     ----------
     ident : str or list
