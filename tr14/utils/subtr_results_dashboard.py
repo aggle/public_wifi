@@ -13,7 +13,7 @@ import bokeh.plotting as bkplt
 import bokeh.io as bkio
 import bokeh.models as bkmdls
 
-from bokeh.models import ColumnDataSource, Slider, ColorBar, LogColorMapper
+#from bokeh.models import ColumnDataSource, Slider, ColorBar, LogColorMapper
 from bokeh.plotting import figure
 from bokeh.themes import Theme
 from bokeh.io import show, output_notebook, output_file
@@ -61,13 +61,10 @@ def show_sky_scene(star_id, dbm, zoom=61, alt_dbm=None, stamp_size=11, plot_size
                          x_range=x_range, y_range=y_range, title=f"{star_id} context on sky")
 
     # draw the sky scene
-    mapper = LogColorMapper(palette='Magma256', low=np.nanmin(mast_img), high=np.nanmax(mast_img))
+    mapper = bkmdls.LogColorMapper(palette='Magma256', low=np.nanmin(mast_img), high=np.nanmax(mast_img))
     p_sky.image(image=[mast_img], 
                 x=0.5, y=0.5, dw=mast_img.shape[1], dh=mast_img.shape[0], 
                 color_mapper=mapper)
-    p_sky.star(x=star_pos['u_mast'], 
-               y=star_pos['v_mast'],
-               size=20, fill_alpha=0.2)
 
     # draw the stamp limits
     stamp_width = np.floor(stamp_size/2).astype(int)
@@ -77,22 +74,37 @@ def show_sky_scene(star_id, dbm, zoom=61, alt_dbm=None, stamp_size=11, plot_size
                bottom=box['v_mast'][0], top=box['v_mast'][1],
                alpha=0.5, line_color='white', fill_alpha=0, line_width=2)
 
-    # show the neighbors
+    # scatter plot for the star and its the neighbors
+    star_plot = p_sky.star(x='u_mast', 
+                           y='v_mast',
+                           source=dbm.stars_tab.query('star_id == @star_id'),
+                           size=20, fill_alpha=0.2)
+
+
     # first, show the neighbors *in* the catalog
-    neighbors = dbm.stars_tab.query("star_id != @star_id")
-    p_sky.circle(x=neighbors['u_mast'],
-                 y=neighbors['v_mast'],
+    nbr_plot = p_sky.circle(x='u_mast',
+                 y='v_mast',
                  size=5, fill_alpha=0.2,
+                 source=dbm.stars_tab.query("star_id != @star_id"),
                  legend_label='Selected stars')
 
     if alt_dbm is not None:
         selected_stars = dbm.stars_tab['star_id']
-        neighbors = alt_dbm.stars_tab.query("star_id not in @selected_stars")
-        p_sky.x(x=neighbors['u_mast'],
-                y=neighbors['v_mast'],
-                size=5, fill_alpha=0.2,
-                color='gray',
-                legend_label='Cut stars')
+        noncat_plot = p_sky.x(x='u_mast',
+                              y='v_mast',
+                              size=5, fill_alpha=0.2,
+                              color='gray',
+                              source=alt_dbm.stars_tab.query("star_id not in @selected_stars"),
+                              legend_label='Cut stars')
+
+    # hover tool
+    hover_tool = bkmdls.HoverTool(renderers=[star_plot, nbr_plot, noncat_plot])
+    hover_tool.tooltips=[("star_id", "@star_id"),
+                         ("mag_F1", "@star_mag_F1{0.2f}"),
+                         ("mag_F2", "@star_mag_F2{0.2f}"),
+                         ]
+    p_sky.add_tools(hover_tool)
+    p_sky.toolbar.active_inspect = None
 
     return p_sky
 
@@ -119,10 +131,13 @@ def show_detector_scene(star_id, dbm, alt_dbm=None, plot_size=300):
                title=f"{star_id} context on detector")
 
     # plot all the catalog detections in the sector
-    p.scatter(dbm.ps_tab['ps_x_exp'],
-              dbm.ps_tab['ps_y_exp'],
-              size=np.sqrt(dbm.ps_tab['ps_phot']),
-              legend_label='Catalog detections')
+    exp_ids = list(dbm.ps_tab.groupby('ps_exp_id').groups.keys())
+    p.circle(x='ps_x_exp',
+             y='ps_y_exp',
+             source=dbm.ps_tab,
+             color=bokeh.transform.factor_cmap('ps_exp_id', f"Category20_{len(exp_ids)}", exp_ids),
+             size=10,
+             legend_label='Catalog detections')
 
     # Plot the location of the target star
     target_ps_ids = dbm.find_matching_id(star_id, 'P')
@@ -136,9 +151,20 @@ def show_detector_scene(star_id, dbm, alt_dbm=None, plot_size=300):
     cut_sec_ids = set(alt_dbm.find_sector(sector_id=15)['ps_id']).difference(set(dbm.ps_tab['ps_id']))
     cut_star_pos = alt_dbm.join_all_tables().query("ps_id in @cut_sec_ids")
     cut_star_pos = cut_star_pos.groupby('star_id')[['ps_x_exp', 'ps_y_exp']].mean()
-    p.scatter(cut_star_pos['ps_x_exp'], cut_star_pos['ps_y_exp'],
-              marker='x', size=5, color='gray',
-              legend_label="Cut detections")
+    p.x(x='ps_x_exp', y='ps_y_exp',
+        source=alt_dbm.ps_tab.query("ps_id in @cut_sec_ids"),
+        size=5,
+        color='gray',
+        legend_label="Cut detections")
+
+    # hover tool
+    hover_tool = bkmdls.HoverTool()
+    hover_tool.tooltips=[("star_id", "@ps_star_id"),
+                         ("ps_id", "@ps_id")]
+    p.add_tools(hover_tool)
+    p.toolbar.active_inspect = None
+
+
     return p
 
 
@@ -270,7 +296,7 @@ def cube_scroller_plot_slider(cube, title, scroll_title='',
                                   high=np.nanmax(img))
     cmap_switcher.on_change('value', cmap_switcher_callback)
 
-    widgets = bklyts.row(slider, cmap_switcher, sizing_mode='scale_width')
+    widgets = bklyts.column(slider, cmap_switcher, sizing_mode='scale_width')
     return plot, widgets, cds
 
 def cube_scroller_app(cube, title, scroll_title='', cmap_class=bkmdls.LinearColorMapper):
