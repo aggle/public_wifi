@@ -16,6 +16,7 @@ import bokeh.models as bkmdls
 #from bokeh.models import ColumnDataSource, Slider, ColorBar, LogColorMapper
 from bokeh.plotting import figure
 from bokeh.themes import Theme
+from bokeh.themes import built_in_themes
 from bokeh.io import show, output_notebook, output_file
 
 from astropy.io import fits
@@ -515,14 +516,14 @@ def generate_inspector(star_id,
         # initialize the color mappers
         color_mapper_dict = {
             'snr':  bkmdls.LinearColorMapper(palette='Magma256',
-                                             low=np.nanmin(img_dict['snr']),
-                                             high=np.nanmax(img_dict['snr'])),
+                                             low=-1,#np.nanmin(img_dict['snr']),
+                                             high=6),#np.nanmax(img_dict['snr'])),
             'residuals':  bkmdls.LinearColorMapper(palette='Magma256',
-                                             low=np.nanmin(img_dict['residuals']),
-                                             high=np.nanmax(img_dict['residuals'])),
-            'models':  bkmdls.LogColorMapper(palette='Magma256',
-                                             low=np.nanmin(img_dict['models']),
-                                             high=np.nanmax(img_dict['models'])),
+                                                   low=np.nanmin(img_dict['residuals']),
+                                                   high=np.nanmax(img_dict['residuals'])),
+            'models':  bkmdls.LinearColorMapper(palette='Magma256',
+                                                low=np.nanmin(img_dict['models']),
+                                                high=np.nanmax(img_dict['models'])),
         }
 
         title_string = lambda title, column: f"{title} :: {column}"
@@ -613,6 +614,8 @@ def generate_inspector(star_id,
                     grid_line_dash: [6, 4]
                     grid_line_color: white
         """, Loader=yaml.FullLoader))
+        #doc.theme = "night_sky"
+
 
     return app
 
