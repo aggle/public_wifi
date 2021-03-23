@@ -5,7 +5,9 @@ Created: 2021-03-10
 """
 
 import os
+import yaml
 import configparser
+from astropy import units
 
 from .Instrument import Instrument
 
@@ -31,3 +33,7 @@ class WFC3Class(Instrument):
         self.npix_x = self.config.getint("Properties", "npix_x")
         self.npix_y = self.config.getint("Properties", "npix_y")
         self.stamp_size = self.config.getint("Properties", "stamp_size")
+        self.pix_scale = units.Quantity((self.config.getfloat("Properties", "pix_scale_x"),
+                                         self.config.getfloat("Properties", "pix_scale_y")),
+                                        unit=self.config.get("Properties", "pix_scale_unit")
+        
