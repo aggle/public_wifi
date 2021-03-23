@@ -23,17 +23,15 @@ class WFC3Class(Instrument):
         """
         Initialize an instrument from the config file
         """
+        file_name = "wfc3.yaml"
         ## read in configuration file and set these static variables
         package_directory = os.path.dirname(os.path.abspath(__file__))
-        config_file = os.path.join(package_directory, "wfc3.cfg")
-        self.config = configparser.ConfigParser()
+        config_file = os.path.join(package_directory, file_name)
         with open(config_file) as f:
-            self.config.read_file(f)
+            yaml_dict = yaml.load(f, Loader=yaml.SafeLoader)
+            # assign all the parts of the config file directly
+            for k, v in yaml_dict.items():
+                setattr(self, k, v)
 
-        self.npix_x = self.config.getint("Properties", "npix_x")
-        self.npix_y = self.config.getint("Properties", "npix_y")
-        self.stamp_size = self.config.getint("Properties", "stamp_size")
-        self.pix_scale = units.Quantity((self.config.getfloat("Properties", "pix_scale_x"),
-                                         self.config.getfloat("Properties", "pix_scale_y")),
-                                        unit=self.config.get("Properties", "pix_scale_unit")
-        
+        # modify any required variables
+        self.pix_scale = units.Quantity(self.pix_scale, unit=self.pix_scale_unit)

@@ -6,7 +6,7 @@ Created: 2021-03-10
 """
 
 import abc
-import configparser
+import yaml
 
 
 class Instrument(object):
@@ -20,8 +20,12 @@ class Instrument(object):
         """
         Initialize an instrument from the config file
         """
-        self.confpar = configparser.ConfigParser()
+        file_name = "wfc3.yaml"
+        ## read in configuration file and set these static variables
+        package_directory = os.path.dirname(os.path.abspath(__file__))
+        config_file = os.path.join(package_directory, file_name)
         with open(config_file) as f:
-            confpar.read_file(f)
-
-        
+            yaml_dict = yaml.load(f, Loader=yaml.SafeLoader)
+            # assign all the parts of the config file directly
+            for k, v in yaml_dict.items():
+                setattr(self, k, v)

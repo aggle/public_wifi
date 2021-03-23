@@ -1,22 +1,21 @@
 # This configuration file defines the relevant properties of the WFC3 detector
+# Template instrument configuration
 # Author: J. Aguilar
 
-[Properties]
 # name of the instrument
-name = WFC3
+name: Name Of Instrument
 
 # Number of pixels across each axis
-npix_x = 1014
-npix_y = 1014
+npix: [0, 0]
 
-# Pixel scales, in arcsec
-# may not be known, or may be variable
-pix_scale_x = 0.13
-pix_scale_y = 0.13
-pix_scale_unit = arcsec/pixel
+# Pixel scales
+# x, y
+pix_scale: [0, 0]
+# something interpretable by astropy.unit.Unit
+pix_scale_unit: arcsec
 
-# size of the stamp to cut out (NxN)
+# size of the stamp to cut out (NxN, or MxN if tuple)
 # though this is probably more dependent on the
 # filter and target, and not necessarily an instrument propery
 # is there a better place to define it?
-stamp_size = 11
+stamp_size: 0 
