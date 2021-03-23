@@ -288,6 +288,7 @@ class DBManager:
         # which kind of identifier do you have?
         if isinstance(ids, str):
             id_lead = ids[0]
+            ids = [ids]
         else:
             # check that all are the same type
             id_lead = [i[0] for i in ids]
@@ -303,15 +304,13 @@ class DBManager:
         # return the ids
         if id_lead.upper() == want_this_id.upper():
             #print("find_matching_id: same type of ID requested as provided.")
-            return ids
+            return pd.Series(ids)
 
 
         start_id_type = id_dict[id_lead]
 
         # which kind do you want?
         requested_id = id_dict[want_this_id]
-        #if want_this_id == 'point_sources':
-        #    want_this_id = 'ps'
 
         lkp_tab = self.find_lookup_table(start_id_type, requested_id)
         try:
@@ -320,7 +319,7 @@ class DBManager:
             print("No lookup table found, exiting...")
             return None
         matching_ids = lkp_tab.set_index(start_id_type+"_id").loc[ids, requested_id+"_id"]
-        return matching_ids
+        return matching_ids.squeeze()
 
     def join_all_tables(self):
         """
@@ -507,9 +506,64 @@ class DBManager:
         hdr_rows = hdr_rows.merge(ps_id.reset_index())
         return hdr_rows[['ps_exp_id'] + list(ps_id.reset_index().columns) + key]
 
-    def get_wcs_header(self, obj_id):
+    def get_exposure_from_id(self, obj_id, hdr='SCI'):
         """
-        Given an identifier (star, point source, stamp), get the corresponding WCS headers
+        Pull out an image from the fits file, given the exposure identifier.
+        if more than one obj_id is given, returns a list of images
+
+        Parameters
+        ----------
+        obj_id : str or list
+          the object identifier whose exposure you want
+        hdr : str or int ['SCI']
+          which header? allowed values: ['SCI','ERR','DQ','SAMP','TIME']
+
+        Returns:
+        img : numpy.array or pandas series containing 2-D image from the fits file
+        """
+        if isinstance(obj_id, str):
+            obj_id = [obj_id]
+        # get the point source IDs - make list to force pd.Series return object
+        ps_ids = self.find_matching_id(obj_id, 'P')
+        # get the exposures
+        exp_ids = self.ps_tab.set_index('ps_id').loc[ps_ids, 'ps_exp_id']
+        # images
+        imgs = exp_ids.apply(lambda x: table_utils.get_img_from_exp_id(x, hdr))
+        imgs.index = obj_id
+        imgs.index.name = 'exposure'
+        return imgs.squeeze()
+
+    def get_header_from_id(self, obj_id, hdr='SCI'):
+        """
+        Pull out a header from a fits file, given the target object identifier.
+        if more than one obj_id is given, returns a list of headers
+
+        Parameters
+        ----------
+        obj_id : str or list
+          the object identifier whose exposure you want
+        hdr : str or int ['SCI']
+          which header? allowed values: ['SCI','ERR','DQ','SAMP','TIME']
+
+        Returns:
+        hdr : fits.header or pandas series containing headers
+        """
+        if isinstance(obj_id, str):
+            obj_id = [obj_id]
+        # get the point source IDs - make list to force pd.Series return object
+        ps_ids = self.find_matching_id(obj_id, 'P')
+        # get the exposures, ensure exp_ids is a pandas-like object
+        exp_ids = self.ps_tab.query("ps_id in @ps_ids").set_index('ps_id')['ps_exp_id']
+        # images
+        hdrs = exp_ids.apply(lambda x: table_utils.get_hdr_from_exp_id(x, hdr))
+        hdrs.index = obj_id
+        hdrs.index.name = 'exposure'
+        return hdrs.squeeze()
+    
+    def get_wcs_from_id(self, obj_id):
+        """
+        Given an identifier (star, point source, stamp), get the corresponding WCS headers.
+        Class wrapper for table_utils.get_wcs_from_exp_id
 
         Parameters
         ----------
@@ -524,12 +578,12 @@ class DBManager:
             obj_id = [obj_id]
         # get the point source IDs
         ps_ids = self.find_matching_id(obj_id, 'P')
-        # exp_ids
-        exp_ids = self.ps_tab.set_index('ps_id')['ps_exp_id']
-        file_names = exp_ids.apply(table_utils.get_file_name_from_exp_id)
-        wcs = file_names.apply(lambda x: WCS(fits.getheader(shared_utils.get_data_file(x), 'SCI')))
-        wcs.index = ps_ids.index
-        return wcs
+        # ensure exp_ids is a pandas-like object
+        exp_ids = self.ps_tab.query("ps_id in @ps_ids").set_index('ps_id')['ps_exp_id']
+        wcs = exp_ids.apply(table_utils.get_wcs_from_exp_id)
+        wcs.index = obj_id
+        wcs.index.name = "wcs"
+        return wcs#.squeeze()
 
     def _cut_lookup_tables_to_local(self):
         """

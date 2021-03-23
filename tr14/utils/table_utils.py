@@ -11,6 +11,7 @@ import numpy as np
 import warnings
 import configparser
 
+from astropy.wcs import WCS
 from astropy.io import fits
 
 from . import shared_utils, header_utils
@@ -332,35 +333,25 @@ def get_img_from_file_id(file_id, hdr='SCI'):
     img = fits.getdata(flt_path, hdr)
     return img
 
+def get_hdr_from_exp_id(exp_id, hdr='SCI'):
+    """
+    Pull out a header from the fits file, given the exposure identifier.
 
-# def get_stamp_from_ps_row(row, stamp_size=11, return_img_ind=False, hdr='SCI'):
-#     """
-#     Given a row of the FIND_NIMFO dataframe, this gets a stamp of the specified
-#     size of the given point source
-#     TODO: accept multiple rows
+    Parameters
+    ----------
+    exp_id : str
+      the identifier for the exposure (usu something like 'E001')
+    hdr : str or int ['SCI']
+      which header? allowed values: ['SCI','ERR','DQ','SAMP','TIME']
 
-#     Parameters
-#     ----------
-#     row : pd.DataFrame row
-#       a row containing the position and file information for the source
-#     stamp_size : int or tuple [11]
-#       (row, col) size of the stamp [(int, int) if only int given]
-#     return_img_ind : bool (False)
-#       if True, return the row and col indices of the stamp in the image
-#     hdr : str or int ('SCI')
-#       each HDU in the flt Duelist has a different kind of image - specify
-#       which one you want here
+    Returns:
+    hdr : fits header object
+    """
+    flt_name = get_file_name_from_exp_id(exp_id)
+    flt_path = shared_utils.get_data_file(flt_name)
+    hdr = fits.getheader(flt_path, hdr)
+    return hdr
 
-#     Returns
-#     -------
-#     stamp_size-sized stamp
-#     """
-#     img = get_img_from_file_id(row['ps_exp_id'], hdr=hdr)
-#     # location of the point source in the image
-#     xy = row[['ps_x_exp','ps_y_exp']].values
-#     # finally, get the stamp (and indices, if requested)
-#     return_vals = image_utils.get_stamp(img, xy, stamp_size, return_img_ind)
-#     return return_vals
 
 """
 If the stamps are written to file, you can just find them using the ps_id or stamp_id
@@ -726,6 +717,24 @@ def get_header_kw_for_exp(exp_id, kw, hdr_id='pri'):
     return kw_val
 
 
+def get_wcs_from_exp_id(exp_id):
+    """
+    Given an exposure ID, get the WCS header for the file
+
+    Parameters
+    ----------
+    exp_id : str
+      a string of format E000 corresponding to an exposure that comes from
+      a unique fits file
+
+    Output
+    ------
+    wcs : a WCS object 
+
+    """
+    file_name = get_file_name_from_exp_id(exp_id)
+    wcs = WCS(fits.getheader(shared_utils.get_data_file(file_name), 'SCI'))
+    return wcs
 
 ####################
 # Catalog cleaning #
