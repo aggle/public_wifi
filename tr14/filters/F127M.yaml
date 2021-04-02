@@ -1,0 +1,46 @@
+name : F127M
+
+# wavelengths
+wlref : 12740.76
+wlref_unit : Angstrom
+wlmean : 12745.88
+wlmean_unit : Angstrom
+wlcen : 12739.27
+wlcen_unit : Angstrom
+wleff : 12732.16
+wleff_unit : Angstrom
+wlpeak : 12983.55
+wlpeak_unit : Angstrom
+wlpivot : 12740.76
+wlpivot_unit : Angstrom
+wlphot : 12735.62
+wlphot_unit : Angstrom
+wlmin : 12267.12
+wlmin_unit : Angstrom
+wlmax : 13234.41
+wlmax_unit : Angstrom
+
+# widths
+weff : 673.11
+weff_unit : Angstrom
+fwhm : 692.26
+fwhm_unit : Angstrom
+
+# extinction
+af_av : 0.29
+
+# solar flux
+fsun : 42.65
+fsun_unit : erg/cm2/s/A
+
+# zero poitns
+zero_points:
+  vega : [(2.76599e-10, erg/cm2/s/A), (1495.67, Jy)]
+  vega_type : Pogson
+  vega_photcal_id : HST/WFC3_IR.F127M/VEGA
+  ab : [(6.71495e-10, erg/cm2/s/A), (3631.00, Jy)]
+  ab_type : Pogson
+  photcal_id : HST/WFC3_IR.F127M/AB
+  st : [(3.631e-9, erg/cm2/s/A), (19634.05, Jy)]
+  st_type : Pogson
+  photcal_id : HST/WFC3_IR.F127M/ST
