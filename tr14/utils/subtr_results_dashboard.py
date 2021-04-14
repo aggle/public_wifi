@@ -29,7 +29,7 @@ from . import subtr_utils
 mast_img = fits.getdata(shared_utils.load_config_path("composite_img_file"))
 mast_img[mast_img<=0] = np.nan
 
-def show_sky_scene(star_id, dbm, zoom=61, alt_dbm=None, stamp_size=11, plot_size=300):
+def show_sky_scene(star_id, dbm, zoom=61, alt_dbm={}, stamp_size=11, plot_size=300):
     """
     Plot the scene on sky
 
@@ -38,7 +38,7 @@ def show_sky_scene(star_id, dbm, zoom=61, alt_dbm=None, stamp_size=11, plot_size
     star_id : the target star
     dbm : database manager for the active selection of stars, that includes the target star
     zoom : [61] size of the initial region to zoom in on
-    alt_dbm : [None] alternate star table, will plot all stars
+    alt_dbm : [{}] alternate star table(s), will plot stars not in main database
     stamp_size : [11] size of a box to draw around the star that indicates the stamp size
     plot_size : [300] size of the plot (x and y)
 
@@ -89,17 +89,24 @@ def show_sky_scene(star_id, dbm, zoom=61, alt_dbm=None, stamp_size=11, plot_size
                  source=dbm.stars_tab.query("star_id != @star_id"),
                  legend_label='Selected stars')
 
-    if alt_dbm is not None:
-        selected_stars = dbm.stars_tab['star_id']
-        noncat_plot = p_sky.x(x='u_mast',
-                              y='v_mast',
-                              size=5, fill_alpha=0.2,
-                              color='gray',
-                              source=alt_dbm.stars_tab.query("star_id not in @selected_stars"),
-                              legend_label='Cut stars')
+    #if alt_dbm is not None:
+    noncat_plots = []
+    if isinstance(alt_dbm, dict):
+        for alt_k, alt_d in alt_dbm.items():
+            selected_stars = alt_d.stars_tab['star_id']
+            noncat_plots.append(
+                p_sky.x(x='u_mast',
+                        y='v_mast',
+                        size=5, fill_alpha=0.2,
+                        color='gray',
+                        source=alt_d.stars_tab.query("star_id not in @selected_stars"),
+                        legend_label=alt_k)
+            )
+    else:
+        print("alt_dbm argument changed: now supply a dictionary of kw-db pairs")
 
     # hover tool
-    hover_tool = bkmdls.HoverTool(renderers=[star_plot, nbr_plot, noncat_plot])
+    hover_tool = bkmdls.HoverTool(renderers=[star_plot, nbr_plot] + noncat_plots)
     hover_tool.tooltips=[("star_id", "@star_id"),
                          ("mag_F1", "@star_mag_F1{0.2f}"),
                          ("mag_F2", "@star_mag_F2{0.2f}"),
@@ -110,7 +117,7 @@ def show_sky_scene(star_id, dbm, zoom=61, alt_dbm=None, stamp_size=11, plot_size
     return p_sky
 
 
-def show_detector_scene(star_id, dbm, alt_dbm=None, plot_size=300):
+def show_detector_scene(star_id, dbm, alt_dbm={}, plot_size=300):
     """
     Plot all the point sources on the detector sector
 
@@ -119,7 +126,7 @@ def show_detector_scene(star_id, dbm, alt_dbm=None, plot_size=300):
     star_id : the target star
     dbm : db_manager object for the sector
     plot_size : [300] size of the plot (x and y)
-    alt_dbm: [None] alternate db_manager, will plot all point sources not in dbm
+    alt_dbm: [{}] alternate db_manager, will plot all point sources not in dbm
 
     Output
     ------
@@ -133,33 +140,45 @@ def show_detector_scene(star_id, dbm, alt_dbm=None, plot_size=300):
 
     # plot all the catalog detections in the sector
     exp_ids = list(dbm.ps_tab.groupby('ps_exp_id').groups.keys())
-    p.circle(x='ps_x_exp',
-             y='ps_y_exp',
-             source=dbm.ps_tab,
-             color=bokeh.transform.factor_cmap('ps_exp_id', f"Category20_{len(exp_ids)}", exp_ids),
-             size=10,
-             legend_label='Catalog detections')
+    catalog_plot = p.circle(x='ps_x_exp',
+                            y='ps_y_exp',
+                            source=dbm.ps_tab,
+                            color=bokeh.transform.factor_cmap('ps_exp_id',
+                                                              f"Category20_{len(exp_ids)}",
+                                                              exp_ids),
+                            size=10,
+                            legend_label='Catalog detections')
 
     # Plot the location of the target star
     target_ps_ids = dbm.find_matching_id(star_id, 'P')
     target_locs = dbm.ps_tab.set_index('ps_id').loc[target_ps_ids, ['ps_x_exp', 'ps_y_exp']]
-    p.star(target_locs['ps_x_exp'].mean(),
-           target_locs['ps_y_exp'].mean(),
-           line_color='black', fill_alpha=0, size=20, line_width=2,
-           legend_label='Target star')
+    target_plot = p.star(target_locs['ps_x_exp'].mean(),
+                         target_locs['ps_y_exp'].mean(),
+                         line_color='black', fill_alpha=0, size=20, line_width=2,
+                         legend_label='Target star')
 
     # detections not in the catalog
-    cut_sec_ids = set(alt_dbm.find_sector(sector_id=15)['ps_id']).difference(set(dbm.ps_tab['ps_id']))
-    cut_star_pos = alt_dbm.join_all_tables().query("ps_id in @cut_sec_ids")
-    cut_star_pos = cut_star_pos.groupby('star_id')[['ps_x_exp', 'ps_y_exp']].mean()
-    p.x(x='ps_x_exp', y='ps_y_exp',
-        source=alt_dbm.ps_tab.query("ps_id in @cut_sec_ids"),
-        size=5,
-        color='gray',
-        legend_label="Cut detections")
+    #if alt_dbm is not None:
+    noncat_plots = []
+    if isinstance(alt_dbm, dict):
+        for alt_k, alt_d in alt_dbm.items():
+            # first, find the point sources not in the main db
+            cut_sec_ids = set(alt_d.find_sector(sector_id=15)['ps_id'])
+            cut_sec_ids = cut_sec_ids.difference(set(dbm.ps_tab['ps_id']))
+            cut_star_pos = alt_d.join_all_tables().query("ps_id in @cut_sec_ids")
+            cut_star_pos = cut_star_pos.groupby('star_id')[['ps_x_exp', 'ps_y_exp']].mean()
+            noncat_plots.append(
+                p.x(x='ps_x_exp', y='ps_y_exp',
+                    source=alt_d.ps_tab.query("ps_id in @cut_sec_ids"),
+                    size=5,
+                    color='gray',
+                    legend_label="Cut detections")
+            )
+    else:
+        print("alt_dbm argument changed: now supply a dictionary of kw-db pairs")
 
     # hover tool
-    hover_tool = bkmdls.HoverTool()
+    hover_tool = bkmdls.HoverTool(renderers=[catalog_plot] + noncat_plots)
     hover_tool.tooltips=[("star_id", "@ps_star_id"),
                          ("ps_id", "@ps_id")]
     p.add_tools(hover_tool)
@@ -236,7 +255,7 @@ def cube_scroller_plot_slider(cube, title, scroll_title='',
     ------
     bokeh figure, slider widget, and the that stores the data
     """
-    TOOLS='' # no tools, for now
+    TOOLS='save'
 
     data = cube.copy()
     #color_mapper = cmap_class(palette='Magma256',
@@ -300,7 +319,7 @@ def cube_scroller_plot_slider(cube, title, scroll_title='',
     widgets = bklyts.column(slider, cmap_switcher, sizing_mode='scale_width')
     return plot, widgets, cds
 
-def cube_scroller_app(cube, title, scroll_title='', cmap_class=bkmdls.LinearColorMapper):
+def cube_scroller_app(cube, title='', scroll_title='', cmap_class=bkmdls.LinearColorMapper):
     """
     Make an app to scroll through a datacube. Returns the app; display using bokeh.io.show
 
@@ -619,5 +638,181 @@ def generate_inspector(star_id,
 
     return app
 
+
+
+
+def generate_inspector_ana(ana_mgr,
+                           star_id, 
+                           alt_dbs={},
+                           plot_size_unit=100):
+    """
+    Create a Bokeh server app using the provided information.
+
+    Parameters
+    ----------
+    ana_mgr : an ana_utils.AnaManager instance
+      contains the database, subtraction manager, and other analysis products
+    star_id : star to show
+    alt_dbs : [{}] dictionary of databases
+      other databases to show on plots. Keys will be used for legend labels
+    plot_size : [100] size of the plot increments
+    Output
+    ------
+    bokeh app for use with show(app)
+
+    """
+    # do some cleanup for better filtering
+    for k in ['snr', 'residuals', 'models']:
+        # if an array is all nan, just set the entry to a single NaN value
+        bool_df = ana_mgr.results_stamps[k].applymap(lambda x: np.isnan(x).all())
+        ana_mgr.results_stamps[k].values[bool_df] = np.nan
+
+    def app(doc):
+        # sky scene, detector scene, and the target star's stamps
+        plot_size = 5*plot_size_unit
+        p_sky = show_sky_scene(star_id, dbm=ana_mgr.db, alt_dbm=alt_dbs,
+                               plot_size=plot_size)
+        p_det = show_detector_scene(star_id, dbm=ana_mgr.db, alt_dbm=alt_dbs,
+                                    plot_size=plot_size)
+        p_trg = show_target_stamps(star_id, dbm=ana_mgr.db,
+                                   plot_size=plot_size)
+
+        # reference stamps used to assemble the model PSF
+        reference_ids = ana_mgr.results_stamps['references'].loc[star_id].dropna(how='all', axis=1)
+        reference_ids = reference_ids.drop_duplicates().values.ravel()
+        reference_stamps = ana_mgr.db.stamps_tab.set_index('stamp_id').loc[reference_ids, 'stamp_array']
+        refs_plot, refs_slider, refs_cds = cube_scroller_plot_slider(reference_stamps,
+                                                                     'Reference stamps',
+                                                                     cmap_class=bkmdls.LogColorMapper,
+                                                                     plot_size=5*plot_size_unit)
+        refs_col = bklyts.column(refs_plot, refs_slider)
+
+        # load the widgets that depend on the stamp selection
+        target_stamp_ids = list(ana_mgr.db.find_matching_id(star_id, 'T'))
+        target_stamp_id = column = target_stamp_ids[0]
+        
+        # initialize stamp dataframes, putting the stamp IDs in the columns
+        scroller_keys =  ['snr', 'residuals', 'models']
+        stamp_dict = {k: ana_mgr.results_stamps[k].loc[star_id].dropna(how='all', axis=1).T
+                      for k in scroller_keys}
+        # shift the model PSFs so the min value is 0, so you can represent them in log scale
+        stamp_dict['models'] = stamp_dict['models'] - stamp_dict['models'].apply(lambda col: col.apply(np.nanmin)).min()
+
+        # initialize the images
+        img_dict = {k: df.loc[df.index[0], column]
+                    for k, df in stamp_dict.items()}
+
+        # put them into ColumnDataSources
+        cds_dict = {k: bkmdls.ColumnDataSource(data={'image':[img],
+                                                     'x': [-0.5], 'y': [-0.5],
+                                                     'dw': [img.shape[0]], 'dh': [img.shape[1]]})
+                    for k, img in img_dict.items()}
+        # initialize the color mappers
+        color_mapper_dict = {
+            'snr':  bkmdls.LinearColorMapper(palette='Magma256',
+                                             low=-1,#np.nanmin(img_dict['snr']),
+                                             high=6),#np.nanmax(img_dict['snr'])),
+            'residuals':  bkmdls.LinearColorMapper(palette='Magma256',
+                                                   low=np.nanmin(img_dict['residuals']),
+                                                   high=np.nanmax(img_dict['residuals'])),
+            'models':  bkmdls.LogColorMapper(palette='Magma256',
+                                             low=np.nanmin(img_dict['models']),
+                                             high=np.nanmax(img_dict['models'])),
+        }
+
+        title_string = lambda title, column: f"{title} :: {column}"
+        # initialize the actual plots
+        TOOLS=''
+        plot_dict = {k: figure(title=title_string(k.upper(), column),
+                               plot_height=plot_size, plot_width=plot_size,
+                               tools=TOOLS)
+                     for k in stamp_dict.keys()}
+        for k, plot in plot_dict.items():
+            plot.image(image='image',
+                       x='x', y='y', dw='dw', dh='dh',
+                       color_mapper=color_mapper_dict[k],
+                       source=cds_dict[k])
+            # Hover tool
+            hover_tool = bkmdls.HoverTool()
+            hover_tool.tooltips=[("value", "@image"),
+                                 ("(x,y)", "($x{0}, $y{0})")]
+            plot.add_tools(hover_tool)
+            plot.toolbar.active_inspect = None
+            # color bar
+            color_bar = bkmdls.ColorBar(color_mapper=color_mapper_dict[k],
+                                        label_standoff=12)
+            plot.add_layout(color_bar, 'right')
+
+        # make the sliders
+        slider_title = lambda title, index: f"{title} :{index}"
+        slider_dict = {k: bkmdls.Slider(start=0, end=stamps.index.size-1, value=0, step=1,
+                                        title=slider_title('N_components', stamps.index[0]),
+                                        show_value=False,
+                                        orientation='horizontal')
+                       for k, stamps in stamp_dict.items()}
+        def make_slider_callback(key): # generator for slider callback functions
+            def slider_callback(attr, old, new):
+                stamps = stamp_dict[key]
+                img = stamps.loc[stamps.index[new], column]
+                cds_dict[key].data = {'image':[img],
+                                      'x': [-0.5], 'y': [-0.5],
+                                      'dw': [img.shape[0]], 'dh': [img.shape[1]]}
+                color_mapper_dict[key].update(low=np.nanmin(img), high=np.nanmax(img))
+                slider_dict[key].title = slider_title("N_components", stamps.index[new])
+            return slider_callback
+        slider_callback_dict = {k: make_slider_callback(k) for k in stamp_dict.keys()}
+        for k, slider in slider_dict.items():
+            slider.on_change('value', slider_callback_dict[k])
+
+        # combine them for the layout
+        scroller_columns = {k: bklyts.column(plot_dict[k], slider_dict[k])
+                            for k in scroller_keys}
+
+
+        # make the target stamp selector
+        def select_callback(attr, old, new):
+            column = new
+            for k in scroller_keys:
+                stamp_col = stamp_dict[k]
+                index = stamp_dict[k].index[slider_dict[k].value]
+                img_dict[k] = stamp_dict[k].loc[index, column]
+                img = img_dict[k]
+                cds_dict[k].data = {'image':[img],
+                                    'x': [-0.5], 'y': [-0.5],
+                                    'dw': [img.shape[0]], 'dh': [img.shape[1]]}
+                color_mapper_dict[k].update(low=np.nanmin(img), high=np.nanmax(img))
+                plot_dict[k].title.text = title_string(k.upper(), column)
+        stamp_selector = bkmdls.Select(title='Target stamp',
+                                       value=column,
+                                       options=[str(i) for i in target_stamp_ids])
+        stamp_selector.on_change('value', select_callback)
+
+        # layout
+        lyt = bklyts.column(
+            bklyts.row(p_sky, p_det, p_trg, refs_col),
+            bklyts.row(stamp_selector,
+                       scroller_columns['snr'],
+                       scroller_columns['residuals'],
+                       scroller_columns['models'])
+        )
+
+        doc.add_root(lyt)
+
+        doc.theme = Theme(json=yaml.load("""
+            attrs:
+                Figure:
+                    background_fill_color: white
+                    outline_line_color: white
+                    toolbar_location: above
+                    height: 500
+                    width: 800
+                Grid:
+                    grid_line_dash: [6, 4]
+                    grid_line_color: white
+        """, Loader=yaml.FullLoader))
+        #doc.theme = "night_sky"
+
+
+    return app
 
 
