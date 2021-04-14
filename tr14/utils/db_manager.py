@@ -564,6 +564,7 @@ class DBManager:
         """
         Given an identifier (star, point source, stamp), get the corresponding WCS headers.
         Class wrapper for table_utils.get_wcs_from_exp_id
+        WARNING: this gives a WCS centered at the exposure, not the stamp
 
         Parameters
         ----------
@@ -581,8 +582,9 @@ class DBManager:
         # ensure exp_ids is a pandas-like object
         exp_ids = self.ps_tab.query("ps_id in @ps_ids").set_index('ps_id')['ps_exp_id']
         wcs = exp_ids.apply(table_utils.get_wcs_from_exp_id)
+        wcs.name = 'wcs'
         wcs.index = obj_id
-        wcs.index.name = "wcs"
+        #wcs.index.name = "wcs"
         return wcs#.squeeze()
 
     def _cut_lookup_tables_to_local(self):

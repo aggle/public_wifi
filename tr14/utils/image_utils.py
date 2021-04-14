@@ -403,3 +403,6 @@ def make_stamp_mask(shape, mask_dim, invert=False, return_ind=False, nan=False):
     if return_ind == True:
         mask = np.where(mask == 1)
     return mask
+
+
+# image manipulation
