@@ -40,7 +40,8 @@ This block defines some useful paths, as well as a wrapper function for loading 
 """
 def load_config_path(sec, key, as_str=False, config_file=config_file):
     """
-    Load a path from the config file. Also handles case of key not found
+    Load a path from the config file. Also handles case of key not found.
+    Run with empty strings for list of options.
 
     Parameters
     ----------
@@ -63,7 +64,14 @@ def load_config_path(sec, key, as_str=False, config_file=config_file):
     config.read(config_file)
     sec = sec.upper()
     key = key.upper()
-    path = Path(config[sec][key]).resolve()
+    try:
+        path = Path(config[sec][key]).resolve()
+    except KeyError:
+        print("Error: bad keys for config file. Options are (section \\n\\t keys):")
+        for sec in config.sections():
+            print(sec)
+            print("\t", ", ".join(i.upper() for i in config.options(sec)))
+        return None
     # test that the path exists
     try:
         assert(path.exists())
