@@ -340,7 +340,7 @@ def plot_sky_context(star_id, stars_table, img_size=61,
                                                 extra_row=True)
     ylim = mast_ind[0][[0, -1]][:, 0]
     xlim = mast_ind[1][:, [0, -1]][0]
-    img = fits.getdata(shared_utils.load_config_path("composite_img_file"))
+    img = fits.getdata(shared_utils.load_config_path("tables", "composite_img_file"))
     img = img[mast_ind[0, :-1, :-1], mast_ind[1, :-1, :-1]]
     ax.pcolor(mast_ind[1]+0.5,
               mast_ind[0]+0.5,

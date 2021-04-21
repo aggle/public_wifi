@@ -26,7 +26,7 @@ from . import table_utils
 from . import db_manager
 from . import subtr_utils
 
-mast_img = fits.getdata(shared_utils.load_config_path("composite_img_file"))
+mast_img = fits.getdata(shared_utils.load_config_path("tables", "composite_img_file"))
 mast_img[mast_img<=0] = np.nan
 
 def show_sky_scene(star_id, dbm, zoom=61, alt_dbm={}, stamp_size=11, plot_size=300):

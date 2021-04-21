@@ -23,10 +23,10 @@ from . import image_utils
 # NMF
 from sklearn.decomposition import NMF
 # pyklip
-sys.path.append(shared_utils.load_config_path('pyklip_path', as_str=True))
+sys.path.append(shared_utils.load_config_path("extern", "pyklip_path", as_str=True))
 from pyklip import klip
 # NMF
-sys.path.append(shared_utils.load_config_path('nmf_path').as_posix())
+sys.path.append(shared_utils.load_config_path("extern", "nmf_path").as_posix())
 from NonnegMFPy import nmf as NMFPy
 
 # Results object

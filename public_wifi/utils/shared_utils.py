@@ -5,6 +5,10 @@ Includes shared useful stuff, like path definitions and file formats
 import configparser
 import re
 from pathlib import Path
+import os
+import abc
+import yaml
+from collections import defaultdict
 
 # universal debug printer
 def debug_print(debug_flag=True, *debug_args):
@@ -30,17 +34,18 @@ def debug_print(debug_flag=True, *debug_args):
 # PATHS #
 #########
 # the paths are stored in the config file
-config_file = (Path(__file__).parent.absolute() / "../config.ini").resolve()
-config = configparser.ConfigParser()
+config_file = (Path(__file__).parent.absolute() / "../config.cfg").resolve()
 """
 This block defines some useful paths, as well as a wrapper function for loading paths from the config file and handling them properly, like turning relative paths into absolute paths
 """
-def load_config_path(key, as_str=False):
+def load_config_path(sec, key, as_str=False, config_file=config_file):
     """
     Load a path from the config file. Also handles case of key not found
 
     Parameters
     ----------
+    sec : str
+      the section in the config file
     key : str
       a key in the PATHS section of the config file
     as_str : bool [False]
@@ -54,10 +59,11 @@ def load_config_path(key, as_str=False):
     """
     # reread the file whenever the function is called so you don't have to
     # reload the entire module if the config file gets updated
-    config = configparser.ConfigParser()
+    config = configparser.ConfigParser(interpolation=configparser.ExtendedInterpolation())
     config.read(config_file)
+    sec = sec.upper()
     key = key.upper()
-    path = Path(config['PATHS'][key]).resolve()
+    path = Path(config[sec][key]).resolve()
     # test that the path exists
     try:
         assert(path.exists())
@@ -69,24 +75,24 @@ def load_config_path(key, as_str=False):
 
 
 # path to header tables
-headers_path = load_config_path('headers_path')
+headers_path = load_config_path("user_paths", "headers_path")
 # HST data files for manipulation
-data_path = load_config_path("data_path")
+data_path = load_config_path("user_paths", "data_path")
 # Database tables
-table_path = load_config_path("table_path")
-db_raw_file = load_config_path("db_raw_file")
-db_file = load_config_path("db_file")
-db_subcat_file = load_config_path("db_subcat_file")
-db_clean_file =  load_config_path("db_clean_file")
+table_path = load_config_path("user_paths", "table_path")
+db_raw_file = load_config_path("tables", "db_raw_file")
+db_file = load_config_path("tables", "db_file")
+db_subcat_file = load_config_path("tables", "db_subcat_file")
+db_clean_file =  load_config_path("tables", "db_clean_file")
 # composite image
 #composite_image_path = load_config_path("composite_img_file")
 # correlation matrix
-full_corr_mat_file = load_config_path("full_corr_path")
+full_corr_mat_file = load_config_path("tables", "full_corr_path")
 
 # gaia catalog and source matches
-align_path = load_config_path("align_path")
+align_path = load_config_path("user_paths", "align_path")
 # KS2 output files
-ks2_path = load_config_path("ks2_path")
+ks2_path = load_config_path("user_paths", "ks2_path")
 
 
 #############
@@ -109,6 +115,7 @@ def get_data_file(file_name):
     file_path : pathlib.Path
       the full file path
     """
+    data_path = load_config_path("user_paths", "data_path")
     file_path = data_path / file_name
     try:
         assert(file_path.exists())
@@ -188,7 +195,7 @@ def read_instrument_config(cfg_name=None, key=None, dtype=None):
     the value stored at `key` in `cfg_name`
 
     """
-    path = load_config_path('instrument_path')
+    path = load_config_path("pw_paths", "instrument_path")
     try:
         file_path = path / cfg_name
         assert file_path.exists() and (cfg_name is not None)
