@@ -125,7 +125,7 @@ def write_headers(filenames, verbose=False):
     for k, v in header_dfs.items():
         out_name = f'{k}_hdrs'  # header_path / f'{k}_hdrs.csv'
         if verbose == True:
-            print(f'Writing {tutils.table_path / (out_name + ".csv")}')
+            print(f'Writing {sutils.table_path / (out_name + ".csv")}')
         tutils.write_table(v,
                            out_name,
                            f"Compilation of {k.upper()} headers from HST image files")
@@ -149,7 +149,7 @@ def load_headers(extname='pri'):
       a dataframe with the right header selected
     """
     filepath = header_path / f'{extname.lower()}_hdrs.csv'
-    read_args = {'index_col':0, 'header':2}
+    read_args = {'index_col':0, 'header':0}
     # special case
     if extname == 'all':
         # return all the headers
