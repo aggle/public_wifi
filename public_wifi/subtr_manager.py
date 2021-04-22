@@ -16,9 +16,9 @@ from skimage.metrics import structural_similarity as ssim
 import sys
 
 # local imports
-from . import table_utils
-from . import shared_utils
-from . import image_utils
+from .utils import table_utils
+from .utils import shared_utils
+from .utils import image_utils
 
 # NMF
 from sklearn.decomposition import NMF

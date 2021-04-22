@@ -12,8 +12,8 @@ import warnings
 from astropy.wcs import WCS
 from astropy.io import fits
 
-from . import shared_utils
-from . import table_utils
+from .utils import shared_utils
+from .utils import table_utils
 
 
 

@@ -11,8 +11,8 @@ from astropy.wcs import WCS
 import reproject
 from reproject import mosaicking
 
-from utils import table_utils
-from utils import image_utils
+from .utils import table_utils
+from .utils import image_utils
 
 ######################
 # SNR and detections #
