@@ -193,7 +193,6 @@ def generate_stamp_table(ps_table):
                'stamp_star_id': str,
                'stamp_x_cent': int,
                'stamp_y_cent': int,
-               'stamp_path': str,
                'stamp_ref_flag': bool,
                'stamp_array': object}
     stamp_table = pd.DataFrame(data=None, columns=columns.keys(), index=stamps.index)
@@ -207,8 +206,6 @@ def generate_stamp_table(ps_table):
     stamp_table['stamp_x_cent'] = ps_table.loc[stamp_table['stamp_ps_id'], 'ps_x_exp'].apply(lambda x: np.int(np.floor(x))).values[:]
     stamp_table['stamp_y_cent'] = ps_table.loc[stamp_table['stamp_ps_id'], 'ps_y_exp'].apply(lambda x: np.int(np.floor(x))).values[:]
     # paths to the stamp files
-    # NOTE: DEPRECATED, FOR NOW STORING ARRAY DIRECTLY IN THE DATAFRAME
-    stamp_table['stamp_path'] = stamp_table['stamp_id'].apply(lambda x: f"/stamp_arrays/{x}")
     # store the arrays
     stamp_table['stamp_array'] = stamps['stamp_array'].copy()
     # assert data types and return
