@@ -80,7 +80,8 @@ def initialize_table(table_name, nrows):
 
 
 
-def write_table(key, df, pk=None, db_file=shared_utils.db_clean_file, verbose=False):
+def write_table(key, df, pk=None, db_file=shared_utils.db_clean_file, verbose=False,
+                h5py_args={}):
     """
     Write a table to file
 
@@ -94,6 +95,8 @@ def write_table(key, df, pk=None, db_file=shared_utils.db_clean_file, verbose=Fa
       (optional) the name of the table's primary key
     db_file : str or pathlib.Path
       the filename to write to
+    h5py_args : dict [{}]
+      any other keyword arguments to pass to h5py.File
 
     Output
     ------
@@ -101,13 +104,13 @@ def write_table(key, df, pk=None, db_file=shared_utils.db_clean_file, verbose=Fa
 
     """
     db_file = Path(db_file)
-    mode='a'
+    h5py_args.setdefault('mode', 'a')
     try:
         assert db_file.exists()
     except AssertionError:
         print(f"File {db_file} not found; creating.")
-        mode='w'
-    with h5py.File(db_file, mode=mode) as f:
+        h5py_args['mode'] = 'w'
+    with h5py.File(db_file, **h5py_args) as f:
         try:
             g = f.create_group(key)
         except ValueError: # group already exists
