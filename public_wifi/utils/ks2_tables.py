@@ -26,7 +26,7 @@ def frtn2py_ind(ind):
     new_coords = ind - 1
     return new_coords
     """
-    return ind
+    return ind - 1
 
 def make_stars_table(mast_cat):
     """
@@ -115,7 +115,7 @@ def make_point_source_table(ps_cat, lookup_nmast):
                    xraw1 = "ps_x_exp",
                    yraw1 = "ps_y_exp",
     )
-    # drop stars that aren't in the master table because their ps_star_ids
+    # drop stars that aren't in the master table, because their ps_star_ids
     # won't make sense
     ps_cat = ps_cat.loc[ps_cat['NMAST'].isin(lookup_nmast['NMAST'])].copy()
 
@@ -217,7 +217,7 @@ def generate_stamp_table(ps_table):
     return stamp_table
 
 
-def write_fundamental_db(db_file=shared_utils.db_raw_file, stamps=False):
+def write_fundamental_db(db_file=shared_utils.db_raw_file, stamps=False, verbose=False):
     """
     Write the basic tables to the database file:
     - stars
@@ -235,6 +235,8 @@ def write_fundamental_db(db_file=shared_utils.db_raw_file, stamps=False):
     db_file : str or Path [shared_utils.db_file]
     stamps : bool [False]
       if True, generate the stamps too (takes a long time)
+    verbose : bool [False]
+      enable extra printing
 
     Output
     ------
@@ -244,6 +246,7 @@ def write_fundamental_db(db_file=shared_utils.db_raw_file, stamps=False):
 
     # use this dict to collect all the tables for writing
     master_tables_dict = {}
+    primary_keys = {}
 
     # get cleaned master and point source catalogs
     mast_cat, ps_cat = ks2_utils.get_ks2_catalogs(mast_file=ks2_utils.ks2_files[0],
@@ -252,11 +255,13 @@ def write_fundamental_db(db_file=shared_utils.db_raw_file, stamps=False):
     # convert mast_cat to the proper format, and get the stars-KS2 lookup table
     stars_table, lookup_ks2_nmast = make_stars_table(mast_cat)
     master_tables_dict['stars'] = stars_table
+    primary_keys['stars'] = 'star_id'
     master_tables_dict['lookup_ks2_nmast'] = lookup_ks2_nmast
 
     # convert the point source catalog to the proper format
     ps_table = make_point_source_table(ps_cat, lookup_ks2_nmast)
     master_tables_dict['point_sources'] = ps_table
+    primary_keys['point_sources'] = 'ps_id'
 
     # mapper between file names and file ids
     lookup_files = ks2_utils.ks2_filemapper.copy()
@@ -276,18 +281,21 @@ def write_fundamental_db(db_file=shared_utils.db_raw_file, stamps=False):
     if stamps == True:
         stamp_table = generate_stamp_table(ps_table)
         master_tables_dict['stamps'] = stamp_table
+        primary_keys['stamps'] = 'stamp_id'
 
     # write all the tables to the database file
-    with pd.HDFStore(db_file, mode='w') as store:
-        for k, v in sorted(master_tables_dict.items()):
-            print(f"Writing table `{k}` to {db_file}...")
-            # suppress PerformanceWarnings when saving non c-mapping objects
-            with warnings.catch_warnings():
-                warnings.simplefilter("ignore")
-                store.put(k, v, format='fixed', data_columns=True)
-
-            print("\tDone.")
-        store.close()
+    #with pd.HDFStore(db_file, mode='w') as store:
+    #    for k, v in sorted(master_tables_dict.items()):
+    #        print(f"Writing table `{k}` to {db_file}...")
+    #        # suppress PerformanceWarnings when saving non c-mapping objects
+    #        with warnings.catch_warnings():
+    #            warnings.simplefilter("ignore")
+    #            store.put(k, v, format='fixed', data_columns=True)
+    #        print("\tDone.")
+    #    store.close()
+    for key, df in sorted(master_tables_dict.items()):
+        pk = primary_keys.get(key, None)
+        table_utils.write_table(key, df, pk=pk, db_file=db_file, verbose=verbose)
     print("Finished.")
 
 
