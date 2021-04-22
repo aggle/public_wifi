@@ -48,10 +48,11 @@ def load_config_path(sec, key, as_str=False, config_file=config_file):
     sec : str
       the section in the config file
     key : str
-      a key in the PATHS section of the config file
+      a key in the given section of the config file
     as_str : bool [False]
       if True, returns path as a string (default is pathlib.Path object)
-
+    config_file : str or Path
+      path to the config file to use
     Output
     -------
     path : pathlib.Path or None

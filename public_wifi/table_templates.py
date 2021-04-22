@@ -1,5 +1,6 @@
 """
 This file contains the templates for all the tables.
+Not currently used.
 """
 
 import pandas as import pd
