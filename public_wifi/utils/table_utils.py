@@ -109,7 +109,7 @@ def write_table(key, df, pk=None, db_file=shared_utils.db_clean_file, verbose=Fa
         assert db_file.exists()
     except AssertionError:
         print(f"File {db_file} not found; creating.")
-        h5py_args['mode'] = 'w'
+        #h5py_args['mode'] = 'w'
     with h5py.File(db_file, **h5py_args) as f:
         try:
             g = f.create_group(key)
@@ -119,6 +119,7 @@ def write_table(key, df, pk=None, db_file=shared_utils.db_clean_file, verbose=Fa
         # set the primary key
         if isinstance(pk, str):
             g.attrs['primary_key'] = pk
+        # write each column of the dataframe
         for c in df.columns:
             col = df[c]
             orig_dtype = col.dtype
@@ -128,6 +129,7 @@ def write_table(key, df, pk=None, db_file=shared_utils.db_clean_file, verbose=Fa
                 col = col.astype(h5py.string_dtype('utf-8'))
             g.create_dataset(c, data=col, dtype=col.dtype, chunks=True)
         f.flush()
+        f.close()
     if verbose == True:
         print(f"Wrote '{key}' to {db_file}")
 
@@ -148,13 +150,15 @@ def load_table(key, db_file=shared_utils.db_clean_file, verbose=False):
 
     """
     with h5py.File(db_file, 'r') as f:
+        g = f.get('/'+key, default=None)
         try:
-            g = f.get('/'+key)
-        except ValueError: # table not found
+            assert(g is not None)
+        except AssertionError: # table not found
             print(f"Table '{key}' not found. Available tables are:")
             print('\n'.join(g for g in f))
-            return
+            return g
         df = pd.DataFrame.from_dict({k: list(g[k][...]) for k in g})
+        f.close()
     if verbose == True:
         print(f"Loaded '{key}' from {db_file}")
     return df

@@ -10,6 +10,9 @@ import warnings
 import numpy as np
 import pandas as pd
 
+from astropy.io import fits
+from astropy import nddata
+
 from . import shared_utils
 from . import header_utils
 from . import ks2_utils
@@ -163,7 +166,7 @@ def make_point_source_table(ps_cat, lookup_nmast):
     return ps_table
 
 
-def generate_stamp_table(ps_table):
+def generate_stamp_table(ps_table, stamp_size=11, verbose=False):
     """
     Generate a stamp table to hold the stamp metadata and arrays
 
@@ -178,11 +181,31 @@ def generate_stamp_table(ps_table):
       table of stamps and stamp metadata
 
     """
-    print("Generating stamps... go get some coffee, this can take a while.")
-    stamps = ps_table.set_index('ps_id').apply(image_utils.get_stamp_from_ps_row,
-                                               return_img_ind=False,
-                                               axis=1)
-    stamps.index.name = 'ps_id'
+    print("Generating stamps...")
+    # the biggest bottleneck is file IO, so groupby by exposure so you only have
+    # to read each file once
+    # then reassemble the groups into a single Series
+    # ps_id must be unique (but I don't actually guarantee it anywhere)
+    gb_exp = ps_table.set_index('ps_id').groupby('ps_exp_id')
+    def get_stamps(exp_group, verbose=verbose):
+        """
+        use nddata.Cutout2D to pull out the stamps from the image
+        """
+        exp_id = exp_group.name
+        if verbose == True:
+            print(f"{exp_id} start")
+        flt_file = table_utils.get_file_name_from_exp_id(exp_id)
+        img = fits.getdata(shared_utils.get_data_file(flt_file), 'sci')
+        row_func = lambda row: nddata.Cutout2D(img,
+                                               tuple(row[['ps_x_exp','ps_y_exp']]),
+                                               size=stamp_size,
+                                               mode='partial',
+                                               fill_value=np.nan).data
+        stamps = exp_group.apply(row_func, axis=1)
+        if verbose == True:
+            print(f"\t{exp_id} end")
+        return stamps
+    stamps = gb_exp.apply(get_stamps, verbose=verbose).droplevel(0) # drop the exp_id index level
     stamps = stamps.reset_index(name='stamp_array')
     stamps['stamp_id'] = stamps['ps_id'].apply(lambda x: x.replace("P","T"))
 
@@ -276,25 +299,16 @@ def write_fundamental_db(db_file=shared_utils.db_raw_file, stamps=False, verbose
 
     # stamp table
     if stamps == True:
-        stamp_table = generate_stamp_table(ps_table)
+        stamp_table = generate_stamp_table(ps_table, verbose=verbose)
         master_tables_dict['stamps'] = stamp_table
         primary_keys['stamps'] = 'stamp_id'
 
     # write all the tables to the database file
-    #with pd.HDFStore(db_file, mode='w') as store:
-    #    for k, v in sorted(master_tables_dict.items()):
-    #        print(f"Writing table `{k}` to {db_file}...")
-    #        # suppress PerformanceWarnings when saving non c-mapping objects
-    #        with warnings.catch_warnings():
-    #            warnings.simplefilter("ignore")
-    #            store.put(k, v, format='fixed', data_columns=True)
-    #        print("\tDone.")
-    #    store.close()
     for key, df in sorted(master_tables_dict.items()):
         pk = primary_keys.get(key, None)
         table_utils.write_table(key, df, pk=pk, db_file=db_file, verbose=verbose)
     print("Finished.")
-
+    # return master_tables_dict, primary_keys
 
 
 def make_cand_master_table():
