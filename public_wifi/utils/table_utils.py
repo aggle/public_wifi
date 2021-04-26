@@ -81,7 +81,8 @@ def initialize_table(table_name, nrows):
 
 
 def write_table(key, df, pk=None, db_file=shared_utils.db_clean_file, verbose=False,
-                h5py_args={}):
+                h5py_args={},
+                clobber=False):
     """
     Write a table to file
 
@@ -97,6 +98,8 @@ def write_table(key, df, pk=None, db_file=shared_utils.db_clean_file, verbose=Fa
       the filename to write to
     h5py_args : dict [{}]
       any other keyword arguments to pass to h5py.File
+    clobber : bool [False]
+      overwrite a table if it exists
 
     Output
     ------
@@ -111,6 +114,16 @@ def write_table(key, df, pk=None, db_file=shared_utils.db_clean_file, verbose=Fa
         print(f"File {db_file} not found; creating.")
         #h5py_args['mode'] = 'w'
     with h5py.File(db_file, **h5py_args) as f:
+        # test if key is already present
+        if key in f:
+            # key present -- check clobber
+            if clobber == True:
+                print(f"Key '{key}' in {db_file} already exists; overwriting...")
+                f.pop(key)
+            else: # if no clobbering, just return
+                print(f"Error: key '{key}' in {db_file} already exists; doing nothing.")
+                return
+        # continue with creating the table
         try:
             g = f.create_group(key)
         except ValueError: # group already exists
