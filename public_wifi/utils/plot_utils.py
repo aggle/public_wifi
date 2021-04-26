@@ -12,7 +12,7 @@ from astropy.io import fits
 from . import shared_utils
 from . import table_utils
 from . import image_utils
-from . import db_manager
+from .. import db_manager
 
 
 filt1_label = table_utils.get_filter_name_from_filter_id('F1')

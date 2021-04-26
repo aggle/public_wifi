@@ -23,8 +23,8 @@ from astropy.io import fits
 
 from . import shared_utils
 from . import table_utils
-from . import db_manager
-from . import subtr_utils
+from .. import db_manager
+from .. import subtr_manager
 
 mast_img = fits.getdata(shared_utils.load_config_path("tables", "composite_img_file"))
 mast_img[mast_img<=0] = np.nan
@@ -293,6 +293,7 @@ def cube_scroller_plot_slider(cube, title, scroll_title='',
     slider = bkmdls.Slider(start=0, end=data.index.size-1, value=0, step=1,
                            title=slider_title(scroll_title, data.index[0]),
                            show_value = False,
+                           default_size=plot_size,
                            orientation='horizontal')
     def callback(attr, old, new):
         img = data[data.index[new]]
@@ -308,6 +309,7 @@ def cube_scroller_plot_slider(cube, title, scroll_title='',
     menu = {"Linear": bkmdls.LinearColorMapper, "Log": bkmdls.LogColorMapper}
     cmap_switcher = bkmdls.Select(title='Switch color map',
                                   value=sorted(menu.keys())[0],
+                                  width=plot_size,
                                   options=sorted(menu.keys()))
     def cmap_switcher_callback(attr, old, new):
         cmap_class = menu[new]
@@ -748,6 +750,7 @@ def generate_inspector_ana(ana_mgr,
         slider_dict = {k: bkmdls.Slider(start=0, end=stamps.index.size-1, value=0, step=1,
                                         title=slider_title('N_components', stamps.index[0]),
                                         show_value=False,
+                                        default_size=plot_size,
                                         orientation='horizontal')
                        for k, stamps in stamp_dict.items()}
         def make_slider_callback(key): # generator for slider callback functions
@@ -784,6 +787,7 @@ def generate_inspector_ana(ana_mgr,
                 plot_dict[k].title.text = title_string(k.upper(), column)
         stamp_selector = bkmdls.Select(title='Target stamp',
                                        value=column,
+                                       width=plot_size,
                                        options=[str(i) for i in target_stamp_ids])
         stamp_selector.on_change('value', select_callback)
 
