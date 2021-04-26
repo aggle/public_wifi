@@ -318,7 +318,14 @@ class DBManager:
         except AssertionError:
             print("No lookup table found, exiting...")
             return None
-        matching_ids = lkp_tab.set_index(start_id_type+"_id").loc[ids, requested_id+"_id"]
+        try:
+            # honestly this implementation could be much better
+            # use .query instead of .set_index to handle missing identifiers
+            matching_ids = lkp_tab.set_index(start_id_type+"_id").loc[ids, requested_id+"_id"]
+        except KeyError:
+            print("One or more of the provided identifiers were not found.")
+            print("This shouldn't occur unless the database was constructed improperly.")
+            return pd.Series(ids)
         return matching_ids.squeeze()
 
     def join_all_tables(self):
