@@ -162,11 +162,10 @@ def show_detector_scene(star_id, dbm, alt_dbm={}, plot_size=300):
     noncat_plots = []
     if isinstance(alt_dbm, dict):
         for alt_k, alt_d in alt_dbm.items():
+            sector = dbm.find_sector(dbm.find_matching_id(star_id, 'p'))['sector_id'].unique()
             # first, find the point sources not in the main db
-            cut_sec_ids = set(alt_d.find_sector(sector_id=15)['ps_id'])
+            cut_sec_ids = set(alt_d.find_sector(sector_id=sector)['ps_id'])
             cut_sec_ids = cut_sec_ids.difference(set(dbm.ps_tab['ps_id']))
-            cut_star_pos = alt_d.join_all_tables().query("ps_id in @cut_sec_ids")
-            cut_star_pos = cut_star_pos.groupby('star_id')[['ps_x_exp', 'ps_y_exp']].mean()
             noncat_plots.append(
                 p.x(x='ps_x_exp', y='ps_y_exp',
                     source=alt_d.ps_tab.query("ps_id in @cut_sec_ids"),
