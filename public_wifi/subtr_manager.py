@@ -19,6 +19,7 @@ import sys
 from .utils import table_utils
 from .utils import shared_utils
 from .utils import image_utils
+from .instruments import WFC3
 
 # NMF
 from sklearn.decomposition import NMF
@@ -31,6 +32,9 @@ from NonnegMFPy import nmf as NMFPy
 
 # Results object
 Results = namedtuple('Results', ('residuals', 'models', 'references'))
+
+# WFC3 instance
+wfc3 = WFC3.WFC3Class()
 
 ###################
 # PSF correlation #
@@ -292,7 +296,7 @@ class SubtrManager:
     Initializes with a DBManager instance as argument. Optionally, calculate the PSF correlations
     """
 
-    def __init__(self, db_manager, calc_corr_flag=True):
+    def __init__(self, db_manager, calc_corr_flag=False):
         # calculate all three correlation matrices
         self.db = db_manager
 
@@ -314,6 +318,7 @@ class SubtrManager:
         if calc_corr_flag == True:
             self.calc_psf_corr()
 
+        self.stamp_mask = np.ones((wfc3.stamp_size, wfc3.stamp_size)) # should not be hard-coded
     ###############
     # stamp masks #
     ###############
@@ -326,7 +331,7 @@ class SubtrManager:
         Set a new mask but do not apply it to the stamps
         """
         self.__stamp_mask = newval
-        self.stamp_mask_ind = np.where(newval == 1)
+        self.__stamp_mask_ind = np.where(newval == 1)
 
     @property
     def stamp_mask_ind(self):
