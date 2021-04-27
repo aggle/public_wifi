@@ -107,6 +107,10 @@ def write_table(key, df, pk=None, db_file=shared_utils.db_clean_file, verbose=Fa
 
     """
     db_file = Path(db_file)
+    try:
+        assert db_file.parent.exists() == True
+    except AssertionError:
+        pass
     h5py_args.setdefault('mode', 'a')
     try:
         assert db_file.exists()
