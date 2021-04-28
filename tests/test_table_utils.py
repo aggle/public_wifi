@@ -7,7 +7,8 @@ from pathlib import Path
 
 
 import random
-import tr14.utils.table_utils as table_utils
+import public_wifi.utils.table_utils as table_utils
+import public_wifi.utils.table_io as table_io
 
 
 def test_index_into_table():
@@ -17,7 +18,7 @@ def test_index_into_table():
     When you ask for rows containing those stars from a table,
     Then the return table should contain rows with all of the requested stars and no more
     """
-    star_table = table_utils.load_table("stars")
+    star_table = table_io.load_table("stars")
     # repeat the same entry 3 times
     list_of_stars = (star_table.iloc[0]['star_id'],) * 3
     table = table_utils.index_into_table(star_table, 'star_id', list_of_stars)
@@ -35,7 +36,7 @@ def test_create_database_subset():
     Then all the database tables should only contain data related to the subset
       of stars. 
     """
-    master_stars = table_utils.load_table("stars")
+    master_stars = table_io.load_table("stars")
     # choose some random stars
     nstars = 100
     star_subset = list(table_utils.np.random.choice(master_stars['star_id'],
@@ -58,7 +59,7 @@ def test_lookup_from_id():
     """
     Test that you get the right subset of a table
     """
-    ps_table = table_utils.load_table('point_sources')
+    ps_table = table_io.load_table('point_sources')
 
 
 # # generate some fake data
@@ -70,7 +71,7 @@ def test_lookup_from_id():
 #     tables = pd.Data
 #     test_file = tmpdir.join("test_db.hdf5")
 
-#     table_utils.write_table(table_name, table, test_file)
+#     table_io.write_table(table_name, table, test_file)
 #     # check that the table exists
 #     with h5py.File(test_file, mode='r') as f:
 #         # make sure the group was written
@@ -88,8 +89,8 @@ def test_lookup_from_id():
 #     # choose 2 rows
 #     rows = sorted(random.choices(table[pk_name].values, k=2))
 #     for col, val in zip(cols, new_vals):
-#         table_utils.update_table(table_name, pk_name, rows, col, val, table_file=test_file)
+#         table_io.update_table(table_name, pk_name, rows, col, val, table_file=test_file)
 #     # now assert that the new table has the new values
-#     new_table = table_utils.load_table(table_name, test_file)
+#     new_table = table_io.load_table(table_name, test_file)
 
 #     assert all(new_table.set_index(pk_name).loc[rows, cols] == new_vals)
