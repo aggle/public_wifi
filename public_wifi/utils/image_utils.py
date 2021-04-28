@@ -8,8 +8,6 @@ import numpy as np
 import pandas as pd
 import matplotlib as mpl
 from matplotlib import pyplot as plt
-from ipywidgets import interact, interactive, fixed, interact_manual
-import ipywidgets as widgets
 
 from astropy.io import fits
 
@@ -81,7 +79,7 @@ def get_stamp_ind(xy_cent, stamp_shape):
     return stamp_ind
 
 
-def get_master_stamp_ind(star_id, stamp_shape, df=None, extra_row=True):
+def get_master_stamp_ind(star_id, stamp_shape, df, extra_row=True):
     """
     Same as get_stamp_ind, but using the master reference frame instead of the
     exposure frame.
@@ -90,8 +88,8 @@ def get_master_stamp_ind(star_id, stamp_shape, df=None, extra_row=True):
     ----------
     star_id : identifier for the star (e.g. S000000)
     stamp_shape : 2x1 tuple or int
-    df : pd.DataFrame [None]
-      optional : supply the dataframe. If None, uses the `stars` table
+    df : pd.DataFrame
+      supply the stars dataframe.
     extra_row : bool [True]
       If True, add an extra index on the end. This is needed for plotting with
       plt.pcolor(x, y, img), where x and y need 1 more row and column than img
@@ -102,11 +100,6 @@ def get_master_stamp_ind(star_id, stamp_shape, df=None, extra_row=True):
       2xN array of (row, col) coordinates
 
     """
-
-
-    if df is None:
-        df = table_utils.load_table("stars")
-
     if isinstance(stamp_shape, np.int):
         stamp_shape = np.tile(stamp_shape, 2)
 
@@ -342,6 +335,9 @@ def make_image_from_flat(flat, indices=None, shape=None, squeeze=True):
         img: an image (or array of) with dims `shape` and with nan's in 
             whatever indices are not explicitly set
     """
+    # sometimes you get just a number, e.g. if the image is a NaN
+    if np.ndim(flat) == 0:
+        return flat
     oldshape = flat.shape[:]
     if shape is None:
         # assume that you have been given the full square imae

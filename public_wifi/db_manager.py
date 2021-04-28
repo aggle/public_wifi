@@ -13,6 +13,7 @@ from astropy.wcs import WCS
 from astropy.io import fits
 
 from .utils import shared_utils
+from .utils import table_io
 from .utils import table_utils
 
 
@@ -75,7 +76,7 @@ class DBManager:
             except:
                 pass
         try:
-            df = table_utils.load_table(key, self.db_path, verbose=verbose)
+            df = table_io.load_table(key, self.db_path, verbose=verbose)
         except KeyError:
             print(f"Error: Key `{key}` not found in {str(self.db_path)}")
             df = None
@@ -125,7 +126,7 @@ class DBManager:
             #         print(f"Table {key} written to {str(self.db_path)}")
             # else:
             #     print("Error: cannot currently store non-pandas types")
-            table_utils.write_table(key, table, db_file=self.db_path, verbose=verbose)
+            table_io.write_table(key, table, db_file=self.db_path, verbose=verbose)
 
 
     def update_table(self, key, pk_name, pk_val, column, val,
@@ -150,8 +151,8 @@ class DBManager:
         ------
         None, writes updated values to file
         """
-        table_utils.update_table(key, pk_name, pk_val, column, val,
-                                 db_file=self.db_path, verbose=verbose)
+        table_io.update_table(key, pk_name, pk_val, column, val,
+                              db_file=self.db_path, verbose=verbose)
 
 
     def list_available_tables(self, return_list=False):

@@ -64,7 +64,7 @@ def get_dq_table(point_sources_table, get_stamp_args={}):
                                        on='ps_id')['ps_star_id']
     dq_stamp_flags = dq_stamps.set_index('ps_id')['dq_array'].apply(header_utils.parse_dq_array)
     # now set the *stamp* id as the index
-    lookup_ps_stamp_id = table_utils.load_table('lookup_ps_stamp_id')
+    lookup_ps_stamp_id = table_io.load_table('lookup_ps_stamp_id')
     dq_stamp_flags = dq_stamp_flags.reset_index().merge(lookup_ps_stamp_id,
                                                         on='ps_id')
     dq_stamp_flags = dq_stamp_flags.set_index("stamp_id")['dq_array']

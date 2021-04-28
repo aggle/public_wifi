@@ -61,7 +61,8 @@ def clean_visual_binaries(star_table, thresh=7):
 def generate_cleaned_tables(sep_thresh=7,
                             mF127M_thresh = -6,
                             color_thresh = 0.3,
-                            nan_stamps=True):
+                            nan_stamps=True,
+                            db_file=shared_utils.db_clean_file):
     """
     Wrap all the cleaning steps in this function. For each cut, trim the
     Enter np.nan for any argument to skip that cut
@@ -85,8 +86,8 @@ def generate_cleaned_tables(sep_thresh=7,
     clean_tables = {}
     # first, load the full catalog and a copy for cleaning
     for k in tables.keys():
-        tables[k] = table_utils.load_table(k)
-        clean_tables[k] = table_utils.load_table(k)
+        tables[k] = table_io.load_table(k, db_file=db_file)
+        clean_tables[k] = table_io.load_table(k, db_file=db_file)
 
     # remove visual contaminants
     if np.isnan(sep_thresh):

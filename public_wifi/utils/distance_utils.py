@@ -150,7 +150,7 @@ I have found it helpful to collect all the neighbors of an a star -- in a
 particular exposure -- within some radius. This helps with plotting to see
 if the nearby point sources are real or spurious.
 """
-def get_neighbors(star_id, radius, stars_table=None):
+def get_neighbors(star_id, radius, stars_table):
     """
     Given a star, use the master catalog to get the neighbors in a radius
 
@@ -160,9 +160,6 @@ def get_neighbors(star_id, radius, stars_table=None):
       stars:star_id identifier for the primary
     radius: int
       search radius in pixels
-    stars_table: pd.DataFrame [None]
-      table to search for neighbors. Must have columns ending in star_id,
-      u_mast, and v_mast. If None, reads "stars" table from database file
 
     Output
     ------
@@ -170,8 +167,6 @@ def get_neighbors(star_id, radius, stars_table=None):
       list of star_id values for the neighbors
 
     """
-    if stars_table is None:
-        stars_table = table_utils.load_table("stars")
     dist = calc_dist_from_obj(stars_table, star_id, set_nan=True)
     neighbor_ids = dist[dist <= radius].index
     return neighbor_ids

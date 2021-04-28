@@ -2,7 +2,6 @@
 This module contains the API for interacting with data tables
 """
 
-import csv
 from pathlib import Path
 import h5py
 import pandas as pd
@@ -14,7 +13,9 @@ import configparser
 from astropy.wcs import WCS
 from astropy.io import fits
 
-from . import shared_utils, header_utils
+from . import table_io
+from . import shared_utils
+from . import header_utils
 
 
 # this dictionary helpfully maps the first letter of an identifier
@@ -22,11 +23,11 @@ from . import shared_utils, header_utils
 ident_map = {'S': 'star_id', 'P': 'ps_id', 'T': 'stamp_id'}
 
 
-# Read form the config file
-config_file = (Path(__file__).parent.absolute() / "../table_definitions.cfg").resolve()
+# Read from the table definitions file
+table_definition_file = (Path(__file__).parent.absolute() / "../table_definitions.cfg").resolve()
 config = configparser.ConfigParser()
 
-def load_table_definition(table_name):
+def load_table_definition(table_name, config_file=table_definition_file):
     """
     Load a path from the config file. Also handles case of key not found
 
@@ -34,7 +35,9 @@ def load_table_definition(table_name):
     ----------
     table_name : str
       the name for the table (see docs)
-
+    config_file : str or Path ("../table_definitions.cfg")
+      Path to a config file where the table columns and dtypes are defined
+    
     Output
     -------
     col_dict : dict
@@ -77,141 +80,6 @@ def initialize_table(table_name, nrows):
     for col in table_cols.keys():
         table[col] = table[col].astype(table_cols[col])
     return table
-
-
-
-def write_table(key, df, pk=None, db_file=shared_utils.db_clean_file, verbose=False,
-                h5py_args={},
-                clobber=False):
-    """
-    Write a table to file
-
-    Parameters
-    ----------
-    key : str
-      the table's key to use in the HDF file
-    df : pd.DataFrame
-      the dataframe with the table
-    pk : str [None]
-      (optional) the name of the table's primary key
-    db_file : str or pathlib.Path
-      the filename to write to
-    h5py_args : dict [{}]
-      any other keyword arguments to pass to h5py.File
-    clobber : bool [False]
-      overwrite a table if it exists
-
-    Output
-    ------
-    Writes the table to the specified file, creating the file if necessary.
-
-    """
-    db_file = Path(db_file)
-    try:
-        assert db_file.parent.exists() == True
-    except AssertionError:
-        pass
-    h5py_args.setdefault('mode', 'a')
-    try:
-        assert db_file.exists()
-    except AssertionError:
-        print(f"File {db_file} not found; creating.")
-        #h5py_args['mode'] = 'w'
-    with h5py.File(db_file, **h5py_args) as f:
-        # test if key is already present
-        if key in f:
-            # key present -- check clobber
-            if clobber == True:
-                print(f"Key '{key}' in {db_file} already exists; overwriting...")
-                f.pop(key)
-            else: # if no clobbering, just return
-                print(f"Error: key '{key}' in {db_file} already exists; doing nothing.")
-                return
-        # continue with creating the table
-        try:
-            g = f.create_group(key)
-        except ValueError: # group already exists
-            print(f"Error: key '{key}' in {db_file} already exists; doing nothing.")
-            return
-        # set the primary key
-        if isinstance(pk, str):
-            g.attrs['primary_key'] = pk
-        # write each column of the dataframe
-        for c in df.columns:
-            col = df[c]
-            orig_dtype = col.dtype
-            col = np.stack(col.values) # trust numpy's automatic type conversion
-            # Strings must be treated specially in HDF5
-            if isinstance(col[0], str):
-                col = col.astype(h5py.string_dtype('utf-8'))
-            g.create_dataset(c, data=col, dtype=col.dtype, chunks=True)
-        f.flush()
-        f.close()
-    if verbose == True:
-        print(f"Wrote '{key}' to {db_file}")
-
-
-def load_table(key, db_file=shared_utils.db_clean_file, verbose=False):
-    """
-    Load a table into a dataframe
-
-    Parameters
-    ----------
-    key : str
-      the key under which the table is stored
-    db_file : str or pathlib.Path
-      the file to read from
-
-    Output
-    ------
-
-    """
-    with h5py.File(db_file, 'r') as f:
-        g = f.get('/'+key, default=None)
-        try:
-            assert(g is not None)
-        except AssertionError: # table not found
-            print(f"Table '{key}' not found. Available tables are:")
-            print('\n'.join(g for g in f))
-            return g
-        df = pd.DataFrame.from_dict({k: list(g[k][...]) for k in g})
-        f.close()
-    if verbose == True:
-        print(f"Loaded '{key}' from {db_file}")
-    return df
-
-def update_table(key, pk_name, pk_val, column, val,
-                 db_file=shared_utils.db_clean_file, verbose=True):
-    """
-    Update table value
-
-    Parameters
-    ----------
-    key : str
-      key under which the table is stored in the hdf5 file
-    pk_name : str
-      name of the table column with the primary key (serves as a proxy for the index)
-    pk_val : str or list
-      primary key value (can be list-like)
-    column : str
-      the column to update
-    val : the new value (can be list-like; must be single-valued or same shape as pk_val)
-    db_file : path to the table file
-
-    Output
-    ------
-    None, writes updated values to file
-    """
-    if np.ndim(pk_val) == 0:
-        pk_val = [pk_val]
-    with h5py.File(db_file, 'r+') as f:
-        pks = list(f[f'{key}/{pk_name}'][...]) # primary keys
-        idx = [pks.index(i) for i in pk_val] # indices of keys to update
-        f[f'{key}/{column}'][idx] = val
-    f.close()
-    if verbose:
-        print(f"Updated '{key}' in {db_file}")
-
 
 
 def list_available_tables(return_list=False, db_file=shared_utils.db_clean_file):
@@ -263,11 +131,12 @@ def get_file_name_from_file_id(file_id):
 Helpers for getting file and filter names.
 Since these queries are run often, this simplifies the process.
 """
-file_mapper = load_table("lookup_files")
-filter_mapper = load_table("lookup_filters")
+# this presupposes that these tables exist! but they may not!
+file_mapper = table_io.load_table("lookup_files")
+filter_mapper = table_io.load_table("lookup_filters")
 
 
-def get_file_name_from_exp_id(exp_id, root=False):
+def get_file_name_from_exp_id(exp_id, file_mapper, root=False):
     """
     Given a KS2 file identifier, get the name of the FLT file
 
@@ -401,7 +270,7 @@ def get_stamp_from_id(ident, stamp_df=None):
         ident.replace("S","T")
 
     if stamp_df is None:
-        stamp_df = load_table('stamps')
+        stamp_df = table_io.load_table('stamps')
     stamp_array = stamp_df.set_index('stamp_id').loc[ident, 'stamp_array']
     return stamp_array
 
@@ -449,7 +318,7 @@ def load_header(extname='pri', db_file=shared_utils.db_clean_file):
     if extname == 'all':
         # return all the headers
         print("Returning all headers.")
-        dfs = {e.lower(): load_table(f"hdr_{e.lower()}", db_file=db_file)
+        dfs = {e.lower(): table_io.load_table(f"hdr_{e.lower()}", db_file=db_file)
                for e in header_utils.all_headers}
         return dfs
     # otherwise, check that the input is OK
@@ -458,7 +327,7 @@ def load_header(extname='pri', db_file=shared_utils.db_clean_file):
     except AssertionError:
         print(f"{extname} not one of {all_headers}, please try again.")
         return None
-    df = load_table(f"hdr_{extname.lower()}", db_file=db_file)
+    df = table_io.load_table(f"hdr_{extname.lower()}", db_file=db_file)
     return df
 
 
@@ -522,9 +391,9 @@ def lookup_star_from_ps_id(ps_id, lookup_table=None, star_table=None, column=Non
     Wraps around lookup_from_id.
     """
     if not isinstance(lookup_table, pd.DataFrame):
-        lookup_table = load_table("lookup_star-ps_id", db_file=db_file)
+        lookup_table = table_io.load_table("lookup_star-ps_id", db_file=db_file)
     if not isinstance(star_table, pd.DataFrame):
-        star_table = load_table("stars", db_file=db_file)
+        star_table = table_io.load_table("stars", db_file=db_file)
     return lookup_from_id(ps_id, lookup_table, star_table, column)
 
 def lookup_ps_from_star_id(star_id, lookup_table=None, ps_table=None, column=None,
@@ -534,9 +403,9 @@ def lookup_ps_from_star_id(star_id, lookup_table=None, ps_table=None, column=Non
     Wraps around lookup_from_id.
     """
     if not isinstance(lookup_table, pd.DataFrame):
-        lookup_table = load_table("lookup_star-ps_id", db_file=db_file)
+        lookup_table = table_io.load_table("lookup_star-ps_id", db_file=db_file)
     if not isinstance(ps_table, pd.DataFrame):
-        ps_table = load_table("point_sources", db_file=db_file)
+        ps_table = table_io.load_table("point_sources", db_file=db_file)
     return lookup_from_id(star_id, lookup_table, ps_table, column)
 
 
@@ -547,9 +416,9 @@ def lookup_star_from_stamp_id(stamp_id, lookup_table=None, star_table=None, colu
     wraps around lookup_from_id.
     """
     if not isinstance(lookup_table, pd.DataFrame):
-        lookup_table = load_table("lookup_star-stamp_id", db_file=db_file)
+        lookup_table = table_io.load_table("lookup_star-stamp_id", db_file=db_file)
     if not isinstance(star_table, pd.DataFrame):
-        star_table = load_table("stars", db_file=db_file)
+        star_table = table_io.load_table("stars", db_file=db_file)
     return lookup_from_id(stamp_id, lookup_table, star_table, column)
 
 
@@ -560,9 +429,9 @@ def lookup_stamp_from_star_id(star_id, lookup_table=None, stamp_table=None, colu
     Wraps around lookup_from_id.
     """
     if not isinstance(lookup_table, pd.DataFrame):
-        lookup_table = load_table("lookup_star-stamp_id", db_file=db_file)
+        lookup_table = table_io.load_table("lookup_star-stamp_id", db_file=db_file)
     if not isinstance(stamp_table, pd.DataFrame):
-        stamp_table = load_table("stamps", db_file=db_file)
+        stamp_table = table_io.load_table("stamps", db_file=db_file)
     return lookup_from_id(star_id, lookup_table, stamp_table, column)
 
 def lookup_ps_from_stamp_id(stamp_id, lookup_table=None, ps_table=None, column=None,
@@ -572,9 +441,9 @@ def lookup_ps_from_stamp_id(stamp_id, lookup_table=None, ps_table=None, column=N
     Wraps around lookup_from_id.
     """
     if not isinstance(lookup_table, pd.DataFrame):
-        lookup_table = load_table("lookup_ps-stamp_id", db_file=db_file)
+        lookup_table = table_io.load_table("lookup_ps-stamp_id", db_file=db_file)
     if not isinstance(ps_table, pd.DataFrame):
-        ps_table = load_table("point_sources", db_file=db_file)
+        ps_table = table_io.load_table("point_sources", db_file=db_file)
     return lookup_from_id(stamp_id, lookup_table, ps_table, column)
 
 def lookup_stamp_from_ps_id(ps_id, lookup_table=None, stamp_table=None, column=None,
@@ -584,9 +453,9 @@ def lookup_stamp_from_ps_id(ps_id, lookup_table=None, stamp_table=None, column=N
     Wraps around lookup_from_id.
     """
     if not isinstance(lookup_table, pd.DataFrame):
-        lookup_table = load_table("lookup_ps-stamp_id", db_file=db_file)
+        lookup_table = table_io.load_table("lookup_ps-stamp_id", db_file=db_file)
     if not isinstance(stamp_table, pd.DataFrame):
-        stamp_table = load_table("stamps", db_file=db_file)
+        stamp_table = table_io.load_table("stamps", db_file=db_file)
     return lookup_from_id(ps_id, lookup_table, stamp_table, column)
 
 
@@ -674,7 +543,7 @@ def create_database_subset(list_of_stars, tables=None):
 
     """
     if tables is None:
-        tables = [load_table(t) for t in ['stars', 'point_sources']]
+        tables = [table_io.load_table(t) for t in ['stars', 'point_sources']]
     subset_tables = []
     for table in tables:
         star_col = shared_utils.find_star_id_col(table.columns)
@@ -700,7 +569,7 @@ def get_working_catalog_subset():
       dictionary of tables with the stars, point_sources, and stamps subsets
     """
     # load the master catalog
-    stars_table = load_table("stars")
+    stars_table = table_io.load_table("stars")
     # select subset
     u_range = (600, 1000)
     v_range = (800, 1200)

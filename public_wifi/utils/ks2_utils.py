@@ -9,16 +9,14 @@ import pandas as pd
 from configparser import ConfigParser
 
 from astropy.io import fits
+from astropy import nddata
 
 # for plotting
 import matplotlib as mpl
 import matplotlib.pyplot as plt
-#from __future__ import print_function
-from ipywidgets import interact, interactive, fixed, interact_manual
-import ipywidgets as widgets
 
-
-from . import shared_utils, image_utils, header_utils
+from . import shared_utils
+from . import header_utils
 
 """
 You only care about a few of the files:
@@ -26,9 +24,9 @@ INPUT.KS2 contains the instructions used to rnun the photometry, and it shows wh
 LOGR.XYVIQ1 gives the average position for each source on the master frame (cols 1 and 2), the average flux (cols 5 and 11), the flux sigma (cols 6 and 12), and fit quality (cols 7 and 13) in each filter)
 LOGR.FIND_NIMFO gives you the coordinates and fluxes of each star in each exposure. Cols 14 and 15 contain the x and y coordinates in the flt images (i.e. *before* geometric distortion correction). col 36 is the ID number for each star (starts with R). col 39 is the ID for the image (starts with G). col 40 (starts with F) is the ID for the filter.
 """
-ks2_files = [shared_utils.ks2_path / i for i in ["LOGR.XYVIQ1",
-                                                 "LOGR.FIND_NIMFO",
-                                                 "INPUT.KS2"]]
+# ks2_files = [shared_utils.ks2_path / i for i in ["LOGR.XYVIQ1",
+#                                                  "LOGR.FIND_NIMFO",
+#                                                  "INPUT.KS2"]]
 
 
 """
@@ -41,7 +39,7 @@ At the end, you have two dataframes:
 - filemapper_df (file ID -> file name)
 - filtermapper_df (filter ID -> filter name)
 """
-def get_file_mapper(ks2_input_file=ks2_files[2]):
+def get_file_mapper(ks2_input_file):#=ks2_files[2]):
     """
     Given a KS2 INPUT.KS2 file, parse the file to get a dataframe that maps between the file numbers and file names.
 
@@ -71,7 +69,7 @@ def get_file_mapper(ks2_input_file=ks2_files[2]):
     return filemapper_df
 
 
-def get_filter_mapper(ks2_input_file=ks2_files[2]):
+def get_filter_mapper(ks2_input_file):#=ks2_files[2]):
     """
     Given a KS2 INPUT.KS2 file, parse the file to get a dataframe that maps between the filter numbers and filter names.
 
@@ -101,14 +99,14 @@ def get_filter_mapper(ks2_input_file=ks2_files[2]):
     filtermapper_df['filt_id'] = filtermapper_df['filter_id'].values[:]
     return filtermapper_df
 
-ks2_filemapper = get_file_mapper()
-ks2_filtermapper = get_filter_mapper()
+#ks2_filemapper = get_file_mapper()
+#ks2_filtermapper = get_filter_mapper()
 
 """
 These helper functions keep you from having to duplicate code every time you want to pull a filter or file name from the above tables
 TODO: I think it's possible to build a template function for this so I don't have to make a new one for every table and field
 """
-def get_filter_name_from_ks2id(filter_id, filter_mapper=get_filter_mapper()):
+def get_filter_name_from_ks2id(filter_id, filter_mapper):#=get_filter_mapper()):
     """
     Given a KS2 filter identifier, get the name of the HST filter
 
@@ -127,7 +125,7 @@ def get_filter_name_from_ks2id(filter_id, filter_mapper=get_filter_mapper()):
     filter_name = filter_mapper.query(f"filter_id == '{filter_id}'")['filter_name'].values[0]
     return filter_name
 
-def get_file_name_from_ks2id(file_id, file_mapper=get_file_mapper()):
+def get_file_name_from_ks2id(file_id, file_mapper):#=get_file_mapper()):
     """
     Given a KS2 file identifier, get the name of the FLT file
 
@@ -148,27 +146,46 @@ def get_file_name_from_ks2id(file_id, file_mapper=get_file_mapper()):
 
 
 # EPOCHS
-# Getting the epochs is a little complicated because you have to
-# do it through the proposal ID numbers
-# load the primary headers. we will use proposid to associate files with an epoch
-prihdrs = header_utils.load_headers('pri')
-get_proposid = lambda x: prihdrs.query("filename == @x")['proposid'].squeeze()
-# label the epochs as EN, where N is an integer indexing from 1
-epoch_labels = [(f"E{i+1}", k) for i, k in
-                enumerate(prihdrs.groupby('proposid').groups)]
-epoch_labels = pd.DataFrame(epoch_labels, columns=['epoch_id', 'proposid'])
-# make a dataframe to serve as a linking table, and a function to access it
-def get_epoch_from_proposid(proposid):
-    """Given a proposal id, find the epoch label"""
-    proposid = np.int(proposid)
-    epoch_id = epoch_labels.query(f"proposid == {proposid}")['epoch_id'].squeeze()
-    return epoch_id
+# # Getting the epochs is a little complicated because you have to
+# # do it through the proposal ID numbers
+# # load the primary headers. we will use proposid to associate files with an epoch
+# prihdrs = header_utils.load_headers('pri')
+# get_proposid = lambda x: prihdrs.query("filename == @x")['proposid'].squeeze()
+# # label the epochs as EN, where N is an integer indexing from 1
+# epoch_labels = [(f"E{i+1}", k) for i, k in
+#                 enumerate(prihdrs.groupby('proposid').groups)]
+# epoch_labels = pd.DataFrame(epoch_labels, columns=['epoch_id', 'proposid'])
+# # make a dataframe to serve as a linking table, and a function to access it
+# def get_epoch_from_proposid(proposid):
+#     """Given a proposal id, find the epoch label"""
+#     proposid = np.int(proposid)
+#     epoch_id = epoch_labels.query(f"proposid == {proposid}")['epoch_id'].squeeze()
+#     return epoch_id
 
-ks2_epoch_mapper = pd.DataFrame(ks2_filemapper['file_id'], index=ks2_filemapper.index)
-ks2_epoch_mapper['proposid'] = ks2_filemapper['file_name'].apply(get_proposid)
-ks2_epoch_mapper['epoch_id'] = ks2_epoch_mapper['proposid'].apply(get_epoch_from_proposid)
+# ks2_epoch_mapper = pd.DataFrame(ks2_filemapper['file_id'], index=ks2_filemapper.index)
+# ks2_epoch_mapper['proposid'] = ks2_filemapper['file_name'].apply(get_proposid)
+# ks2_epoch_mapper['epoch_id'] = ks2_epoch_mapper['proposid'].apply(get_epoch_from_proposid)
 
-def get_epoch_from_ks2id(file_id):
+def get_epoch_mapper(header_path, file_mapper):
+    prihdrs = header_utils.load_headers('pri')
+    get_proposid = lambda x: prihdrs.query("filename == @x")['proposid'].squeeze()
+    # label the epochs as EN, where N is an integer indexing from 1
+    epoch_labels = [(f"E{i+1}", k) for i, k in
+                    enumerate(prihdrs.groupby('proposid').groups)]
+    epoch_labels = pd.DataFrame(epoch_labels, columns=['epoch_id', 'proposid'])
+    # make a dataframe to serve as a linking table, and a function to access it
+    def get_epoch_from_proposid(proposid):
+        """Given a proposal id, find the epoch label"""
+        proposid = np.int(proposid)
+        epoch_id = epoch_labels.query(f"proposid == {proposid}")['epoch_id'].squeeze()
+        return epoch_id
+
+    ks2_epoch_mapper = pd.DataFrame(ks2_filemapper['file_id'], index=ks2_filemapper.index)
+    ks2_epoch_mapper['proposid'] = ks2_filemapper['file_name'].apply(get_proposid)
+    ks2_epoch_mapper['epoch_id'] = ks2_epoch_mapper['proposid'].apply(get_epoch_from_proposid)
+    return ks2_epoch_mapper
+
+def get_epoch_from_ks2id(file_id, ks2_epoch_mapper):
     index = ks2_epoch_mapper["file_id"] == file_id
     try:
         epoch_id = ks2_epoch_mapper.loc[index, 'epoch_id'].squeeze()
@@ -217,7 +234,7 @@ master_dtypes = {
     "f2": np.int,
     "g2": np.int,
 }
-def get_master_catalog(ks2_master_file=ks2_files[0],
+def get_master_catalog(ks2_master_file,#=ks2_files[0],
                        clean=True,
                        ps_cat=None,
                        clean_args={}):
@@ -392,7 +409,8 @@ o_cols = ['o' + i for i in phot_method_ids]
 f_cols = ['f' + i for i in phot_method_ids]
 g_cols = ['g' + i for i in phot_method_ids]
 
-def get_point_source_catalog(ps_file=ks2_files[1], clean=True, clean_args={}):
+def get_point_source_catalog(ps_file,#=ks2_files[1],
+                             clean=True, clean_args={}):
     """
     This function reads the KS2 FIND_NIMFO file that stores *every* point source
 
@@ -583,7 +601,8 @@ def get_stamp_from_ks2(row, stamp_size=11, return_img_ind=False):
     # location of the point source in the image
     xy = row[['xraw1','yraw1']].values
     # finally, get the stamp (and indices, if requested)
-    return_vals = image_utils.get_stamp(img, xy, stamp_size, return_img_ind)
+    return_vals = nddata.Cutout2D(img, tuple(xy), size=stamp_size,
+                                  mode='partial', fill_value=np.nan).data
     return return_vals
 
 
@@ -857,9 +876,10 @@ def clean_master_catalog(mast_cat, ps_cat=None, recompute=True, mag_cut=None):
     return mast_cat
 
 
-def get_ks2_catalogs(mast_file=ks2_files[0], ps_file=ks2_files[1],
-                           raw=False,
-                           q_min=0.95, mag_min=-3.0):
+def get_ks2_catalogs(mast_file,#=ks2_files[0],
+                     ps_file,#=ks2_files[1],
+                     raw=False,
+                     q_min=0.95, mag_min=-3.0):
     """
     This function reads the KS2 output files, applies the cleaning and cutting procedures, and returns the dataframes.
     Cuts:
@@ -867,9 +887,9 @@ def get_ks2_catalogs(mast_file=ks2_files[0], ps_file=ks2_files[1],
 
     Parameters
     ----------
-    mast_file : string or path [{mf}]
+    mast_file : string or path
       full path to the KS2 master catalog file. If None, use default
-    ps_file : string or path [{pf}]
+    ps_file : string or path
       full path to the KS2 point source catalog file. If None, use default
     raw : bool [False]
       if True, do not apply cleaning
@@ -881,7 +901,7 @@ def get_ks2_catalogs(mast_file=ks2_files[0], ps_file=ks2_files[1],
     Output
     ------
     tuple (mast_cat, ps_cat)
-    """.format(mf=ks2_files[0], pf=ks2_files[1])
+    """
 
     # if raw catalogs are requested, do not apply any cuts
     if raw == True:
@@ -904,9 +924,3 @@ def get_ks2_catalogs(mast_file=ks2_files[0], ps_file=ks2_files[1],
 
 
 
-if __name__ == "__main__":
-    # run it in script mode to get all the dataframes
-    ks2_filemapper = get_file_mapper(ks2_files[2])
-    ks2_filtermapper = get_filter_mapper(ks2_files[2])
-    ks2_mastercat = get_master_catalog(ks2files[0])
-    ks2_allsources = get_point_source_catalog(ks2files[1])

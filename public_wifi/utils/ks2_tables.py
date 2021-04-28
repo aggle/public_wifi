@@ -237,7 +237,10 @@ def generate_stamp_table(ps_table, stamp_size=11, verbose=False):
     return stamp_table
 
 
-def write_fundamental_db(db_file=shared_utils.db_raw_file, stamps=False, verbose=False):
+def write_fundamental_db(db_file,
+                         ks2_path,
+                         stamps=False,
+                         verbose=False):
     """
     Write the basic tables to the database file:
     - stars
@@ -252,7 +255,9 @@ def write_fundamental_db(db_file=shared_utils.db_raw_file, stamps=False, verbose
 
     Parameters
     ----------
-    db_file : str or Path [shared_utils.db_file]
+    db_file : str or Path 
+      file to write to
+    ks2_path : path to KS2 data files
     stamps : bool [False]
       if True, generate the stamps too (takes a long time)
     verbose : bool [False]
@@ -263,14 +268,17 @@ def write_fundamental_db(db_file=shared_utils.db_raw_file, stamps=False, verbose
     generates an HDF5 file at the path specified
 
     """
+    ks2_files = [Path(ks2_path) / f for f in ["LOGR.XYVIQ1",
+                                              "LOGR.FIND_NIMFO",
+                                              "INPUT.KS2"]]
 
     # use this dict to collect all the tables for writing
     master_tables_dict = {}
     primary_keys = {}
 
     # get cleaned master and point source catalogs
-    mast_cat, ps_cat = ks2_utils.get_ks2_catalogs(mast_file=ks2_utils.ks2_files[0],
-                                                  ps_file=ks2_utils.ks2_files[1],
+    mast_cat, ps_cat = ks2_utils.get_ks2_catalogs(mast_file=ks2_files[0],
+                                                  ps_file=ks2_files[1],
                                                   raw=False)
     # convert mast_cat to the proper format, and get the stars-KS2 lookup table
     stars_table, lookup_ks2_nmast = make_stars_table(mast_cat)
@@ -284,12 +292,12 @@ def write_fundamental_db(db_file=shared_utils.db_raw_file, stamps=False, verbose
     primary_keys['point_sources'] = 'ps_id'
 
     # mapper between file names and file ids
-    lookup_files = ks2_utils.ks2_filemapper.copy()
+    lookup_files = ks2_utils.get_file_mapper(ks2_files[2])
     lookup_files['file_id'] = lookup_files['file_id'].apply(lambda x: x.replace("G","E"))
     master_tables_dict['lookup_files'] = lookup_files
 
     # mapper between the filter names and filter ids
-    lookup_filters = ks2_utils.ks2_filtermapper.copy()
+    lookup_filters = ks2_utils.get_filter_mapper(ks2_files[2])
     master_tables_dict['lookup_filters'] = lookup_filters
 
     # FITS header tables
@@ -306,7 +314,7 @@ def write_fundamental_db(db_file=shared_utils.db_raw_file, stamps=False, verbose
     # write all the tables to the database file
     for key, df in sorted(master_tables_dict.items()):
         pk = primary_keys.get(key, None)
-        table_utils.write_table(key, df, pk=pk, db_file=db_file, verbose=verbose)
+        table_io.write_table(key, df, pk=pk, db_file=db_file, verbose=verbose)
     print("Finished.")
     # return master_tables_dict, primary_keys
 
