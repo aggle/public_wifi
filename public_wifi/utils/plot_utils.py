@@ -110,7 +110,7 @@ def cube_scroller(df,
       point sources dataframe OR stamps dataframe, with just the ones you want
       to show
     stamp_args : dict
-      dict of arguments to pass to ks2_utils.get_stamp_from_ks2(row, **stamp_args)
+      dict of arguments to pass to image_utils.get_stamp_from_ks2(row, **stamp_args)
     fig_args : dict
       dict of arguments to pass to plt.subplots(**fig_args)
     imshow_args : dict

@@ -10,12 +10,11 @@ import numpy as np
 import pandas as pd
 from astropy.io import fits
 
-from . import shared_utils as sutils
-from . import table_utils as tutils
+from . import shared_utils
 
 extnames = ['SCI','ERR','DQ','SAMP','TIME']
 all_headers = ['PRI'] + extnames
-header_path = sutils.table_path
+header_path = shared_utils.table_path
 
 
 def clean_header_dict(hdr_dict):
@@ -104,14 +103,15 @@ def get_header_dfs(fits_files):
     return header_dfs 
 
 
-def write_headers(filenames, verbose=False):
+def write_headers(fits_files, out_folder, verbose=False):
     """
     Save the headers, as csv files that can be read into dataframes, in the folder designated at the top of the file ({0}). The file name is the extension header EXTNAME value, and 'pri' refers to the primary header. Does all the work to compile and write headers. No return value; writes a file instead
 
     Parameters
     ----------
-    filename : None
+    fits_files : None
      a list of filenames for FITS images you want to treat as a single dataset
+    out_folder : parent folder for writing the header tables
     verbose : False
      if True, print the name of the file written
 
@@ -120,16 +120,13 @@ def write_headers(filenames, verbose=False):
     Nothing
     """.format(header_path)
 
-    header_dicts = headers2dict(filenames)
+    header_dicts = headers2dict(fits_files)
     header_dfs = {k: headerdict2dataframe(header_dicts[k]) for k in header_dicts}
     for k, v in header_dfs.items():
-        out_name = f'{k}_hdrs'  # header_path / f'{k}_hdrs.csv'
+        out_name = Path(out_folder) / f'{k}_hdrs.csv'  # header_path / f'{k}_hdrs.csv'
         if verbose == True:
-            print(f'Writing {sutils.table_path / (out_name + ".csv")}')
-        tutils.write_table(v,
-                           out_name,
-                           f"Compilation of {k.upper()} headers from HST image files")
-        #v.to_csv(out_name)
+            print(f'Writing {out_name}')
+        v.to_csv(out_name)
     if verbose == True:
         print("\nFinished.")
 
@@ -272,4 +269,4 @@ if __name__ == "__main__":
     """
     datapath = Path("../../data/sabbi_data/")
     files = datapath.glob("i*flt.fits")
-    write_headers(files, verbose=True)
+    #write_headers(files, verbose=True)
