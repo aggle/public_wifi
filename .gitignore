@@ -5,3 +5,5 @@ docs/pub/auto/
 *.ipynb
 public_wifi/utils/.ipynb_checkpoints/plot_utils-checkpoint.py
 public_wifi/utils/.#*py
+sphinx/make.bat
+sphinx/Makefile
