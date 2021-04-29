@@ -19,22 +19,25 @@ import sys
 from .utils import table_utils
 from .utils import shared_utils
 from .utils import image_utils
-from .instruments import WFC3
+#from .instruments import WFC3
 
-# NMF
-from sklearn.decomposition import NMF
+# PSF Subtraction Modules
 # pyklip
-sys.path.append(shared_utils.load_config_path("extern", "pyklip_path", as_str=True))
-from pyklip import klip
+#sys.path.append(shared_utils.load_config_path("extern", "pyklip_path", as_str=True))
+try:
+    from pyklip import klip
+except ModuleNotFoundError:
+    print("Error loading pyklip: did you forget to run sys.append with the pyklip path?")
 # NMF
-sys.path.append(shared_utils.load_config_path("extern", "nmf_path").as_posix())
-from NonnegMFPy import nmf as NMFPy
+#sys.path.append(shared_utils.load_config_path("extern", "nmf_path").as_posix())
+try:
+    from NonnegMFPy import nmf as NMFPy
+except ModuleNotFoundError:
+    print("Error loading NonnegMFPy: did you forget to run sys.append with the NMF path?")
 
 # Results object
 Results = namedtuple('Results', ('residuals', 'models', 'references'))
 
-# WFC3 instance
-wfc3 = WFC3.WFC3Class()
 
 ###################
 # PSF correlation #
@@ -296,10 +299,10 @@ class SubtrManager:
     Initializes with a DBManager instance as argument. Optionally, calculate the PSF correlations
     """
 
-    def __init__(self, db_manager, calc_corr_flag=False):
+    def __init__(self, db_manager, calc_corr_flag=False, instrument=None):
         # calculate all three correlation matrices
         self.db = db_manager
-
+        self.instr = instrument
         # table for tracking references used
         cols = pd.Index(self.db.stamps_tab['stamp_id'], name='targ_id')
         indx = pd.Index(self.db.stamps_tab['stamp_id'], name='ref_id')
@@ -318,7 +321,8 @@ class SubtrManager:
         if calc_corr_flag == True:
             self.calc_psf_corr()
 
-        self.stamp_mask = np.ones((wfc3.stamp_size, wfc3.stamp_size)) # should not be hard-coded
+        if self.instr is not None and hasattr(self.instr, 'stamp_size'):
+            self.stamp_mask = np.ones((self.instr.stamp_size, self.instr.stamp_size)) # should not be hard-coded
     ###############
     # stamp masks #
     ###############
@@ -777,7 +781,7 @@ class SubtrManager:
         if return_results == True:
             return all_results
 
-    def subtr_by_star(self, subtr_func, arg_dict, return_results=False):
+    def subtr_by_star(self, subtr_func, arg_dict, return_results=False, verbose=False):
         """
         Aggregator for results for the subtraction functions
 
@@ -798,11 +802,21 @@ class SubtrManager:
         #print(stars)
         residuals, models, references = {}, {}, {}
         for i, star in enumerate(stars):
-            result = subtr_func(star, kwargs=arg_dict)
+            try:
+                result = subtr_func(star, kwargs=arg_dict)
+            except ZeroRefsError:
+                # if there are no references, create an empty dataframe
+                # for this star
+                stamp_ids = self.db.stamps_tab.query("stamp_star_id == @star")['stamp_id']
+                empty_df = pd.DataFrame(index=stamp_ids)
+                result = Results(residuals=empty_df,
+                                 models=empty_df,
+                                 references=empty_df)
             residuals[star] = result.residuals
             models[star] = result.models
             references[star] = result.references 
-            print(f"{i+1}/{len(stars)} stars complete")
+            if verbose == True:
+                print(f"{i+1}/{len(stars)} stars complete")
 
         all_results = Results(residuals=pd.concat(residuals, names=['star_id', 'stamp_id']),
                               models=pd.concat(models, names=['star_id', 'stamp_id']),

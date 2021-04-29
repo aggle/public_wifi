@@ -12,7 +12,7 @@ from astropy import units
 from .Instrument import Instrument
 
 
-class WFC3Class(Instrument):
+class WFC3IRClass(Instrument):
     """
     Abstract class for instruments with the required fields that need to be implemented.
     Currently used to store instrument properties that affect the analysis, like detector
@@ -23,7 +23,7 @@ class WFC3Class(Instrument):
         """
         Initialize an instrument from the config file
         """
-        config_file = "wfc3.yaml"
+        config_file = "wfc3_ir.yaml"
         ## read in configuration file and set these static variables
         #package_directory = os.path.dirname(os.path.abspath(__file__))
         #config_file = os.path.join(package_directory, file_name)

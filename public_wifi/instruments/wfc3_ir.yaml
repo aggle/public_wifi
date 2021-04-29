@@ -2,7 +2,7 @@
 # Author: J. Aguilar
 
 # name of the instrument
-name : WFC3
+name : WFC3_IR
 
 # Number of pixels across each axis
 npix : [1014, 1014]

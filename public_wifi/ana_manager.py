@@ -228,9 +228,15 @@ class AnaManager:
     - detection
     - photometry
     - fake injection and recovery
+
+    Parameters
+    ----------
+    sub_mgr : public_wifi.SubtrManager instance
+    instrument : [None] public_wifi.instruments.Instrument class
+    compute_snr : [True] if True, compute pixel-wise SNR. If False, don't. Takes time.
     """
 
-    def __init__(self, sub_mgr, instrument=None):
+    def __init__(self, sub_mgr, instrument=None, compute_snr=True):
         # start with a subtraction manager object
         self.sm = sub_mgr
         self.db = sub_mgr.db
@@ -249,8 +255,8 @@ class AnaManager:
         self.stamp_cutouts = self.stamps2cutout()
         # this holds the wcs data
         self.stamp_wcs = self.stamp_cutouts.apply(lambda x: x.wcs)
-        # make nddata for the results objects
-        self.results_cutouts = {}
+        # turn the results into nddata objects
+        self.results_cutouts = self.subtr2cutout()
 
     def compute_std(self, mode='pixel'):
         """Compute noise maps for the residuals"""
@@ -268,13 +274,22 @@ class AnaManager:
         return cutouts
 
     def subtr2cutout(self):
-        """turn all the subtraction stamps into nddata"""
-        for k in ['references', 'residuals', 'snr']:
+        """
+        Turn all the subtraction stamps into NDData objects.
+        If self.results_cutouts exists, sets that; otherwise, returns dict.
+        Returned objects have same keys and shape as results_stamps objects
+        """
+        results_dict = {}
+        for k in ['models', 'residuals', 'snr']:
             try:
                 v = self.results_stamps[k]
             except KeyError:
                 continue
-            self.results_cutouts[k] = subtr2cutout(v, self.stamp_wcs)
+            results_dict[k] = subtr2cutout(v, self.stamp_wcs)
+        if hasattr(self, "results_cutouts"):
+            self.results_cutouts.update(results_dict)
+        else:
+            return results_dict
 
     def make_star_result_mosaics(self, star_id, key='residuals', res_factor=1):
         """
