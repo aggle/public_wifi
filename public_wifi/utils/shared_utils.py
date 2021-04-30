@@ -34,7 +34,7 @@ def debug_print(debug_flag=True, *debug_args):
 # PATHS #
 #########
 # the paths are stored in the config file
-config_file = (Path(__file__).parent.absolute() / "../config.cfg").resolve()
+config_file = (Path(__file__).parent.absolute() / "../config-public_wifi.cfg").resolve()
 """
 This block defines some useful paths, as well as a wrapper function for loading paths from the config file and handling them properly, like turning relative paths into absolute paths
 """
@@ -84,14 +84,14 @@ def load_config_path(sec, key, as_str=False, config_file=config_file):
 
 
 # path to header tables
-headers_path = load_config_path("user_paths", "headers_path")
+#headers_path = load_config_path("user_paths", "headers_path")
 # HST data files for manipulation
 data_path = load_config_path("user_paths", "data_path")
 # Database tables
 table_path = load_config_path("user_paths", "table_path")
-db_raw_file = load_config_path("tables", "db_raw_file")
-db_file = load_config_path("tables", "db_file")
-db_subcat_file = load_config_path("tables", "db_subcat_file")
+#db_raw_file = load_config_path("tables", "db_raw_file")
+#db_file = load_config_path("tables", "db_file")
+#db_subcat_file = load_config_path("tables", "db_subcat_file")
 db_clean_file =  load_config_path("tables", "db_clean_file")
 # composite image
 #composite_image_path = load_config_path("composite_img_file")

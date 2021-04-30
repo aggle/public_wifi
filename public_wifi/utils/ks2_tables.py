@@ -237,7 +237,7 @@ def generate_stamp_table(ps_table, stamp_size=11, verbose=False):
     return stamp_table
 
 
-def write_fundamental_db(db_file=shared_utils.db_raw_file, stamps=False, verbose=False):
+def write_fundamental_db(db_file, stamps=False, verbose=False):
     """
     Write the basic tables to the database file:
     - stars
@@ -252,7 +252,7 @@ def write_fundamental_db(db_file=shared_utils.db_raw_file, stamps=False, verbose
 
     Parameters
     ----------
-    db_file : str or Path [shared_utils.db_file]
+    db_file : str or Path 
     stamps : bool [False]
       if True, generate the stamps too (takes a long time)
     verbose : bool [False]

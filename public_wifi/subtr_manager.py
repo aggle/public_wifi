@@ -22,14 +22,19 @@ from .utils import image_utils
 #from .instruments import WFC3
 
 # PSF Subtraction Modules
+pw_config = Path('./config-public_wifi.cfg').resolve()
 # pyklip
-#sys.path.append(shared_utils.load_config_path("extern", "pyklip_path", as_str=True))
+sys.path.append(shared_utils.load_config_path("extern", "pyklip_path",
+                                              as_str=True,
+                                              config_file=pw_config))
 try:
     from pyklip import klip
 except ModuleNotFoundError:
     print("Error loading pyklip: did you forget to run sys.append with the pyklip path?")
 # NMF
-#sys.path.append(shared_utils.load_config_path("extern", "nmf_path").as_posix())
+sys.path.append(shared_utils.load_config_path("extern", "nmf_path",
+                                              as_str=True,
+                                              config_file=pw_config))
 try:
     from NonnegMFPy import nmf as NMFPy
 except ModuleNotFoundError:
