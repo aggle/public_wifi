@@ -9,6 +9,7 @@ import numpy as np
 import pandas as pd
 from collections import namedtuple
 import functools
+from pathlib import Path
 
 # RDI imports
 from scipy import stats
@@ -22,7 +23,7 @@ from .utils import image_utils
 #from .instruments import WFC3
 
 # PSF Subtraction Modules
-pw_config = Path('./config-public_wifi.cfg').resolve()
+pw_config = (Path(__file__).parent.absolute() / "./config-public_wifi.cfg").resolve()
 # pyklip
 sys.path.append(shared_utils.load_config_path("extern", "pyklip_path",
                                               as_str=True,
