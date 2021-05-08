@@ -9,6 +9,7 @@ import numpy as np
 import pandas as pd
 from collections import namedtuple
 import functools
+from pathlib import Path
 
 # RDI imports
 from scipy import stats
@@ -16,20 +17,23 @@ from skimage.metrics import structural_similarity as ssim
 import sys
 
 # local imports
-from .utils import table_utils
 from .utils import shared_utils
 from .utils import image_utils
-#from .instruments import WFC3
 
 # PSF Subtraction Modules
+pw_config = (Path(__file__).parent.absolute() / "./config-public_wifi.cfg").resolve()
 # pyklip
-#sys.path.append(shared_utils.load_config_path("extern", "pyklip_path", as_str=True))
+sys.path.append(shared_utils.load_config_path("extern", "pyklip_path",
+                                              as_str=True,
+                                              config_file=pw_config))
 try:
     from pyklip import klip
 except ModuleNotFoundError:
     print("Error loading pyklip: did you forget to run sys.append with the pyklip path?")
 # NMF
-#sys.path.append(shared_utils.load_config_path("extern", "nmf_path").as_posix())
+sys.path.append(shared_utils.load_config_path("extern", "nmf_path",
+                                              as_str=True,
+                                              config_file=pw_config))
 try:
     from NonnegMFPy import nmf as NMFPy
 except ModuleNotFoundError:
@@ -322,24 +326,30 @@ class SubtrManager:
             self.calc_psf_corr()
 
         if self.instr is not None and hasattr(self.instr, 'stamp_size'):
-            self.stamp_mask = np.ones((self.instr.stamp_size, self.instr.stamp_size)) # should not be hard-coded
+            self._stamp_mask = np.ones((self.instr.stamp_size, self.instr.stamp_size)) # should not be hard-coded
     ###############
     # stamp masks #
     ###############
     @property
     def stamp_mask(self):
-        return self.__stamp_mask
+        try:
+            return self._stamp_mask
+        except AttributeError:
+            return None
     @stamp_mask.setter
     def stamp_mask(self, newval):
         """
         Set a new mask but do not apply it to the stamps
         """
-        self.__stamp_mask = newval
-        self.__stamp_mask_ind = np.where(newval == 1)
+        self._stamp_mask = newval
+        self._stamp_mask_ind = np.where(newval == 1)
 
     @property
     def stamp_mask_ind(self):
-        return self.__stamp_mask_ind
+        try:
+            return self._stamp_mask_ind
+        except AttributeError:
+            return None
 
     ###########
     # methods #

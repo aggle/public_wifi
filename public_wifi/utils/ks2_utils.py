@@ -15,8 +15,22 @@ from astropy import nddata
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 
-from . import shared_utils
+import configparser
 from . import header_utils
+
+
+def frtn2py_ind(ind):
+    """
+    Given pixel indices (dataframe, array, whatever), subtract 1 to have them
+    be indexed from 0 instead of 1
+    Returns the same object with all the values subtracted by 1
+    """
+    """
+    new_coords = ind - 1
+    return new_coords
+    """
+    return ind - 1
+
 
 """
 You only care about a few of the files:
@@ -24,6 +38,49 @@ INPUT.KS2 contains the instructions used to rnun the photometry, and it shows wh
 LOGR.XYVIQ1 gives the average position for each source on the master frame (cols 1 and 2), the average flux (cols 5 and 11), the flux sigma (cols 6 and 12), and fit quality (cols 7 and 13) in each filter)
 LOGR.FIND_NIMFO gives you the coordinates and fluxes of each star in each exposure. Cols 14 and 15 contain the x and y coordinates in the flt images (i.e. *before* geometric distortion correction). col 36 is the ID number for each star (starts with R). col 39 is the ID for the image (starts with G). col 40 (starts with F) is the ID for the filter.
 """
+# Use this function to load paths from the config file
+def load_config_path(sec, key, config_file):
+    """
+    Load a path from the config file. Also handles case of key not found.
+    Run with empty strings for list of options.
+
+    Parameters
+    ----------
+    sec : str
+      the section in the config file
+    key : str
+      a key in the given section of the config file
+    as_str : bool [False]
+      if True, returns path as a string (default is pathlib.Path object)
+    config_file : str or Path
+      path to the config file to use
+    Output
+    -------
+    path : pathlib.Path or None
+      absolute path to the target in the config file.
+      Prints warning if the path does not exist.
+    """
+    # reread the file whenever the function is called so you don't have to
+    # reload the entire module if the config file gets updated
+    config = configparser.ConfigParser(interpolation=configparser.ExtendedInterpolation())
+    config.read(config_file)
+    sec = sec.upper()
+    key = key.upper()
+    try:
+        path = Path(config[sec][key]).resolve()
+    except KeyError:
+        print("Error: bad keys for config file. Options are (section \\n\\t keys):")
+        for sec in config.sections():
+            print(sec)
+            print("\t", ", ".join(i.upper() for i in config.options(sec)))
+        return None
+    # test that the path exists
+    try:
+        assert(path.exists())
+    except AssertionError:
+        print(f"Warning: {path} not found.")
+    return path
+
 # ks2_files = [shared_utils.ks2_path / i for i in ["LOGR.XYVIQ1",
 #                                                  "LOGR.FIND_NIMFO",
 #                                                  "INPUT.KS2"]]
@@ -52,6 +109,7 @@ def get_file_mapper(ks2_input_file):#=ks2_files[2]):
     -------
     filemapper_df : pd.DataFrame
       pandas dataframe with two columns: file_id, and file_name
+      file_id is the KS2-assigned file identifier; file_name is the name on disk
     """
     filemapper_df = pd.DataFrame(columns=['file_id','file_name'])
 
@@ -69,7 +127,7 @@ def get_file_mapper(ks2_input_file):#=ks2_files[2]):
     return filemapper_df
 
 
-def get_filter_mapper(ks2_input_file):#=ks2_files[2]):
+def get_filter_mapper(ks2_input_file):
     """
     Given a KS2 INPUT.KS2 file, parse the file to get a dataframe that maps between the filter numbers and filter names.
 
@@ -166,8 +224,20 @@ def get_file_name_from_ks2id(file_id, file_mapper):#=get_file_mapper()):
 # ks2_epoch_mapper['proposid'] = ks2_filemapper['file_name'].apply(get_proposid)
 # ks2_epoch_mapper['epoch_id'] = ks2_epoch_mapper['proposid'].apply(get_epoch_from_proposid)
 
-def get_epoch_mapper(header_path, file_mapper):
-    prihdrs = header_utils.load_headers('pri')
+def get_epoch_mapper(ks2_filemapper, prihdrs, verbose=False):
+    """
+    Get the epoch mapper
+
+    Parameters
+    ----------
+    ks2_filemapper : mapper between exposure IDs and primary headers
+    prihdrs : dataframe of all the primary headers
+    verbose : [False] print extra info
+    Returns
+    -------
+    epoch_mapper : pd.DataFrame
+      a mapper between file_id, proposal_id, and epoch_id
+    """
     get_proposid = lambda x: prihdrs.query("filename == @x")['proposid'].squeeze()
     # label the epochs as EN, where N is an integer indexing from 1
     epoch_labels = [(f"E{i+1}", k) for i, k in
@@ -186,6 +256,9 @@ def get_epoch_mapper(header_path, file_mapper):
     return ks2_epoch_mapper
 
 def get_epoch_from_ks2id(file_id, ks2_epoch_mapper):
+    """
+    Find out in which epoch an exposure was taken
+    """
     index = ks2_epoch_mapper["file_id"] == file_id
     try:
         epoch_id = ks2_epoch_mapper.loc[index, 'epoch_id'].squeeze()
@@ -291,6 +364,9 @@ def get_master_catalog(ks2_master_file,#=ks2_files[0],
                                     skipinitialspace=True,
                                     index_col=False)
 
+
+    # convert the indices from fortran 2 python
+    master_catalog_df[['umast0', 'vmast0']] = frtn2py_ind(master_catalog_df[['umast0', 'vmast0']])
 
     # if desired, return the cleaned catalog. else, return raw
     if clean == True:
@@ -409,7 +485,8 @@ o_cols = ['o' + i for i in phot_method_ids]
 f_cols = ['f' + i for i in phot_method_ids]
 g_cols = ['g' + i for i in phot_method_ids]
 
-def get_point_source_catalog(ps_file,#=ks2_files[1],
+def get_point_source_catalog(ps_file,
+                             ks2_epochmapper,
                              clean=True, clean_args={}):
     """
     This function reads the KS2 FIND_NIMFO file that stores *every* point source
@@ -445,11 +522,15 @@ def get_point_source_catalog(ps_file,#=ks2_files[1],
     ps_df['chip_id'] = ps_df['exp_id'].apply(lambda x: int(x.split('.')[1]))
     ps_df['exp_id'] = ps_df['exp_id'].apply(lambda x: x.split('.')[0])
     # add the observation epoch to the table
-    ps_df['epoch_id'] = ps_df['exp_id'].apply(get_epoch_from_ks2id)
+    ps_df['epoch_id'] = ps_df['exp_id'].apply(lambda el: get_epoch_from_ks2id(el, ks2_epochmapper))
 
 
     # make sure the dtypes are correct
     ps_df = ps_df.astype(nimfo_dtypes, copy=True)
+
+    # convert the indices from fortran 2 python
+    pos_cols = ['umast', 'vmast', 'u1', 'v1', 'x1', 'y1', 'x0', 'y0', 'xraw1', 'yraw1']
+    ps_df[pos_cols] = frtn2py_ind(ps_df[pos_cols])
 
     # if desired, return the cleaned catalog. else, return raw
     if clean == True:
@@ -518,10 +599,7 @@ def remove_duplicates_old(ps_cat, master_cat, verbose=False):
 
 def remove_duplicates(ps_cat, verbose=False):
     """
-    Remove duplicate entries from the point source catalog and master catalogs.
-    For all duplicate entries with different NMAST designations, a primary
-    designation is chosen ("primary id"), and the alternative NMAST
-    designations are referred to as "aliases".
+    Remove duplicate entries from the point source catalog.
 
     Parameters
     ----------
@@ -550,7 +628,7 @@ def remove_duplicates(ps_cat, verbose=False):
 """
 This utility does all the work to pull out a full exposure, given the KS2 file ID.
 """
-def get_img_from_ks2_file_id(ks2_exp_id, hdr='SCI'):
+def get_img_from_ks2_file_id(ks2_exp_id, ks2_file_mapper, fits_path, hdr='SCI'):
     """
     Pull out an image from the fits file, given the KS2 exposure identifier.
 
@@ -558,6 +636,10 @@ def get_img_from_ks2_file_id(ks2_exp_id, hdr='SCI'):
     ----------
     ks2_exp_id : str
       the exposure identifier assigned by KS2
+    ks2_file_mapper : pd.DataFrame
+      mapper between KS2 file names and root names
+    fits_path : str or Path
+      path to the folder where the fits files are stored
     hdr : str or int ['SCI']
       which header? allowed values: ['SCI','ERR','DQ','SAMP','TIME']
 
@@ -565,8 +647,14 @@ def get_img_from_ks2_file_id(ks2_exp_id, hdr='SCI'):
     img : numpy.array
       2-D image from the fits file
     """
-    flt_name = get_file_name_from_ks2id(ks2_exp_id)
-    flt_path = shared_utils.get_data_file(flt_name)
+    flt_name = get_file_name_from_ks2id(ks2_exp_id, ks2_file_mapper)
+    #flt_path = shared_utils.get_data_file(flt_name)
+    flt_path = fits_path / flt_name
+    try:
+        assert flt_path.exists()
+    except AssertionError:
+        print(f"Error: {flt_path} not found")
+        raise AssertionError
     img = fits.getdata(flt_path, hdr)
     return img
 
@@ -576,7 +664,12 @@ This is a wrapper for get_stamp, which is a little clunky to use by itself.
 This takes in a row of the FIND_NIMFO catalog and pulls out a stamp for that
 point source, in that file, of the specified size
 """
-def get_stamp_from_ks2(row, stamp_size=11, return_img_ind=False):
+def get_stamp_from_ks2(row,
+                       ks2_file_mapper,
+                       fits_path,
+                       stamp_size=11,
+                       return_img_ind=False,
+                       hdr='SCI'):
     """
     Given a row of the FIND_NIMFO dataframe, this gets a stamp of the specified
     size of the given point source
@@ -586,18 +679,26 @@ def get_stamp_from_ks2(row, stamp_size=11, return_img_ind=False):
     ----------
     row : pd.DataFrame row
       a row containing the position and file information for the source
+    ks2_file_mapper : pd.DataFrame
+      mapper between KS2 file names and root names
+    fits_path : str or Path
+      path to the folder where the fits files are stored
     stamp_size : int or tuple [11]
       (row, col) size of the stamp [(int, int) if only int given]
     return_img_ind : bool (False)
       if True, return the row and col indices of the stamp in the image
+    hdr : str or int
+      which header to get the stamp from
 
     Returns
     -------
     stamp_size-sized stamp
     """
     # get the file name where the point source is located and pull the exposure
-    flt_file = get_file_name_from_ks2id(row['exp_id'])
-    img = fits.getdata(shared_utils.get_data_file(flt_file), 1)
+    #flt_file = get_file_name_from_ks2id(row['exp_id'], ks2_file_mapper)
+    #flt_path = Path(fits_path) / flt_file
+    #img = fits.getdata(shared_utils.get_data_file(flt_path), extname)
+    img = get_img_from_ks2_file_id(row['exp_id'], ks2_file_mapper, fits_path, hdr)
     # location of the point source in the image
     xy = row[['xraw1','yraw1']].values
     # finally, get the stamp (and indices, if requested)
@@ -621,7 +722,7 @@ This all can be found in the notebook: ???
 
 def clean_catalog_dtypes(cat, dtype_dict):
     """
-    Make sure each entry in a catalog has the write data type.
+    Make sure each entry in a catalog has the right data type.
     If it doesn't, assign None as the universal null value
     Parameters
     ----------
@@ -752,7 +853,7 @@ Clean the master catalog:
 2. Remove stars that are not in the point source catalog
 3. Recompute z, sz, q, and f using the point source catalog
 """
-def recompute_master_catalog(mast_cat, ps_cat):
+def recompute_master_catalog(mast_cat, ps_cat, ks2_filtermapper):
     """
     After making cuts on the point source catalog, recompute relevant
     values in the master catalog.
@@ -763,6 +864,8 @@ def recompute_master_catalog(mast_cat, ps_cat):
       the master catalog
     ps_cat : pd.DataFrame
       the point source catalog
+    ks2_filtermapper : pd.DataFrame
+      map[per between filter IDs and names
 
     Output
     ------
@@ -812,7 +915,7 @@ def recompute_master_catalog(mast_cat, ps_cat):
     return mast_cat_clean
 
 
-def clean_master_catalog(mast_cat, ps_cat=None, recompute=True, mag_cut=None):
+def clean_master_catalog(mast_cat, ps_cat=None, ks2_filtermapper=None, recompute=True, mag_cut=None):
     """
     Clean the master catalog. If no point source catalog is given, this just checks the types and assigns proper null values. If a point source catalog is provided, then it also makes sure that the list of objects present in each catalog are in agreement.
     If an object is out of range, it gets dropped from the catalog
@@ -822,6 +925,8 @@ def clean_master_catalog(mast_cat, ps_cat=None, recompute=True, mag_cut=None):
       the master catalog
     ps_cat : pd.DataFrame [None]
       (optional) the point source catalog
+    ks2_filtermapper : pd.DataFrame
+      dataframe that has list of filter names mapped to KS2 filter IDs
     recompute : bool [True]
       if True, use ps_cat to recompute the zmast, szmast, q, and g columns of the
       master catalog
@@ -856,7 +961,7 @@ def clean_master_catalog(mast_cat, ps_cat=None, recompute=True, mag_cut=None):
 
     # third, recompute star properties (z, sz, q, and f) with remaining stars
     if recompute == True:
-        mast_cat = recompute_master_catalog(mast_cat, ps_cat)
+        mast_cat = recompute_master_catalog(mast_cat, ps_cat, ks2_filtermapper)
     # compute magnitudes and colors
     mast_cat['mmast1'] = -2.5 * np.log10(mast_cat['zmast1'])
     mast_cat['mmast2'] = -2.5 * np.log10(mast_cat['zmast2'])
@@ -876,8 +981,10 @@ def clean_master_catalog(mast_cat, ps_cat=None, recompute=True, mag_cut=None):
     return mast_cat
 
 
-def get_ks2_catalogs(mast_file,#=ks2_files[0],
-                     ps_file,#=ks2_files[1],
+def get_ks2_catalogs(mast_file,
+                     ps_file,
+                     ks2_epochmapper,
+                     ks2_filtermapper,
                      raw=False,
                      q_min=0.95, mag_min=-3.0):
     """
@@ -891,6 +998,8 @@ def get_ks2_catalogs(mast_file,#=ks2_files[0],
       full path to the KS2 master catalog file. If None, use default
     ps_file : string or path
       full path to the KS2 point source catalog file. If None, use default
+    ks2_epochmapper : pd.DataFrame
+      dataframe mapping files and proposal ids to epochs
     raw : bool [False]
       if True, do not apply cleaning
     q_min : float [0.95]
@@ -903,21 +1012,28 @@ def get_ks2_catalogs(mast_file,#=ks2_files[0],
     tuple (mast_cat, ps_cat)
     """
 
+    clean = not raw # raw is used for historical reasons but I hate it
     # if raw catalogs are requested, do not apply any cuts
-    if raw == True:
+    if clean == False:
         print("Returning raw catalogs")
-        ps_cat = get_point_source_catalog(ps_file=ps_file, clean=False)
-        mast_cat = get_master_catalog(ks2_master_file=mast_file, clean=False)
+        ps_cat = get_point_source_catalog(ps_file=ps_file,
+                                          ks2_epochmapper=ks2_epochmapper,
+                                          clean=clean)
+        mast_cat = get_master_catalog(ks2_master_file=mast_file, clean=clean)
     else:
         # apply cuts to the PS catalog
         print("Returning cleaned catalogs")
+        ps_clean_args = {'q_min': q_min}
         ps_cat = get_point_source_catalog(ps_file=ps_file,
-                                          clean=True,
-                                          clean_args=dict(q_min=q_min))
+                                          ks2_epochmapper=ks2_epochmapper,
+                                          clean=clean,
+                                          clean_args=ps_clean_args)
+        mast_clean_args = {'mag_cut': mag_min,
+                           'ks2_filtermapper': ks2_filtermapper}
         mast_cat = get_master_catalog(ks2_master_file=mast_file,
-                                      clean=True,
+                                      clean=clean,
                                       ps_cat=ps_cat,
-                                      clean_args=dict(mag_cut=mag_min))
+                                      clean_args=mast_clean_args)
 
     # all done!
     return mast_cat, ps_cat

@@ -20,7 +20,7 @@ from .utils import table_utils
 
 class DBManager:
 
-    def __init__(self, db_path=shared_utils.db_clean_file):
+    def __init__(self, db_path, config_file):
         """
         Usage:
         Initialize using the path to the database
@@ -30,6 +30,7 @@ class DBManager:
         self.subtr_groupby_keys : keys in self.ps_tab used to group objects for psf subtraction
         """
         self.db_path = db_path
+        self.config_file = config_file
         # load the principle tables directly as class members
         self.tables = {} # list of loaded tables
         # dicts of tables that group naturally together
@@ -40,7 +41,7 @@ class DBManager:
         self.ps_tab = self.load_table('point_sources', verbose=True)
         self.stamps_tab = self.load_table('stamps', verbose=True)
         self.grid_defs_tab = self.load_table('grid_sector_definitions', verbose=True)
-        self.comp_status_tab = self.load_table('companion_status', verbose=True)
+        #self.comp_status_tab = self.load_table('companion_status', verbose=True)
         # finally, group the subtraction subsets together with the default keys
         self.subtr_groupby_keys = ['ps_filt_id', 'ps_epoch_id', 'sector_id']
         self.do_subtr_groupby(keys=self.subtr_groupby_keys)
@@ -56,7 +57,7 @@ class DBManager:
 
     def load_table(self, key, verbose=False):
         """
-        Load a table.
+        Load a table. Wrapper for table_io.load_table.
 
         Parameters
         ----------
@@ -120,12 +121,6 @@ class DBManager:
         # mixed or complex types in an HDF file, but I want to ignore those
         with warnings.catch_warnings() as w:
             kwargs['mode'] = kwargs.get("mode", 'a')
-            # if hasattr(self.tables[key], 'to_hdf'):
-            #     table.to_hdf(self.db_path, key=key, **kwargs)
-            #     if verbose == True:
-            #         print(f"Table {key} written to {str(self.db_path)}")
-            # else:
-            #     print("Error: cannot currently store non-pandas types")
             table_io.write_table(key, table, db_file=self.db_path, verbose=verbose)
 
 
@@ -709,6 +704,7 @@ class DBManager:
         dbm_sub = DBSubset(group['star_id'],
                            group['ps_id'],
                            group['stamp_id'],
+                           config_file=self.config_file,
                            db_master=None, db_path=self.db_path)
         dbm_sub.keys = key_dict
         return dbm_sub
@@ -724,8 +720,9 @@ class DBSubset(DBManager):
     """
     def __init__(self,
                  star_ids, ps_ids, stamp_ids,
-                 db_master=None,
-                 db_path=shared_utils.db_clean_file):
+                 db_path,
+                 config_file,
+                 db_master=None):
         """
         Give it the stars, ps, and stamps tables. All other tables are copied
         It is more generic than DBSector
@@ -735,7 +732,7 @@ class DBSubset(DBManager):
         #    copy_attrs(db_master, self)
         #else:
         # run the regular initialization
-        super().__init__(db_path=db_path)
+        super().__init__(db_path=db_path, config_file=config_file)
         self.get_db_subset(star_ids, ps_ids, stamp_ids)
         self._cut_lookup_tables_to_local()
         # if the subset was made by filtering the ps table with a groupby, give keys here
@@ -770,7 +767,7 @@ class DBSector(DBManager):
     This class holds a subset of star, point source, and stamp tables for a WFC3 detector sector.
     Basically it initializes a regular DBManager object and then filters down to the requested sector
     """
-    def __init__(self, sector_id, db_master=None, db_path=shared_utils.db_clean_file):
+    def __init__(self, sector_id, db_path, db_master=None):
         """
         Give it the stars, ps, and stamps tables. All other tables are copied
         """

@@ -13,25 +13,11 @@ import pandas as pd
 from astropy.io import fits
 from astropy import nddata
 
-from . import shared_utils
 from . import header_utils
 from . import ks2_utils
-from . import table_utils
-from . import image_utils
+from . import table_io
 
-def frtn2py_ind(ind):
-    """
-    Given pixel indices (dataframe, array, whatever), subtract 1 to have them
-    be indexed from 0 instead of 1
-    Returns the same object with all the values subtracted by 1
-    """
-    """
-    new_coords = ind - 1
-    return new_coords
-    """
-    return ind - 1
-
-def make_stars_table(mast_cat):
+def make_stars_table(mast_cat, ks2_filtermapper):
     """
     Take the KS2 master catalog and put it in the right format for the Tr14 database
 
@@ -51,7 +37,7 @@ def make_stars_table(mast_cat):
     columns = dict(NMAST = "star_id",
                    umast0 = "u_mast",
                    vmast0 = "v_mast")
-    for i in ks2_utils.ks2_filtermapper['filt_id']:
+    for i in ks2_filtermapper['filt_id']:
         columns[f"zmast{i[-1]}"] = f"star_phot_{i}"
         columns[f"szmast{i[-1]}"] = f"star_phot_e_{i}"
 
@@ -66,13 +52,13 @@ def make_stars_table(mast_cat):
     star_ids = stars_table.apply(lambda x: f"S{x.name:06d}", axis=1)
     lookup_nmast = pd.DataFrame(data=zip(star_ids, ks2_ids), columns=['star_id','NMAST'])
     stars_table['star_id'] = star_ids
-    # transform coordinates from fortran to python
-    stars_table[['u_mast','v_mast']] = frtn2py_ind(stars_table[['u_mast',
-                                                                'v_mast']])
+    # transform coordinates from fortran to python (subtract 1)
+    xy_cols = ['u_mast','v_mast']
+    stars_table[xy_cols] = ks2_utils.frtn2py_ind(stars_table[xy_cols])
     # add the membership column
     stars_table['clust_memb'] = False
     # compute magnitudes
-    for i in ks2_utils.ks2_filtermapper['filt_id']:
+    for i in ks2_filtermapper['filt_id']:
         # mag
         col_name = f"star_mag_{i}"
         mag = -2.5*np.log10(stars_table[f"star_phot_{i}"])
@@ -146,9 +132,9 @@ def make_point_source_table(ps_cat, lookup_nmast):
     ps_table['ps_epoch_id'] = new_ids
 
     # transform coordinates from fortran to python
-    ps_table[['ps_u_mast','ps_v_mast']] = frtn2py_ind(ps_table[['ps_u_mast',
+    ps_table[['ps_u_mast','ps_v_mast']] = ks2_utils.frtn2py_ind(ps_table[['ps_u_mast',
                                                                 'ps_v_mast']])
-    ps_table[['ps_x_exp','ps_y_exp']] = frtn2py_ind(ps_table[['ps_x_exp',
+    ps_table[['ps_x_exp','ps_y_exp']] = ks2_utils.frtn2py_ind(ps_table[['ps_x_exp',
                                                               'ps_y_exp']])
 
 
@@ -166,7 +152,11 @@ def make_point_source_table(ps_cat, lookup_nmast):
     return ps_table
 
 
-def generate_stamp_table(ps_table, stamp_size=11, verbose=False):
+def generate_stamp_table(ps_table,
+                         fits_folder,
+                         fits_file_mapper,
+                         stamp_size=11,
+                         verbose=False):
     """
     Generate a stamp table to hold the stamp metadata and arrays
 
@@ -174,6 +164,14 @@ def generate_stamp_table(ps_table, stamp_size=11, verbose=False):
     ----------
     ps_table : pd.DataFrame
       point source table
+    fits_folder : str or Path
+      path to the parent folder where the fits images are keps
+    fits_file_mapper : pd.DataFrame
+      dataframe that maps the KS2 exposure names to the source fits file names
+    stamp_size : int [11]
+      dimension of the square stamp to cut out
+    verbose : bool [False]
+      print extra output
 
     Output
     ------
@@ -192,10 +190,19 @@ def generate_stamp_table(ps_table, stamp_size=11, verbose=False):
         use nddata.Cutout2D to pull out the stamps from the image
         """
         exp_id = exp_group.name
+        # make sure that the fits file mapper has the right naming convention
+        fits_file_mapper['file_id'] = fits_file_mapper['file_id'].apply(lambda el: el.replace('G','E'))
         if verbose == True:
             print(f"{exp_id} start")
-        flt_file = table_utils.get_file_name_from_exp_id(exp_id)
-        img = fits.getdata(shared_utils.get_data_file(flt_file), 'sci')
+        file_root = fits_file_mapper.set_index("file_id").loc[exp_id].squeeze()
+        flt_file = Path(fits_folder) / file_root
+        try:
+            assert flt_file.exists()
+        except AssertionError:
+            print(f"{flt_file.as_posix()} not found")
+            return None
+        #img = fits.getdata(shared_utils.get_data_file(flt_file), 'sci')
+        img = fits.getdata(flt_file, 'sci')
         row_func = lambda row: nddata.Cutout2D(img,
                                                tuple(row[['ps_x_exp','ps_y_exp']]),
                                                size=stamp_size,
@@ -224,11 +231,13 @@ def generate_stamp_table(ps_table, stamp_size=11, verbose=False):
     # use the ps_id to index the ps table
     ps_table = ps_table.set_index('ps_id')
     # get the star_ids
-    stamp_table['stamp_star_id'] = ps_table.loc[stamp_table['stamp_ps_id'], 'ps_star_id'].values[:]
+    star_ids = ps_table.loc[stamp_table['stamp_ps_id'], 'ps_star_id'].values[:]
+    stamp_table['stamp_star_id'] = star_ids
     # get the centers of the stamps
-    stamp_table['stamp_x_cent'] = ps_table.loc[stamp_table['stamp_ps_id'], 'ps_x_exp'].apply(lambda x: np.int(np.floor(x))).values[:]
-    stamp_table['stamp_y_cent'] = ps_table.loc[stamp_table['stamp_ps_id'], 'ps_y_exp'].apply(lambda x: np.int(np.floor(x))).values[:]
-    # paths to the stamp files
+    stamp_x_cent = ps_table.loc[stamp_table['stamp_ps_id'], 'ps_x_exp']
+    stamp_table['stamp_x_cent'] = stamp_x_cent.apply(lambda x: np.int(np.floor(x))).values[:]
+    stamp_y_cent = ps_table.loc[stamp_table['stamp_ps_id'], 'ps_y_exp']
+    stamp_table['stamp_y_cent'] = stamp_y_cent.apply(lambda x: np.int(np.floor(x))).values[:]
     # store the arrays
     stamp_table['stamp_array'] = stamps['stamp_array'].copy()
     # assert data types and return
@@ -238,7 +247,7 @@ def generate_stamp_table(ps_table, stamp_size=11, verbose=False):
 
 
 def write_fundamental_db(db_file,
-                         ks2_path,
+                         config_file,
                          stamps=False,
                          verbose=False):
     """
@@ -257,7 +266,8 @@ def write_fundamental_db(db_file,
     ----------
     db_file : str or Path 
       file to write to
-    ks2_path : path to KS2 data files
+    config_file : str or Path
+      path to the config file that knows the paths to the KS2 and exposure files
     stamps : bool [False]
       if True, generate the stamps too (takes a long time)
     verbose : bool [False]
@@ -268,20 +278,49 @@ def write_fundamental_db(db_file,
     generates an HDF5 file at the path specified
 
     """
-    ks2_files = [Path(ks2_path) / f for f in ["LOGR.XYVIQ1",
-                                              "LOGR.FIND_NIMFO",
-                                              "INPUT.KS2"]]
+    # some basic paths
+    ks2_files = {f: ks2_utils.load_config_path("ks2_paths", f, config_file)
+                 for f in ['ks2_stars', 'ks2_point_sources', 'ks2_input']}
+    fits_path = ks2_utils.load_config_path('USER_PATHS', 'data_path', config_file)
 
     # use this dict to collect all the tables for writing
     master_tables_dict = {}
     primary_keys = {}
 
-    # get cleaned master and point source catalogs
-    mast_cat, ps_cat = ks2_utils.get_ks2_catalogs(mast_file=ks2_files[0],
-                                                  ps_file=ks2_files[1],
+
+    # mapper between file names and file ids
+    lookup_files = ks2_utils.get_file_mapper(ks2_files['ks2_input'])
+    lookup_files['file_id'] = lookup_files['file_id'].apply(lambda x: x.replace("G","E"))
+    master_tables_dict['lookup_files'] = lookup_files
+
+    # mapper between the filter names and filter ids
+    lookup_filters = ks2_utils.get_filter_mapper(ks2_files['ks2_input'])
+    master_tables_dict['lookup_filters'] = lookup_filters
+
+    # FITS header tables
+    fits_files = lookup_files['file_name'].apply(lambda x: fits_path / x)
+    if verbose == True:
+        print("Generating headers")
+    headers = header_utils.get_header_dfs(fits_files)
+    if verbose == True:
+        print("Headers finished")
+    for k, v in headers.items():
+        master_tables_dict["hdr_"+k] = v
+
+    lookup_epochs = ks2_utils.get_epoch_mapper(lookup_files, headers['pri'], verbose=True)
+    master_tables_dict['lookup_epochs'] = lookup_epochs
+
+    # get cleaned master and point source catalogs in KS2 format
+    # need to revert the epochmapper to the KS2 version
+    ks2_epochmapper=lookup_epochs.copy()
+    ks2_epochmapper['file_id'] = ks2_epochmapper['file_id'].apply(lambda x: x.replace("E","G"))
+    mast_cat, ps_cat = ks2_utils.get_ks2_catalogs(mast_file=ks2_files['ks2_stars'],
+                                                  ps_file=ks2_files['ks2_point_sources'],
+                                                  ks2_epochmapper=ks2_epochmapper,
+                                                  ks2_filtermapper=lookup_filters,
                                                   raw=False)
-    # convert mast_cat to the proper format, and get the stars-KS2 lookup table
-    stars_table, lookup_ks2_nmast = make_stars_table(mast_cat)
+    # convert mast_cat to PUBLIC WIFI format, and get the stars-KS2 lookup table
+    stars_table, lookup_ks2_nmast = make_stars_table(mast_cat, lookup_filters)
     master_tables_dict['stars'] = stars_table
     primary_keys['stars'] = 'star_id'
     master_tables_dict['lookup_ks2_nmast'] = lookup_ks2_nmast
@@ -291,23 +330,15 @@ def write_fundamental_db(db_file,
     master_tables_dict['point_sources'] = ps_table
     primary_keys['point_sources'] = 'ps_id'
 
-    # mapper between file names and file ids
-    lookup_files = ks2_utils.get_file_mapper(ks2_files[2])
-    lookup_files['file_id'] = lookup_files['file_id'].apply(lambda x: x.replace("G","E"))
-    master_tables_dict['lookup_files'] = lookup_files
-
-    # mapper between the filter names and filter ids
-    lookup_filters = ks2_utils.get_filter_mapper(ks2_files[2])
-    master_tables_dict['lookup_filters'] = lookup_filters
-
-    # FITS header tables
-    headers = header_utils.load_headers('all')
-    for k, v in headers.items():
-        master_tables_dict["hdr_"+k] = v
 
     # stamp table
     if stamps == True:
-        stamp_table = generate_stamp_table(ps_table, verbose=verbose)
+        fits_path = ks2_utils.load_config_path("user_paths", "data_path", config_file)
+        stamp_table = generate_stamp_table(ps_table, 
+                                           fits_path,
+                                           fits_file_mapper=lookup_files,
+                                           stamp_size=11,
+                                           verbose=verbose)
         master_tables_dict['stamps'] = stamp_table
         primary_keys['stamps'] = 'stamp_id'
 

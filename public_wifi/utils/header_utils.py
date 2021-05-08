@@ -10,11 +10,9 @@ import numpy as np
 import pandas as pd
 from astropy.io import fits
 
-from . import shared_utils
 
 extnames = ['SCI','ERR','DQ','SAMP','TIME']
 all_headers = ['PRI'] + extnames
-header_path = shared_utils.table_path
 
 
 def clean_header_dict(hdr_dict):
@@ -105,7 +103,7 @@ def get_header_dfs(fits_files):
 
 def write_headers(fits_files, out_folder, verbose=False):
     """
-    Save the headers, as csv files that can be read into dataframes, in the folder designated at the top of the file ({0}). The file name is the extension header EXTNAME value, and 'pri' refers to the primary header. Does all the work to compile and write headers. No return value; writes a file instead
+    Save the headers, as csv files that can be read into dataframes, in the designated folder. The file name is the extension header EXTNAME value, and 'pri' refers to the primary header. Does all the work to compile and write headers. No return value; writes a file instead
 
     Parameters
     ----------
@@ -118,12 +116,12 @@ def write_headers(fits_files, out_folder, verbose=False):
     Returns
     -------
     Nothing
-    """.format(header_path)
+    """
 
     header_dicts = headers2dict(fits_files)
     header_dfs = {k: headerdict2dataframe(header_dicts[k]) for k in header_dicts}
     for k, v in header_dfs.items():
-        out_name = Path(out_folder) / f'{k}_hdrs.csv'  # header_path / f'{k}_hdrs.csv'
+        out_name = Path(out_folder) / f'{k}_hdrs.csv'  
         if verbose == True:
             print(f'Writing {out_name}')
         v.to_csv(out_name)
@@ -131,12 +129,14 @@ def write_headers(fits_files, out_folder, verbose=False):
         print("\nFinished.")
 
 
-def load_headers(extname='pri'):
+def load_headers(header_path, extname='pri'):
     """
     Helper function to load the right header file
 
     Parameters
     ----------
+    header_path : str or Path
+      path to the folder where the header files are stored
     extname : str [pri]
       shorthand name for the extension whose dataframe you want
       options are: pri, sci, err, dq, samp, and time

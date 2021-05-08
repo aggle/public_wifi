@@ -211,7 +211,6 @@ def show_target_stamps(star_id, dbm, plot_size=300):
     ncols = min(len(target_stamp_ids), 3)
     nrows = np.ceil(len(target_stamp_ids)/ncols).astype(np.int)
     stamps = dbm.stamps_tab.set_index("stamp_id").loc[target_stamp_ids, 'stamp_array']
-    #stamps = [table_utils.get_stamp_from_id(stamp_id) for stamp_id in target_stamp_ids]
     p_stamps = stamps.reset_index()['stamp_id'].apply(lambda x: figure(tools='', title=f'{x}'))
     mapper = bkmdls.LogColorMapper(palette='Magma256',
                                    low=np.nanmin(np.stack(stamps)),

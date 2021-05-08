@@ -34,11 +34,11 @@ def debug_print(debug_flag=True, *debug_args):
 # PATHS #
 #########
 # the paths are stored in the config file
-config_file = (Path(__file__).parent.absolute() / "../config.cfg").resolve()
+pw_config_file = (Path(__file__).parent.absolute() / "../config-public_wifi.cfg").resolve()
 """
 This block defines some useful paths, as well as a wrapper function for loading paths from the config file and handling them properly, like turning relative paths into absolute paths
 """
-def load_config_path(sec, key, as_str=False, config_file=config_file):
+def load_config_path(sec, key, as_str=False, config_file=pw_config_file):
     """
     Load a path from the config file. Also handles case of key not found.
     Run with empty strings for list of options.
@@ -83,15 +83,16 @@ def load_config_path(sec, key, as_str=False, config_file=config_file):
     return path
 
 
+"""
 # path to header tables
-headers_path = load_config_path("user_paths", "headers_path")
+#headers_path = load_config_path("user_paths", "headers_path")
 # HST data files for manipulation
 data_path = load_config_path("user_paths", "data_path")
 # Database tables
 table_path = load_config_path("user_paths", "table_path")
-db_raw_file = load_config_path("tables", "db_raw_file")
-db_file = load_config_path("tables", "db_file")
-db_subcat_file = load_config_path("tables", "db_subcat_file")
+#db_raw_file = load_config_path("tables", "db_raw_file")
+#db_file = load_config_path("tables", "db_file")
+#db_subcat_file = load_config_path("tables", "db_subcat_file")
 db_clean_file =  load_config_path("tables", "db_clean_file")
 # composite image
 #composite_image_path = load_config_path("composite_img_file")
@@ -102,7 +103,7 @@ full_corr_mat_file = load_config_path("tables", "full_corr_path")
 align_path = load_config_path("user_paths", "align_path")
 # KS2 output files
 ks2_path = load_config_path("user_paths", "ks2_path")
-
+"""
 
 #############
 # FLT files #
@@ -110,21 +111,23 @@ ks2_path = load_config_path("user_paths", "ks2_path")
 """
 Here's a helper function for loading a data file
 """
-def get_data_file(file_name):
+def get_data_file(file_name, config_file):
     """
-    Given a file name (no path), return the full path the file so it can be read
+    Given a FITS file name (no path), return the full path the file so it can be read
 
     Parameters
     ----------
     file_name : str or pathlib.Path
       the file name, e.g. icct01hrq_flt.fits
-
+    config_file : str or Path
+      config file with the path where the exposures are kept (DATA_PATH)
+    
     Returns
     -------
     file_path : pathlib.Path
       the full file path
     """
-    data_path = load_config_path("user_paths", "data_path")
+    data_path = load_config_path("user_paths", "data_path", config_file=config_file)
     file_path = data_path / file_name
     try:
         assert(file_path.exists())
@@ -184,50 +187,3 @@ def find_column(columns, qstr):
         return None
 
 
-def read_instrument_config(cfg_name=None, key=None, dtype=None):
-    """
-    Pull the value for 'key' from the instrument configuration file.
-    Run with no parameters for a list of files, or with only a file name
-    for a list of keys.
-
-    Parameters
-    ----------
-    cfg_name : [''] The name (not full path) of the configuration file.
-      If empty, list the available files
-    key : [None] The key whose value you want to pull.
-      If empty, list the available keys
-    dtype : [None] if provided, try to conver the output to this type.
-      Otherwise, output will be a string
-
-    Output
-    ------
-    the value stored at `key` in `cfg_name`
-
-    """
-    path = load_config_path("pw_paths", "instrument_path")
-    try:
-        file_path = path / cfg_name
-        assert file_path.exists() and (cfg_name is not None)
-    except (AssertionError, TypeError):
-        files = path.glob('*')
-        print("Available instrument configuration files:")
-        for f in sorted(files):
-            print(f"\t{f.name}")
-        return
-
-    # file exists, read it
-    config = configparser.ConfigParser()
-    config.read(file_path)
-    try:
-        value = config.get('Properties', key)
-    except (KeyError, AttributeError, configparser.NoOptionError):
-        print("Available keys:")
-        for key in config['Properties']:
-            print(f"\t{key}")
-        return
-    if dtype is not None:
-        try:
-            value = dtype(value)
-        except:
-            print(f"Error, cannot convert `{key}` value `{value}` to {str(dtype)}, returning string")
-    return value

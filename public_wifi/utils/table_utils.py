@@ -82,7 +82,7 @@ def initialize_table(table_name, nrows):
     return table
 
 
-def list_available_tables(return_list=False, db_file=shared_utils.db_clean_file):
+def list_available_tables(db_file, return_list=False):
     """
     Print a list of tables and their descriptions. Alternately, return a list of the tables.
     TODO print the subtables, too
@@ -107,7 +107,7 @@ def list_available_tables(return_list=False, db_file=shared_utils.db_clean_file)
 
 
 
-def get_file_name_from_file_id(file_id):
+def get_file_name_from_file_id(file_id, path):
     """
     The header files don't store the whole filename, so this function fills in
     the rest of the name as well as the path.
@@ -116,6 +116,8 @@ def get_file_name_from_file_id(file_id):
     ----------
     file_id : str
       the file identifier (everything except _flt.fits)
+    path : str or Path
+      path to the folder where the FITS files are kept
 
     Returns
     -------
@@ -123,7 +125,12 @@ def get_file_name_from_file_id(file_id):
       the full absolute path to the fits file
     """
     suffix = "_flt.fits"
-    filename = shared_utils.data_path.absolute() / (file_id + suffix)
+    filename = Path(path).absolute() / (file_id + suffix)
+    try:
+        assert filename.exists()
+    except AssertionError:
+        print(f"Error: file_id {file_id} resolves to {filename}, which is not found")
+        return None
     return filename.absolute()
 
 
@@ -131,10 +138,6 @@ def get_file_name_from_file_id(file_id):
 Helpers for getting file and filter names.
 Since these queries are run often, this simplifies the process.
 """
-# this presupposes that these tables exist! but they may not!
-file_mapper = table_io.load_table("lookup_files")
-filter_mapper = table_io.load_table("lookup_filters")
-
 
 def get_file_name_from_exp_id(exp_id, file_mapper, root=False):
     """
@@ -161,14 +164,15 @@ def get_file_name_from_exp_id(exp_id, file_mapper, root=False):
     return file_name
 
 
-def get_filter_name_from_filter_id(filter_id):
+def get_filter_name_from_filter_id(filter_id, filter_mapper):
     """
     Given a filter identifier, get the name of the HST filter
 
     Parameters
     ----------
     filter_id : str
-      The identifier assigned to each filter by the database. Typically F followed by a number, like F1 or F2.
+      The identifier assigned to each filter by the database.
+      Typically F followed by a number, like F1 or F2.
     filter_mapper : pd.DataFrame (default: result of ks2_utils.get_filter_mapper())
       The dataframe that tracks the filter IDs and the corresponding filter names
 
@@ -186,7 +190,7 @@ def get_filter_name_from_filter_id(filter_id):
 """
 Helpers for getting exposures/images and stamps
 """
-def get_img_from_exp_id(exp_id, hdr='SCI'):
+def get_img_from_exp_id(exp_id, hdr, db_file, config_file):
     """
     Pull out an image from the fits file, given the exposure identifier.
 
@@ -194,19 +198,22 @@ def get_img_from_exp_id(exp_id, hdr='SCI'):
     ----------
     exp_id : str
       the identifier for the exposure (usu something like 'E001')
-    hdr : str or int ['SCI']
+    hdr : str or int 
       which header? allowed values: ['SCI','ERR','DQ','SAMP','TIME']
+    db_file : str or Path
+      path to the active database file
 
     Returns:
     img : numpy.array
       2-D image from the fits file
     """
-    flt_name = get_file_name_from_exp_id(exp_id)
-    flt_path = shared_utils.get_data_file(flt_name)
+    file_mapper = table_io.load_table("lookup_files", db_file)
+    flt_name = get_file_name_from_exp_id(exp_id, file_mapper)
+    flt_path = shared_utils.get_data_file(flt_name, config_file)
     img = fits.getdata(flt_path, hdr)
     return img
 
-def get_img_from_file_id(file_id, hdr='SCI'):
+def get_img_from_file_id(file_id, hdr, db_file, config_file):
     """
     Pull out an image from the fits file, given the exposure identifier.
 
@@ -216,17 +223,22 @@ def get_img_from_file_id(file_id, hdr='SCI'):
       the identifier for the file/exposure (usu something like 'E001')
     hdr : str or int ['SCI']
       which header? allowed values: ['SCI','ERR','DQ','SAMP','TIME']
+    db_file : str or Path
+      path to the active database file
+    config_file : str or Path
+      config file that tells you where the FITS files are
 
     Returns:
     img : numpy.array
       2-D image from the fits file
     """
-    flt_name = get_file_name_from_file_id(file_id)
-    flt_path = shared_utils.get_data_file(flt_name)
+    file_mapper = table_io.load_table("lookup_files", db_file)
+    flt_name = get_file_name_from_file_id(file_id, file_mapper)
+    flt_path = shared_utils.get_data_file(flt_name, config_file)
     img = fits.getdata(flt_path, hdr)
     return img
 
-def get_hdr_from_exp_id(exp_id, hdr='SCI'):
+def get_hdr_from_exp_id(exp_id, hdr, db_file):
     """
     Pull out a header from the fits file, given the exposure identifier.
 
@@ -249,32 +261,6 @@ def get_hdr_from_exp_id(exp_id, hdr='SCI'):
 """
 If the stamps are written to file, you can just find them using the ps_id or stamp_id
 """
-def get_stamp_from_id(ident, stamp_df=None):
-    """
-    Given a stamp or point source identifier, pull the corresponding stamp from
-    the database file /stamp_arrays/ group
-
-    Parameters
-    ----------
-    ident: str
-      stamp or point source identifier ([S/T]000000)
-
-    Output
-    ------
-    stamp_array: np.array
-      array corresponding to the requested stamp
-
-    """
-    # force the identifier to the stamp format, i.e. first letter "T"
-    if ident[0] == 'S':
-        ident.replace("S","T")
-
-    if stamp_df is None:
-        stamp_df = table_io.load_table('stamps')
-    stamp_array = stamp_df.set_index('stamp_id').loc[ident, 'stamp_array']
-    return stamp_array
-
-
 
 def get_stamp_coords_from_center(x, y, stamp_size):
     """
@@ -300,7 +286,7 @@ def get_stamp_coords_from_center(x, y, stamp_size):
 """
 Shortcut for loading the FITS headers
 """
-def load_header(extname='pri', db_file=shared_utils.db_clean_file):
+def load_header(extname, db_file):
     """
     Helper function to load the right header file
 
@@ -334,135 +320,6 @@ def load_header(extname='pri', db_file=shared_utils.db_clean_file):
 #################################
 # Table manipulation and lookup #
 #################################
-def lookup_from_id(ident,
-                   lookup_table, target_table,
-                   column=None):
-    """
-    This function is intended to run underneath wrappers that target particular table combinations
-    Parameters
-    ----------
-    ident : str or list
-      identifier(s) with format [S,P,T]######
-    lookup_table : pd.DataFrame
-      the table matching the given ID to the target identifier. If None, loads lookup table from the
-      specified database file
-    target_table : pd.DataFrame
-      the table containing the target information. if no columns are specified (column=None),
-      then returns the entire row. If None, loads the table from the specified
-      database file
-    column : string or list [None]
-      the column of the star table to return. if a string, returns one column. if a list,
-      returns all the specified columns. if None, returns the entire row
-    Output
-    ------
-    results : value, series, or dataframe
-      if one value for one object, then a single value. if several columns from a single
-      star or one value for several stars, then it's a series. if multiple columns for
-      multiple stars, then it's a dataframe.
-
-    """
-
-    # decide what kind of an identifier you have
-    if isinstance(ident, str):
-        ident = [ident]
-    ident_type = ident_map[ident[0][0]]
-    # the other identifier is the other column from the lookup table
-    targ_ident_type = [i for i in list(lookup_table.columns) if i != ident_type][0]
-    # get the corresponding identifiers
-    targ_ids = lookup_table.query(f'{ident_type} in @ident')[targ_ident_type]
-    targ_ids = targ_ids.drop_duplicates()
-    # use these identifiers to select a subset of the data
-    sub_table = target_table.query(f'{targ_ident_type} in @targ_ids')
-    #sub_table = sub_table.drop_duplicates()
-    # if applicable, select one (or more) columns
-    if isinstance(column, str) or isinstance(column, list):
-        try:
-            sub_table = sub_table[column].squeeze()
-        except KeyError:
-            print(f"Error: requested columns not found, returning full table.")
-    # finally, return the table
-    return sub_table
-
-# OK, now all the functions that wrap around it
-def lookup_star_from_ps_id(ps_id, lookup_table=None, star_table=None, column=None,
-                           db_file=shared_utils.db_clean_file):
-    """
-    Get the star table of star(s) that correspond to one or more point source detections.
-    Wraps around lookup_from_id.
-    """
-    if not isinstance(lookup_table, pd.DataFrame):
-        lookup_table = table_io.load_table("lookup_star-ps_id", db_file=db_file)
-    if not isinstance(star_table, pd.DataFrame):
-        star_table = table_io.load_table("stars", db_file=db_file)
-    return lookup_from_id(ps_id, lookup_table, star_table, column)
-
-def lookup_ps_from_star_id(star_id, lookup_table=None, ps_table=None, column=None,
-                           db_file=shared_utils.db_clean_file):
-    """
-    Get the point source table of point source(s) that correspond to one or more stars.
-    Wraps around lookup_from_id.
-    """
-    if not isinstance(lookup_table, pd.DataFrame):
-        lookup_table = table_io.load_table("lookup_star-ps_id", db_file=db_file)
-    if not isinstance(ps_table, pd.DataFrame):
-        ps_table = table_io.load_table("point_sources", db_file=db_file)
-    return lookup_from_id(star_id, lookup_table, ps_table, column)
-
-
-def lookup_star_from_stamp_id(stamp_id, lookup_table=None, star_table=None, column=None,
-                           db_file=shared_utils.db_clean_file):
-    """
-    Get the star table of star(s) that correspond to one or more stamps.
-    wraps around lookup_from_id.
-    """
-    if not isinstance(lookup_table, pd.DataFrame):
-        lookup_table = table_io.load_table("lookup_star-stamp_id", db_file=db_file)
-    if not isinstance(star_table, pd.DataFrame):
-        star_table = table_io.load_table("stars", db_file=db_file)
-    return lookup_from_id(stamp_id, lookup_table, star_table, column)
-
-
-def lookup_stamp_from_star_id(star_id, lookup_table=None, stamp_table=None, column=None,
-                              db_file=shared_utils.db_clean_file):
-    """
-    Get the stamp table of stamp(s) that correspond to one or more stars.
-    Wraps around lookup_from_id.
-    """
-    if not isinstance(lookup_table, pd.DataFrame):
-        lookup_table = table_io.load_table("lookup_star-stamp_id", db_file=db_file)
-    if not isinstance(stamp_table, pd.DataFrame):
-        stamp_table = table_io.load_table("stamps", db_file=db_file)
-    return lookup_from_id(star_id, lookup_table, stamp_table, column)
-
-def lookup_ps_from_stamp_id(stamp_id, lookup_table=None, ps_table=None, column=None,
-                            db_file=shared_utils.db_clean_file):
-    """
-    Get the point source table of point source(s) that correspond to one or more stamps.
-    Wraps around lookup_from_id.
-    """
-    if not isinstance(lookup_table, pd.DataFrame):
-        lookup_table = table_io.load_table("lookup_ps-stamp_id", db_file=db_file)
-    if not isinstance(ps_table, pd.DataFrame):
-        ps_table = table_io.load_table("point_sources", db_file=db_file)
-    return lookup_from_id(stamp_id, lookup_table, ps_table, column)
-
-def lookup_stamp_from_ps_id(ps_id, lookup_table=None, stamp_table=None, column=None,
-                            db_file=shared_utils.db_clean_file):
-    """
-    Get the stamp table of stamps correspond to one or more point source(s).
-    Wraps around lookup_from_id.
-    """
-    if not isinstance(lookup_table, pd.DataFrame):
-        lookup_table = table_io.load_table("lookup_ps-stamp_id", db_file=db_file)
-    if not isinstance(stamp_table, pd.DataFrame):
-        stamp_table = table_io.load_table("stamps", db_file=db_file)
-    return lookup_from_id(ps_id, lookup_table, stamp_table, column)
-
-
-
-
-
-
 def match_value_in_table(table, query_col, match_val, return_col=None):
     """
     Retrieve a value from a table. Assumes the equality operator ('==')
@@ -552,37 +409,7 @@ def create_database_subset(list_of_stars, tables=None):
     return subset_tables
 
 
-def get_working_catalog_subset():
-    """
-    This is the canonical working catalog subset. It is defined as all stars
-    between u=[600, 1000] and v=[800, 1200] in the master frame of reference.
-    There are 228 unique stars and 9807 point sources, about 10% of the total
-    catalog. This function accepts no arguments because it shouldn't change
-
-    Parameters
-    ----------
-    none
-
-    Output
-    ------
-    subset_tables : dict
-      dictionary of tables with the stars, point_sources, and stamps subsets
-    """
-    # load the master catalog
-    stars_table = table_io.load_table("stars")
-    # select subset
-    u_range = (600, 1000)
-    v_range = (800, 1200)
-    # generate the query string
-    qstr = (f"u_mast >= @u_range[0] and u_mast <= @u_range[1]"
-            "and v_mast >= @v_range[0] and v_mast <= @v_range[1]")
-    subset_tables = create_database_subset(stars_table.query(qstr)['star_id'],
-                                           ['stars','point_sources','stamps'])
-    return subset_tables
-
-
-
-def get_header_kw_for_exp(exp_id, kw, hdr_id='pri'):
+def get_header_kw_for_exp(exp_id, kw, hdr_id, db_file):
     """
     Shortcut to get the value of a particular header keyword for an exposure
 
@@ -592,16 +419,20 @@ def get_header_kw_for_exp(exp_id, kw, hdr_id='pri'):
       exposure identifier (e.g. E123)
     kw : str
       header keyword whose value you want
-    hdr: str [pri]
+    hdr: str 
       which header to search for the keyword
+    db_file : str or Path
+      path to the database file
 
     Output
     ------
     kw_val : the value stored at the header keyword
     """
 
-    hdr = load_header(hdr_id)
-    filename = get_file_name_from_exp_id(exp_id, root=True)
+    #hdr = load_header(hdr_id, db_file)
+    hdr = table_io.load_table('hdr_'+hdr_id, db_file)
+    file_mapper = table_io.load_table('lookup_files', db_file)
+    filename = get_file_name_from_exp_id(exp_id, file_mapper, root=True)
     try:
         kw_val = hdr.query('rootname == @filename')[kw.lower()].squeeze()
     except:
@@ -610,7 +441,7 @@ def get_header_kw_for_exp(exp_id, kw, hdr_id='pri'):
     return kw_val
 
 
-def get_wcs_from_exp_id(exp_id):
+def get_wcs_from_exp_id(exp_id, file_mapper, config_file):
     """
     Given an exposure ID, get the WCS header for the file
 
@@ -619,14 +450,19 @@ def get_wcs_from_exp_id(exp_id):
     exp_id : str
       a string of format E000 corresponding to an exposure that comes from
       a unique fits file
+    file_mapper : pd.DataFrame
+      dataframe linking the exposure IDs to the file names
+    config_file : str or Path
+      path to the config file that stores folder where the FITS files are kept
 
     Output
     ------
     wcs : a WCS object 
 
     """
-    file_name = get_file_name_from_exp_id(exp_id)
-    wcs = WCS(fits.getheader(shared_utils.get_data_file(file_name), 'SCI'))
+    file_name = get_file_name_from_exp_id(exp_id, file_mapper)
+    file_path = shared_utils.get_data_file(file_name, config_file)
+    wcs = WCS(fits.getheader(file_path, 'SCI'))
     return wcs
 
 ####################
@@ -669,85 +505,3 @@ def set_reference_quality_flag(stamp_ids, flag=True, stamp_table=None):
     # done
 
 
-##################
-#### Old stuff ###
-##################
-class OldFuncs:
-    """Dumping ground for old functions you want to keep around"""
-
-    def write_table(table, key, kwargs={}, db_file=shared_utils.db_clean_file, verbose=True):
-        """
-        Add a table to the DB file `shared_utils.db_clean_file`. Really just a simple
-        wrapper so I don't have to keep typing shared_utils.db_clean_file every time
-        I need to write something
-
-        Parameters
-        ----------
-        table : pd.DataFrame
-          pandas DataFrame (or Series) containing the data you want to store
-        key : str
-          key for the table in the HSF file
-        kwargs : dict [{}]
-          any keyword arguments to pass to pd.DataFrame.to_hdf for DataFrames and
-          Series, or to h5py.File for non-pandas objects
-        db_file : str or Path [shared_utils.db_clean_file]
-          path to the database file
-        verbose : bool [True]
-          print some output
-        Output
-        -------
-        Nothing; writes to file
-        """
-        # this throws a performance warning when you store python objects with
-        # mixed or complex types in an HDF file, but I want to ignore those
-        with warnings.catch_warnings() as w:
-            kwargs['mode'] = kwargs.get("mode", 'a')
-            if hasattr(table, 'to_hdf'):
-                table.to_hdf(db_file, key=key, **kwargs)
-                if verbose == True:
-                    print(f"Table {key} written to {str(db_file)}")
-            else:
-                print("Error: cannot currently store non-pandas types")
-                """
-                with h5py.File(db_file, **kwargs) as store:
-                    try:
-                        store[key] = table
-                    except KeyError:
-                        grp = store.create_group(key)
-                    store.close()
-                """
-
-
-    def load_table(key, db_file=shared_utils.db_clean_file):
-        """
-        Load a table.
-
-        Parameters
-        ----------
-        key : string or list
-        db_file : path to the database file that holds the table
-
-        Output
-        ------
-        df : pd.DataFrame or dict of dataframes
-          the table (or, if `key` is a list, then a dict of dataframes)
-        """
-        # df = None
-        if isinstance(key, list):
-            df = {}
-            for k in key:
-                # drop the leading /, if relevant
-                if k[0] == '/': k = k[1:]
-                try:
-                    df[k] = pd.read_hdf(db_file, k)
-                except KeyError:
-                    print(f"Error: Key `{key}` not found in {str(db_file)}")
-                    df[k] = None
-        else:
-            try:
-                df = pd.read_hdf(db_file, key)
-            except KeyError:
-                print(f"Error: Key `{key}` not found in {str(db_file)}")
-                df = None
-
-        return df

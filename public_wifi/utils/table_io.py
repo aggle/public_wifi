@@ -13,7 +13,7 @@ import configparser
 from astropy.wcs import WCS
 from astropy.io import fits
 
-from . import shared_utils, header_utils
+from . import header_utils
 
 
 # this dictionary helpfully maps the first letter of an identifier
@@ -21,8 +21,9 @@ from . import shared_utils, header_utils
 ident_map = {'S': 'star_id', 'P': 'ps_id', 'T': 'stamp_id'}
 
 
-def write_table(key, df, pk=None,
-                db_file=shared_utils.db_clean_file,
+def write_table(key, df,
+                db_file,
+                pk=None,
                 verbose=False,
                 h5py_args={},
                 clobber=False):
@@ -35,10 +36,10 @@ def write_table(key, df, pk=None,
       the table's key to use in the HDF file
     df : pd.DataFrame
       the dataframe with the table
-    pk : str [None]
-      (optional) the name of the table's primary key
     db_file : str or pathlib.Path
       the filename to write to
+    pk : str [None]
+      (optional) the name of the table's primary key
     h5py_args : dict [{}]
       any other keyword arguments to pass to h5py.File
     clobber : bool [False]
@@ -94,7 +95,7 @@ def write_table(key, df, pk=None,
         print(f"Wrote '{key}' to {db_file}")
 
 
-def load_table(key, db_file=shared_utils.db_clean_file, verbose=False):
+def load_table(key, db_file, verbose=False):
     """
     Load a table into a dataframe
 
@@ -131,7 +132,7 @@ def load_table(key, db_file=shared_utils.db_clean_file, verbose=False):
 
 
 def update_table(key, pk_name, pk_val, column, val,
-                 db_file=shared_utils.db_clean_file, verbose=True):
+                 db_file, verbose=True):
     """
     Update table value
 
