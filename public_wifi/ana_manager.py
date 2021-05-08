@@ -125,13 +125,19 @@ def get_base_cutouts(db, stamp_size):
     # group by exposure ID so you only read each file once
     gb_exp = table.groupby('ps_exp_id')
     # put the whole exposure into an NDData object
-    parent_nddata = gb_exp.apply(lambda x: nddata.NDData(data=table_utils.get_img_from_exp_id(x.name),
-                                                         wcs=table_utils.get_wcs_from_exp_id(x.name)))
+    def wcs_func(x):
+        img = nddata.NDData(data=table_utils.get_img_from_exp_id(x.name, 'SCI',
+                                                                 db.db_path, db.config_file),
+                            wcs=table_utils.get_wcs_from_exp_id(x.name,
+                                                                db.lookup_dict['lookup_files'],
+                                                                db.config_file))
+        return img
+    parent_nddata = gb_exp.apply(wcs_func)
     row_cutout = lambda row: nddata.Cutout2D(parent_nddata[row['ps_exp_id']].data,
-                                              position=tuple(row[['ps_x_exp', 'ps_y_exp']]-1),
-                                              wcs=parent_nddata[row['ps_exp_id']].wcs, 
-                                              size=stamp_size,
-                                              mode='partial', copy=True)
+                                             position=tuple(row[['ps_x_exp', 'ps_y_exp']]-1),
+                                             wcs=parent_nddata[row['ps_exp_id']].wcs, 
+                                             size=stamp_size,
+                                             mode='partial', copy=True)
     cutouts = table.set_index('stamp_id').apply(row_cutout, axis=1)
     return cutouts
 
