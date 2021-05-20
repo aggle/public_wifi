@@ -1,4 +1,4 @@
-#+title: Trumpler 14 analysis user guide
+#+title: PUBLIC WIFI user guide
 
 The final state of the Trumpler 14 analysis package will consist of the following independent components:
 
@@ -9,7 +9,10 @@ The final state of the Trumpler 14 analysis package will consist of the followin
 
 Currently, only *Database* and *PSF subtraction* are implemented. See below for usage, and at the end of the file for a brief description of each component.
 
+A conda environment that is compatible with this version of PUBLIC WIFI is provided in `docs/conda-public_wifi.yml` (it has more packages than are strictly necessary). You can create the environment from a terminal with the command `conda env create -f conda-public_wifi.yml`. You can then activate the environment with `conda activate public_wifi`. 
+
 * Usage
+
 This is going to be pretty bare-bones, reflecting the current state of the software.
 
 The database is managed by the ~db_manager.DBManager~ class, and the psf subtraction is managed by the ~subtr_utils.SubtrManager~ class. ~shared_utils~ holds various useful values like file paths to the database. Import the following modules from wherever the tr14 base folder is located:
