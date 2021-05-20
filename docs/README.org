@@ -9,7 +9,7 @@ The final state of the Trumpler 14 analysis package will consist of the followin
 
 Currently, only *Database* and *PSF subtraction* are implemented. See below for usage, and at the end of the file for a brief description of each component.
 
-A conda environment that is compatible with this version of PUBLIC WIFI is provided in ~docs/conda-public_wifi.yml~ (it has more packages than are strictly necessary). You can create the environment from a terminal with the command ~conda env create -f conda-public_wifi.yml~. You can then activate the environment with ~conda activate public_wifi~. 
+A conda environment that is compatible with this version of PUBLIC WIFI is provided in `docs/conda-public_wifi.yml` (it has more packages than are strictly necessary). You can create the environment from a terminal with the command `conda env create -f conda-public_wifi.yml`. You can then activate the environment with `conda activate public_wifi`. 
 
 * Usage
 
