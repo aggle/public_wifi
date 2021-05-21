@@ -365,9 +365,6 @@ def get_master_catalog(ks2_master_file,#=ks2_files[0],
                                     index_col=False)
 
 
-    # convert the indices from fortran 2 python
-    master_catalog_df[['umast0', 'vmast0']] = frtn2py_ind(master_catalog_df[['umast0', 'vmast0']])
-
     # if desired, return the cleaned catalog. else, return raw
     if clean == True:
         master_catalog_df = clean_master_catalog(master_catalog_df, ps_cat,
@@ -527,10 +524,6 @@ def get_point_source_catalog(ps_file,
 
     # make sure the dtypes are correct
     ps_df = ps_df.astype(nimfo_dtypes, copy=True)
-
-    # convert the indices from fortran 2 python
-    pos_cols = ['umast', 'vmast', 'u1', 'v1', 'x1', 'y1', 'x0', 'y0', 'xraw1', 'yraw1']
-    ps_df[pos_cols] = frtn2py_ind(ps_df[pos_cols])
 
     # if desired, return the cleaned catalog. else, return raw
     if clean == True:

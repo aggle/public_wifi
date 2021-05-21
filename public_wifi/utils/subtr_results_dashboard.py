@@ -64,7 +64,7 @@ def show_sky_scene(star_id, dbm, zoom=61, alt_dbm={}, stamp_size=11, plot_size=3
     # draw the sky scene
     mapper = bkmdls.LogColorMapper(palette='Magma256', low=np.nanmin(mast_img), high=np.nanmax(mast_img))
     p_sky.image(image=[mast_img], 
-                x=0.5, y=0.5, dw=mast_img.shape[1], dh=mast_img.shape[0], 
+                x=-0.5, y=-0.5, dw=mast_img.shape[1], dh=mast_img.shape[0], 
                 color_mapper=mapper)
 
     # draw the stamp limits
