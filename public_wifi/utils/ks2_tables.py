@@ -151,7 +151,6 @@ def make_point_source_table(ps_cat, lookup_nmast):
 
     return ps_table
 
-
 def generate_stamp_table(ps_table,
                          fits_folder,
                          fits_file_mapper,
@@ -187,6 +186,7 @@ def generate_stamp_table(ps_table,
     gb_exp = ps_table.set_index('ps_id').groupby('ps_exp_id')
     def get_stamps(exp_group, verbose=verbose):
         """
+        Operate on the group dataframe
         use nddata.Cutout2D to pull out the stamps from the image
         """
         exp_id = exp_group.name
@@ -203,8 +203,9 @@ def generate_stamp_table(ps_table,
             return None
         #img = fits.getdata(shared_utils.get_data_file(flt_file), 'sci')
         img = fits.getdata(flt_file, 'sci')
+        # operate on dataframe rows
         row_func = lambda row: nddata.Cutout2D(img,
-                                               tuple(row[['ps_x_exp','ps_y_exp']]),
+                                               tuple(row[['ps_x_exp','ps_y_exp']].values),
                                                size=stamp_size,
                                                mode='partial',
                                                fill_value=np.nan).data
@@ -244,6 +245,48 @@ def generate_stamp_table(ps_table,
     for k, v in columns.items():
         stamp_table[k] = stamp_table[k].astype(v)
     return stamp_table
+
+def make_lookup_tables(stars_tab, ps_tab, stamps_tab):
+    """
+    Generate the tables that link the star, point source, and stamp IDs
+    with each other
+
+    Parameters
+    ----------
+    stars_tab : pd.DataFrame
+      table for unique astrophysical objects
+    ps_tab : pd.DataFrame
+      table of point source detections
+    stamps_tab : pd.DataFrame
+      table of stamps
+
+    Output
+    ------
+    lookup_tables : dict of the lookup tables
+
+    """
+    # store the tables in this dict for looping later
+    lookup_tables = {}
+
+    # star - point source
+    old_cols = ['ps_star_id','ps_id']
+    new_cols = {'ps_star_id':'star_id', 'ps_id': 'ps_id'}
+    lookup_star_ps_id = ps_tab[old_cols].rename(columns=new_cols).copy()
+    lookup_tables["lookup_star-ps_id"] = lookup_star_ps_id
+
+    # point source - stamp
+    old_cols = ['stamp_ps_id','stamp_id']
+    new_cols = {'stamp_ps_id':'ps_id', 'stamp_id':'stamp_id'}
+    lookup_ps_stamp_id = stamps_tab[old_cols].rename(columns=new_cols).copy()
+    lookup_tables["lookup_ps-stamp_id"] = lookup_ps_stamp_id
+
+    # star - stamp
+    old_cols = ['stamp_star_id','stamp_id']
+    new_cols = {'stamp_star_id':'star_id', 'stamp_id':'stamp_id'}
+    lookup_star_stamp_id = stamps_tab[old_cols].rename(columns=new_cols).copy()
+    lookup_tables["lookup_star-stamp_id"] = lookup_star_stamp_id
+
+    return lookup_tables
 
 
 def write_fundamental_db(db_file,
@@ -332,22 +375,28 @@ def write_fundamental_db(db_file,
 
 
     # stamp table
-    if stamps == True:
-        fits_path = ks2_utils.load_config_path("user_paths", "data_path", config_file)
-        stamp_table = generate_stamp_table(ps_table, 
-                                           fits_path,
-                                           fits_file_mapper=lookup_files,
-                                           stamp_size=11,
-                                           verbose=verbose)
-        master_tables_dict['stamps'] = stamp_table
-        primary_keys['stamps'] = 'stamp_id'
+    fits_path = ks2_utils.load_config_path("user_paths", "data_path", config_file)
+    stamp_table = generate_stamp_table(ps_table, 
+                                       fits_path,
+                                       fits_file_mapper=lookup_files,
+                                       stamp_size=11,
+                                       verbose=verbose)
+    master_tables_dict['stamps'] = stamp_table
+    primary_keys['stamps'] = 'stamp_id'
+
+    # make the lookup tables
+    master_tables_dict.update(make_lookup_tables(stars_table,
+                                                 ps_table,
+                                                 stamp_table))
 
     # write all the tables to the database file
     for key, df in sorted(master_tables_dict.items()):
         pk = primary_keys.get(key, None)
-        table_io.write_table(key, df, pk=pk, db_file=db_file, verbose=verbose)
+        table_io.write_table(key, df, pk=pk, db_file=db_file, verbose=verbose,
+                             clobber=True)
     print("Finished.")
     # return master_tables_dict, primary_keys
+
 
 
 def make_cand_master_table():
