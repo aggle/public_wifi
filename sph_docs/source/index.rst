@@ -1,16 +1,18 @@
-.. PUBLIC_WIFI documentation master file, created by
-   sphinx-quickstart on Tue Apr 27 10:11:12 2021.
+.. PUBLIC WIFI documentation master file, created by
+   sphinx-quickstart on Fri May 21 21:46:14 2021.
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to PUBLIC_WIFI's documentation!
+Welcome to PUBLIC WIFI's documentation!
 =======================================
 
 .. toctree::
    :maxdepth: 2
    :caption: Contents:
 
-
+   readme
+   modules
+   
 
 Indices and tables
 ==================

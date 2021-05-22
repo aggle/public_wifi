@@ -1,0 +1,2068 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>public_wifi.utils package &#8212; PUBLIC WIFI 0.1 documentation</title>
+    <link rel="stylesheet" href="_static/pyramid.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="prev" title="public_wifi.instruments package" href="public_wifi.instruments.html" />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Neuton&amp;subset=latin" type="text/css" media="screen" charset="utf-8" />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Nobile:regular,italic,bold,bolditalic&amp;subset=latin" type="text/css" media="screen" charset="utf-8" />
+<!--[if lte IE 6]>
+<link rel="stylesheet" href="_static/ie6.css" type="text/css" media="screen" charset="utf-8" />
+<![endif]-->
+
+  </head><body>
+
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="public_wifi.instruments.html" title="public_wifi.instruments package"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">PUBLIC WIFI 0.1 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="modules.html" >public_wifi</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="public_wifi.html" accesskey="U">public_wifi package</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">public_wifi.utils package</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="public-wifi-utils-package">
+<h1>public_wifi.utils package<a class="headerlink" href="#public-wifi-utils-package" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="public-wifi-utils-cat-utils-module">
+<h2>public_wifi.utils.cat_utils module<a class="headerlink" href="#public-wifi-utils-cat-utils-module" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="public-wifi-utils-cleaning-utils-module">
+<h2>public_wifi.utils.cleaning_utils module<a class="headerlink" href="#public-wifi-utils-cleaning-utils-module" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-public_wifi.utils.distance_utils">
+<span id="public-wifi-utils-distance-utils-module"></span><h2>public_wifi.utils.distance_utils module<a class="headerlink" href="#module-public_wifi.utils.distance_utils" title="Permalink to this headline">¶</a></h2>
+<p>Methods for calculating and analyzing separations between point sources and stars</p>
+<dl class="py function">
+<dt id="public_wifi.utils.distance_utils.calc_detector_distances">
+<code class="sig-prename descclassname">public_wifi.utils.distance_utils.</code><code class="sig-name descname">calc_detector_distances</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">df</span></em><span class="sig-paren">)</span><a class="headerlink" href="#public_wifi.utils.distance_utils.calc_detector_distances" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculate the on-detector distances for a point source dataframe. Diagonal is nan.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>df</strong> (<em>pd.DataFrame</em>) – dataframe containing at least the columns: ps_id, ps_x_exp, ps_y_exp</p></li>
+<li><p><strong>Output</strong> – </p></li>
+<li><p><strong>------</strong> – </p></li>
+<li><p><strong>dist_mat</strong> (<em>pd.DataFrame</em>) – symmetric dataframe of distances between point source detections.
+index and columns are ps_id, diag is nan</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="public_wifi.utils.distance_utils.calc_dist_from_obj">
+<code class="sig-prename descclassname">public_wifi.utils.distance_utils.</code><code class="sig-name descname">calc_dist_from_obj</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">df</span></em>, <em class="sig-param"><span class="n">star_id</span></em>, <em class="sig-param"><span class="n">set_nan</span><span class="o">=</span><span class="default_value">True</span></em><span class="sig-paren">)</span><a class="headerlink" href="#public_wifi.utils.distance_utils.calc_dist_from_obj" title="Permalink to this definition">¶</a></dt>
+<dd><p>Given a stars table and a star_id, calculate the pixelwise distance of every
+other point source in that exposure from the specified object.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>df</strong> (<em>pd.DataFrame</em>) – pandas dataframe for a single exposure with only one entry per
+astrophysical object</p></li>
+<li><p><strong>star_id</strong> (<em>str</em>) – identifier for the astrophysical object</p></li>
+<li><p><strong>set_nan</strong> (<em>bool</em><em> [</em><em>True</em><em>]</em>) – if True, set the distance of the object from itself to nan instead of 0</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="public_wifi.utils.distance_utils.calc_distance_matrix">
+<code class="sig-prename descclassname">public_wifi.utils.distance_utils.</code><code class="sig-name descname">calc_distance_matrix</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">df</span></em>, <em class="sig-param"><span class="n">set_nan</span><span class="o">=</span><span class="default_value">True</span></em><span class="sig-paren">)</span><a class="headerlink" href="#public_wifi.utils.distance_utils.calc_distance_matrix" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculate the pairwise distance matrix for the dataframe, in the master frame.
+This works for the point source table if you slice it to be a single exposure</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>df</strong> (<em>dataframe with columns containing the star_id</em><em>, </em><em>u_mast</em><em>, </em><em>and v_mast values</em>) – </p></li>
+<li><p><strong>set_nan</strong> (<em>bool</em><em> [</em><em>True</em><em>]</em>) – if True, set the diagonal to NaN instead of 0</p></li>
+<li><p><strong>Output</strong> – </p></li>
+<li><p><strong>------</strong> – </p></li>
+<li><p><strong>dist_mat</strong> (<em>pd.DataFrame</em>) – dataframe of pairwise distances in the master frame of reference</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="public_wifi.utils.distance_utils.calc_exp_dist_from_obj">
+<code class="sig-prename descclassname">public_wifi.utils.distance_utils.</code><code class="sig-name descname">calc_exp_dist_from_obj</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">df</span></em>, <em class="sig-param"><span class="n">obj_id</span></em>, <em class="sig-param"><span class="n">set_nan</span><span class="o">=</span><span class="default_value">True</span></em><span class="sig-paren">)</span><a class="headerlink" href="#public_wifi.utils.distance_utils.calc_exp_dist_from_obj" title="Permalink to this definition">¶</a></dt>
+<dd><p>Given a dataframe of a single exposure and a particular object,
+calculate the pixelwise distance of every other point source in that
+exposure from the specified object.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>df</strong> (<em>pd.DataFrame</em>) – pandas dataframe for a single exposure with only one entry per
+astrophysical object</p></li>
+<li><p><strong>obj_id</strong> (<em>str</em>) – identifier for the astrophysical object</p></li>
+<li><p><strong>set_nan</strong> (<em>bool</em><em> [</em><em>True</em><em>]</em>) – if True, set the distance of the object from itself to nan instead of 0</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="public_wifi.utils.distance_utils.generate_exposure_distance_matrix">
+<code class="sig-prename descclassname">public_wifi.utils.distance_utils.</code><code class="sig-name descname">generate_exposure_distance_matrix</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">df</span></em>, <em class="sig-param"><span class="n">same_nan</span><span class="o">=</span><span class="default_value">True</span></em><span class="sig-paren">)</span><a class="headerlink" href="#public_wifi.utils.distance_utils.generate_exposure_distance_matrix" title="Permalink to this definition">¶</a></dt>
+<dd><p>Given a KS2 dataframe, compute a symmetric matrix of pixelwise distances.
+The dataframe should only contain point sources from the same exposure.
+this goes really slowly as the size of the dataframe increases; I’m not sure why</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>df</strong> (<em>pd.DataFrame</em>) – dataframe that at least contains the columns [NMAST, xraw1, and yraw1]</p></li>
+<li><p><strong>same_nan</strong> (<em>bool</em><em> (</em><em>False</em><em>)</em>) – if True, set the diagonal to nan instead of 0</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>dist_mat</strong> – N sources x N sources dataframe, where the index and columns are
+the star identifiers, containing the pixelwise distance between sources</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>pd.DataFrame</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="public_wifi.utils.distance_utils.get_exposure_neighbors">
+<code class="sig-prename descclassname">public_wifi.utils.distance_utils.</code><code class="sig-name descname">get_exposure_neighbors</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">catalog</span></em>, <em class="sig-param"><span class="n">obj_id</span></em>, <em class="sig-param"><span class="n">exp_id</span></em>, <em class="sig-param"><span class="n">radius</span></em><span class="sig-paren">)</span><a class="headerlink" href="#public_wifi.utils.distance_utils.get_exposure_neighbors" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get all the point sources within a certain radius of an object in a
+particular exposure. This tests the selected obj_id’s xraw1 and yraw1
+against those of the rest of the objects in that exposure.
+Returns a dataframe of the neighbors.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>catalog</strong> (<em>pd.DataFrame</em>) – a catalog of point sources</p></li>
+<li><p><strong>obj_id</strong> (<em>str</em>) – the stellar object identifier. Only one should be present in any exposure</p></li>
+<li><p><strong>exp_id</strong> (<em>str</em>) – identifier for the exposure</p></li>
+<li><p><strong>radius</strong> (<em>int</em>) – distance in pixels from the object to keep</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>neighbor_df</strong> – catalog entries for the neighbors</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>pd.DataFrame</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="public_wifi.utils.distance_utils.get_neighbors">
+<code class="sig-prename descclassname">public_wifi.utils.distance_utils.</code><code class="sig-name descname">get_neighbors</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">star_id</span></em>, <em class="sig-param"><span class="n">radius</span></em>, <em class="sig-param"><span class="n">stars_table</span></em><span class="sig-paren">)</span><a class="headerlink" href="#public_wifi.utils.distance_utils.get_neighbors" title="Permalink to this definition">¶</a></dt>
+<dd><p>Given a star, use the master catalog to get the neighbors in a radius</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>star_id</strong> (<em>str</em>) – stars:star_id identifier for the primary</p></li>
+<li><p><strong>radius</strong> (<em>int</em>) – search radius in pixels</p></li>
+<li><p><strong>Output</strong> – </p></li>
+<li><p><strong>------</strong> – </p></li>
+<li><p><strong>neighbor_ids</strong> (<em>list</em>) – list of star_id values for the neighbors</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="module-public_wifi.utils.dq_utils">
+<span id="public-wifi-utils-dq-utils-module"></span><h2>public_wifi.utils.dq_utils module<a class="headerlink" href="#module-public_wifi.utils.dq_utils" title="Permalink to this headline">¶</a></h2>
+<p>Functions for gathering and using data quality information</p>
+<dl class="py function">
+<dt id="public_wifi.utils.dq_utils.get_dq_stamps">
+<code class="sig-prename descclassname">public_wifi.utils.dq_utils.</code><code class="sig-name descname">get_dq_stamps</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">point_sources_table</span></em>, <em class="sig-param"><span class="n">get_stamp_args</span><span class="o">=</span><span class="default_value">{}</span></em><span class="sig-paren">)</span><a class="headerlink" href="#public_wifi.utils.dq_utils.get_dq_stamps" title="Permalink to this definition">¶</a></dt>
+<dd><p>Given a point sources table, create a table for the data quality flags.
+This can take a while to run.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>Output</strong> – </p></li>
+<li><p><strong>------</strong> – </p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="public_wifi.utils.dq_utils.get_dq_table">
+<code class="sig-prename descclassname">public_wifi.utils.dq_utils.</code><code class="sig-name descname">get_dq_table</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">point_sources_table</span></em>, <em class="sig-param"><span class="n">get_stamp_args</span><span class="o">=</span><span class="default_value">{}</span></em><span class="sig-paren">)</span><a class="headerlink" href="#public_wifi.utils.dq_utils.get_dq_table" title="Permalink to this definition">¶</a></dt>
+<dd><p>Given a point sources table, create a table for the data quality flags.
+This can take a while to run.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>point_sources_table</strong> (<em>pd.DataFrame</em>) – a point sources table - either full, or a subset</p></li>
+<li><p><strong>get_stamp_args</strong> (<em>{}</em>) – keyword arguments to pass to image_utils.get_stamps_from_ps_table</p></li>
+<li><p><strong>Output</strong> – </p></li>
+<li><p><strong>------</strong> – </p></li>
+<li><p><strong>dq_table</strong> (<em>pd.Series</em>) – table whose index is the stamp ID and whose value is a dict of pixel
+coordinates for each flag</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="module-public_wifi.utils.header_utils">
+<span id="public-wifi-utils-header-utils-module"></span><h2>public_wifi.utils.header_utils module<a class="headerlink" href="#module-public_wifi.utils.header_utils" title="Permalink to this headline">¶</a></h2>
+<p>Simple module to write the fits headers to file, and read them, or do other manipulations
+For now, the filenames and directories will be hard-coded in</p>
+<dl class="py function">
+<dt id="public_wifi.utils.header_utils.clean_header_dict">
+<code class="sig-prename descclassname">public_wifi.utils.header_utils.</code><code class="sig-name descname">clean_header_dict</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">hdr_dict</span></em><span class="sig-paren">)</span><a class="headerlink" href="#public_wifi.utils.header_utils.clean_header_dict" title="Permalink to this definition">¶</a></dt>
+<dd><p>Remove unnecessary keywords from a header dictionary
+Keywords to remove: “’’”, “HISTORY”,”COMMENT”
+Returns nothing; changes made in-place</p>
+</dd></dl>
+
+<dl class="py function">
+<dt id="public_wifi.utils.header_utils.get_header_dfs">
+<code class="sig-prename descclassname">public_wifi.utils.header_utils.</code><code class="sig-name descname">get_header_dfs</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">fits_files</span></em><span class="sig-paren">)</span><a class="headerlink" href="#public_wifi.utils.header_utils.get_header_dfs" title="Permalink to this definition">¶</a></dt>
+<dd><p>From the given fits file names, group all the headers into dataframes, with
+dataframe for each type of header and one row for each file</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>fits_files</strong> (<em>list-like</em>) – a list of filenames for FITS images you want to collect together</p></li>
+<li><p><strong>Output</strong> – </p></li>
+<li><p><strong>------</strong> – </p></li>
+<li><p><strong>df_dict</strong> (<em>dict</em>) – a dictionary of the dataframes. the dict key is the name of the header type
+(PRI, SCI, ERR, etc)</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="public_wifi.utils.header_utils.header2dict">
+<code class="sig-prename descclassname">public_wifi.utils.header_utils.</code><code class="sig-name descname">header2dict</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">header</span></em><span class="sig-paren">)</span><a class="headerlink" href="#public_wifi.utils.header_utils.header2dict" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convert header to a dict and do cleanup
+Accepts a FITS header
+Returns a dict of the header keywords and values, plus whatever cleanup</p>
+</dd></dl>
+
+<dl class="py function">
+<dt id="public_wifi.utils.header_utils.headerdict2dataframe">
+<code class="sig-prename descclassname">public_wifi.utils.header_utils.</code><code class="sig-name descname">headerdict2dataframe</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">header_dicts</span></em><span class="sig-paren">)</span><a class="headerlink" href="#public_wifi.utils.header_utils.headerdict2dataframe" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convert a header dictionary into a pandas dataframe</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>header_dict</strong> (<em>the dictionary made from a fits header</em>) – </p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>header_df</strong></p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>a single pandas dataframe containing information from all the headers</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="public_wifi.utils.header_utils.headers2dict">
+<code class="sig-prename descclassname">public_wifi.utils.header_utils.</code><code class="sig-name descname">headers2dict</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">filenames</span></em><span class="sig-paren">)</span><a class="headerlink" href="#public_wifi.utils.header_utils.headers2dict" title="Permalink to this definition">¶</a></dt>
+<dd><p>Each file has the same keywords in the headers
+Put them <em>all</em> into dictionaries (loop header2dict over all the headers in all the files)</p>
+</dd></dl>
+
+<dl class="py function">
+<dt id="public_wifi.utils.header_utils.load_headers">
+<code class="sig-prename descclassname">public_wifi.utils.header_utils.</code><code class="sig-name descname">load_headers</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">header_path</span></em>, <em class="sig-param"><span class="n">extname</span><span class="o">=</span><span class="default_value">'pri'</span></em><span class="sig-paren">)</span><a class="headerlink" href="#public_wifi.utils.header_utils.load_headers" title="Permalink to this definition">¶</a></dt>
+<dd><p>Helper function to load the right header file</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>header_path</strong> (<em>str</em><em> or </em><em>Path</em>) – path to the folder where the header files are stored</p></li>
+<li><p><strong>extname</strong> (<em>str</em><em> [</em><em>pri</em><em>]</em>) – shorthand name for the extension whose dataframe you want
+options are: pri, sci, err, dq, samp, and time</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>df</strong> – a dataframe with the right header selected</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>pd.DataFrame</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="public_wifi.utils.header_utils.parse_dq_array">
+<code class="sig-prename descclassname">public_wifi.utils.header_utils.</code><code class="sig-name descname">parse_dq_array</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">dq_array</span></em><span class="sig-paren">)</span><a class="headerlink" href="#public_wifi.utils.header_utils.parse_dq_array" title="Permalink to this definition">¶</a></dt>
+<dd><p>This should return a dictionary, where each key is a flag value, and each
+value is the y,x coordinates of the pixels that have that value</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>dq_array</strong> (<em>np.array</em>) – array of DQ binary words</p></li>
+<li><p><strong>Output</strong> – </p></li>
+<li><p><strong>------</strong> – </p></li>
+<li><p><strong>dq_flag_dict</strong> (<em>dict</em><em> or </em><em>None</em>) – a dictionary whose keys are the flags and whose entries are the 2xN
+row, col pixel coordinates of pixels that have those flags
+If there are no error flags, return None</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="public_wifi.utils.header_utils.parse_dq_binword">
+<code class="sig-prename descclassname">public_wifi.utils.header_utils.</code><code class="sig-name descname">parse_dq_binword</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">pix_val</span></em><span class="sig-paren">)</span><a class="headerlink" href="#public_wifi.utils.header_utils.parse_dq_binword" title="Permalink to this definition">¶</a></dt>
+<dd><p>This function is designed to be applied to a pandas Series. It returns the
+flags found at each pixel
+See <a class="reference external" href="https://hst-docs.stsci.edu/wfc3dhb/chapter-2-wfc3-data-structure/2-2-wfc3-file-structure">https://hst-docs.stsci.edu/wfc3dhb/chapter-2-wfc3-data-structure/2-2-wfc3-file-structure</a></p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>dq_array</strong> (<em>np.array of type int16</em>) – </p></li>
+<li><p><strong>Output</strong> – </p></li>
+<li><p><strong>------</strong> – </p></li>
+<li><p><strong>pix_flags</strong> (<em>list of ints</em><em>, or </em><em>0</em>) – A list of all the non-zero flags present for a pixel (e.g. [1, 16, 32, 256])
+If pixel value is 0, return 0</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="public_wifi.utils.header_utils.print_columns">
+<code class="sig-prename descclassname">public_wifi.utils.header_utils.</code><code class="sig-name descname">print_columns</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">df</span></em><span class="sig-paren">)</span><a class="headerlink" href="#public_wifi.utils.header_utils.print_columns" title="Permalink to this definition">¶</a></dt>
+<dd><p>Helper function to print the long list of columns in a header (in alphabetical order)</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>df</strong> (<em>None</em>) – dataframe whose columns you want to print</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p></p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>Nothing</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="public_wifi.utils.header_utils.write_headers">
+<code class="sig-prename descclassname">public_wifi.utils.header_utils.</code><code class="sig-name descname">write_headers</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">fits_files</span></em>, <em class="sig-param"><span class="n">out_folder</span></em>, <em class="sig-param"><span class="n">verbose</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="headerlink" href="#public_wifi.utils.header_utils.write_headers" title="Permalink to this definition">¶</a></dt>
+<dd><p>Save the headers, as csv files that can be read into dataframes, in the designated folder. The file name is the extension header EXTNAME value, and ‘pri’ refers to the primary header. Does all the work to compile and write headers. No return value; writes a file instead</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>fits_files</strong> (<em>None</em>) – a list of filenames for FITS images you want to treat as a single dataset</p></li>
+<li><p><strong>out_folder</strong> (<em>parent folder for writing the header tables</em>) – </p></li>
+<li><p><strong>verbose</strong> (<em>False</em>) – if True, print the name of the file written</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p></p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>Nothing</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="module-public_wifi.utils.image_utils">
+<span id="public-wifi-utils-image-utils-module"></span><h2>public_wifi.utils.image_utils module<a class="headerlink" href="#module-public_wifi.utils.image_utils" title="Permalink to this headline">¶</a></h2>
+<p>This file contains utilities for image manipulation: cutting stamps, rotations and reflections,
+computing indices, etc.</p>
+<dl class="py function">
+<dt id="public_wifi.utils.image_utils.flatten_image_axes">
+<code class="sig-prename descclassname">public_wifi.utils.image_utils.</code><code class="sig-name descname">flatten_image_axes</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">array</span></em><span class="sig-paren">)</span><a class="headerlink" href="#public_wifi.utils.image_utils.flatten_image_axes" title="Permalink to this definition">¶</a></dt>
+<dd><p>returns the array with the final two axes - assumed to be the image pixels - flattened</p>
+</dd></dl>
+
+<dl class="py function">
+<dt id="public_wifi.utils.image_utils.flatten_leading_axes">
+<code class="sig-prename descclassname">public_wifi.utils.image_utils.</code><code class="sig-name descname">flatten_leading_axes</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">array</span></em>, <em class="sig-param"><span class="n">axis</span><span class="o">=</span><span class="default_value">- 1</span></em><span class="sig-paren">)</span><a class="headerlink" href="#public_wifi.utils.image_utils.flatten_leading_axes" title="Permalink to this definition">¶</a></dt>
+<dd><p>For an array of flattened images of with N axes where the first N-1 axes
+index parameters (or whatever else), return an array with the first N-1 axes flattened
+so the final result is 2-D, with the last axis being the pixel axis
+Args:</p>
+<blockquote>
+<div><p>array: an array of at least 2 dimensions
+axis [-1]: flattens shape up to this axis (e.g. -1 to flatten up to</p>
+<blockquote>
+<div><p>the last axis, -2 to preserve last two axes, etc.)</p>
+</div></blockquote>
+</div></blockquote>
+</dd></dl>
+
+<dl class="py function">
+<dt id="public_wifi.utils.image_utils.get_master_stamp_ind">
+<code class="sig-prename descclassname">public_wifi.utils.image_utils.</code><code class="sig-name descname">get_master_stamp_ind</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">star_id</span></em>, <em class="sig-param"><span class="n">stamp_shape</span></em>, <em class="sig-param"><span class="n">df</span></em>, <em class="sig-param"><span class="n">extra_row</span><span class="o">=</span><span class="default_value">True</span></em><span class="sig-paren">)</span><a class="headerlink" href="#public_wifi.utils.image_utils.get_master_stamp_ind" title="Permalink to this definition">¶</a></dt>
+<dd><p>Same as get_stamp_ind, but using the master reference frame instead of the
+exposure frame.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>star_id</strong> (<em>identifier for the star</em><em> (</em><em>e.g. S000000</em><em>)</em>) – </p></li>
+<li><p><strong>stamp_shape</strong> (<em>2x1 tuple</em><em> or </em><em>int</em>) – </p></li>
+<li><p><strong>df</strong> (<em>pd.DataFrame</em>) – supply the stars dataframe.</p></li>
+<li><p><strong>extra_row</strong> (<em>bool</em><em> [</em><em>True</em><em>]</em>) – If True, add an extra index on the end. This is needed for plotting with
+plt.pcolor(x, y, img), where x and y need 1 more row and column than img</p></li>
+<li><p><strong>Output</strong> – </p></li>
+<li><p><strong>------</strong> – </p></li>
+<li><p><strong>stamp_ind</strong> (<em>np.array</em>) – 2xN array of (row, col) coordinates</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="public_wifi.utils.image_utils.get_stamp">
+<code class="sig-prename descclassname">public_wifi.utils.image_utils.</code><code class="sig-name descname">get_stamp</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">image</span></em>, <em class="sig-param"><span class="n">xy</span></em>, <em class="sig-param"><span class="n">stamp_shape</span></em>, <em class="sig-param"><span class="n">return_img_ind</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="headerlink" href="#public_wifi.utils.image_utils.get_stamp" title="Permalink to this definition">¶</a></dt>
+<dd><p>Cut a stamp from the given image, centered at xy with shape stamp_shape.
+If the stamp shape N is odd, the center c will be at c = (N-1)/2.
+If N is even, then c is given by N/2.
+If the stamp would extend past the borders of the image, those parts of the
+stamp are padded with nan’s.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>image</strong> (<em>np.array</em>) – 2-D source image</p></li>
+<li><p><strong>xy</strong> (<em>list-like</em><em> (</em><em>list</em><em>, </em><em>tuple</em><em>, </em><em>np.array</em><em>, </em><em>etc</em><em>)</em>) – the xy (col, row) center of the stamp</p></li>
+<li><p><strong>stamp_shape</strong> (<em>int</em><em> or </em><em>tuple of ints</em>) – the dimensions of the stamp</p></li>
+<li><p><strong>return_img_ind</strong> (<em>bool</em><em> [</em><em>False</em><em>] </em><em>(</em><em>not yet implemented</em><em>)</em>) – if True, then return arrays that index the stamp into the original image</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>stamp</strong> (<em>np.array</em>) – a copied stamp from the image, centered at xy with shape stamp_shape</p></li>
+<li><p><strong>img_ind</strong> (<em>np.array (optional)</em>) – if return_img_ind is True, return a matrix of the image indices.
+Can be useful for plotting</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="public_wifi.utils.image_utils.get_stamp_from_ps_row">
+<code class="sig-prename descclassname">public_wifi.utils.image_utils.</code><code class="sig-name descname">get_stamp_from_ps_row</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">row</span></em>, <em class="sig-param"><span class="n">stamp_size</span><span class="o">=</span><span class="default_value">11</span></em>, <em class="sig-param"><span class="n">return_img_ind</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">hdr</span><span class="o">=</span><span class="default_value">'SCI'</span></em><span class="sig-paren">)</span><a class="headerlink" href="#public_wifi.utils.image_utils.get_stamp_from_ps_row" title="Permalink to this definition">¶</a></dt>
+<dd><p>Given a table, or a row of the point sources table, this gets a stamp of
+the specified size of the given point source
+TODO: accept multiple rows</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>row</strong> (<em>pd.DataFrame row</em>) – a row containing the position and file information for the source</p></li>
+<li><p><strong>stamp_size</strong> (<em>int</em><em> or </em><em>tuple</em><em> [</em><em>11</em><em>]</em>) – (row, col) size of the stamp [(int, int) if only int given]</p></li>
+<li><p><strong>return_img_ind</strong> (<em>bool</em><em> (</em><em>False</em><em>)</em>) – if True, return the row and col indices of the stamp in the image</p></li>
+<li><p><strong>hdr</strong> (<em>str</em><em> or </em><em>int</em><em> [</em><em>'SCI'</em><em>]</em>) – which header? allowed values: [‘SCI’,’ERR’,’DQ’,’SAMP’,’TIME’]</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p></p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>stamp_size-sized stamp</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="public_wifi.utils.image_utils.get_stamp_ind">
+<code class="sig-prename descclassname">public_wifi.utils.image_utils.</code><code class="sig-name descname">get_stamp_ind</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">xy_cent</span></em>, <em class="sig-param"><span class="n">stamp_shape</span></em><span class="sig-paren">)</span><a class="headerlink" href="#public_wifi.utils.image_utils.get_stamp_ind" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the indices corresponding to the stamp. Does not contain any
+information about the image size; i.e. indices may not be valid near
+the edges of the image.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>xy_cent</strong> (<em>2x1 array-like of ints of the xy</em><em> (</em><em>col</em><em>, </em><em>row</em><em>) </em><em>center</em>) – </p></li>
+<li><p><strong>stamp_shape</strong> (<em>2x1 tuple</em><em> or </em><em>int</em>) – </p></li>
+<li><p><strong>Output</strong> – </p></li>
+<li><p><strong>------</strong> – </p></li>
+<li><p><strong>stamp_ind</strong> (<em>np.array</em>) – 2xN array of (row, col) coordinates</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="public_wifi.utils.image_utils.get_stamps_from_ps_table">
+<code class="sig-prename descclassname">public_wifi.utils.image_utils.</code><code class="sig-name descname">get_stamps_from_ps_table</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">df</span></em>, <em class="sig-param"><span class="n">kwargs</span><span class="o">=</span><span class="default_value">{}</span></em><span class="sig-paren">)</span><a class="headerlink" href="#public_wifi.utils.image_utils.get_stamps_from_ps_table" title="Permalink to this definition">¶</a></dt>
+<dd><p>pass in a point source table and get the stamp for the object of each row</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>df</strong> (<em>pd.DataFrame</em>) – a subset of the point sources table (or the whole thing)</p></li>
+<li><p><strong>kwargs</strong> (<em>dict</em><em> [</em><em>{}</em><em>]</em>) – keyword args to pass to get_stamp_from_ps_row</p></li>
+<li><p><strong>Output</strong> – </p></li>
+<li><p><strong>------</strong> – </p></li>
+<li><p><strong>stamps</strong> (<em>pd.DataFrame</em>) – dataframe of stamps indexed by the point source ID</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="public_wifi.utils.image_utils.make_image_from_flat">
+<code class="sig-prename descclassname">public_wifi.utils.image_utils.</code><code class="sig-name descname">make_image_from_flat</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">flat</span></em>, <em class="sig-param"><span class="n">indices</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">shape</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">squeeze</span><span class="o">=</span><span class="default_value">True</span></em><span class="sig-paren">)</span><a class="headerlink" href="#public_wifi.utils.image_utils.make_image_from_flat" title="Permalink to this definition">¶</a></dt>
+<dd><p>put the flattened region back into an image. if no indices or shape are specified, assumes that
+the region of N pixels is a square with Nx = Ny = sqrt(N). Only operates on the last axis.
+Input:</p>
+<blockquote>
+<div><p>flat: [Ni,[Nj,[Nk…]]] x Npix array (any shape as long as the last dim is the pixels)
+indices: [None] Npix array of flattened pixel coordinates</p>
+<blockquote>
+<div><p>corresponding to the region</p>
+</div></blockquote>
+<p>shape: [None] image shape
+squeeze [True]: gets rid of extra axes</p>
+</div></blockquote>
+<dl class="simple">
+<dt>Returns:</dt><dd><dl class="simple">
+<dt>img: an image (or array of) with dims <cite>shape</cite> and with nan’s in</dt><dd><p>whatever indices are not explicitly set</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="public_wifi.utils.image_utils.make_pcolor_index">
+<code class="sig-prename descclassname">public_wifi.utils.image_utils.</code><code class="sig-name descname">make_pcolor_index</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">indices</span></em><span class="sig-paren">)</span><a class="headerlink" href="#public_wifi.utils.image_utils.make_pcolor_index" title="Permalink to this definition">¶</a></dt>
+<dd><p>pyplot.pcolor likes to have the x and y arrays for an image have 1 more
+element than the image, i.e. if the image is  MxN, then the row indices
+for y should have M+1 elements, and the col indices (x) should have N+1
+elements. This assumes that all the indexes are pixel integers.
+It then applies a half-pixel shift so that the integer values
+refer to the pixel centers.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>indices</strong> (<em>list-like</em><em>, </em><em>dim 2xN</em>) – a tuple, list, or array of the indices, as (row, col) (i.e. y, x). They
+do not need to have the same number of elements</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>extended_indices</strong> – the indices with one more element tacked onto the end</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>tuple (y, x)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="public_wifi.utils.image_utils.make_stamp_mask">
+<code class="sig-prename descclassname">public_wifi.utils.image_utils.</code><code class="sig-name descname">make_stamp_mask</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">shape</span></em>, <em class="sig-param"><span class="n">mask_dim</span></em>, <em class="sig-param"><span class="n">invert</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">return_ind</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">nan</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="headerlink" href="#public_wifi.utils.image_utils.make_stamp_mask" title="Permalink to this definition">¶</a></dt>
+<dd><p>Make a square mask on the middle of the stamp. 1’s on the outside, 0’s in the middle</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>shape</strong> (<em>tuple of stamp shape</em>) – </p></li>
+<li><p><strong>mask_dim</strong> (<em>int</em>) – size of the mask (one side of the square)</p></li>
+<li><p><strong>invert</strong> (<em>bool</em><em> [</em><em>False</em><em>]</em>) – inver the max</p></li>
+<li><p><strong>return_ind</strong> (<em>bool</em><em> [</em><em>False</em><em>]</em>) – if True, return the indices of the pixels you want to keep
+instead of the mask itself</p></li>
+<li><p><strong>nan</strong> (<em>bool</em><em> [</em><em>False</em><em>]</em>) – if True, use np.nan instead of 0</p></li>
+<li><p><strong>Output</strong> – </p></li>
+<li><p><strong>------</strong> – </p></li>
+<li><p><strong>binary mask with 1 on the outside and 0</strong><strong> (or </strong><strong>nan</strong><strong>) </strong><strong>on the inside</strong> (<em>NxN</em>) – </p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="public_wifi.utils.image_utils.savefig">
+<code class="sig-prename descclassname">public_wifi.utils.image_utils.</code><code class="sig-name descname">savefig</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">fig</span></em>, <em class="sig-param"><span class="n">name</span></em>, <em class="sig-param"><span class="n">save</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">fig_args</span><span class="o">=</span><span class="default_value">{}</span></em><span class="sig-paren">)</span><a class="headerlink" href="#public_wifi.utils.image_utils.savefig" title="Permalink to this definition">¶</a></dt>
+<dd><p>Wrapper for fig.savefig that handles enabling/disabling and printing</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>fig</strong> (<em>mpl.Figure</em>) – </p></li>
+<li><p><strong>name</strong> (<em>str</em><em> or </em><em>pathlib.Path</em>) – full path for file</p></li>
+<li><p><strong>save</strong> (<em>bool</em><em> [</em><em>False</em><em>]</em>) – True: save figure. False: only print information</p></li>
+<li><p><strong>fig_args</strong> (<em>dict {}</em>) – (optional) args to pass to fig.savefig()</p></li>
+<li><p><strong>Output</strong> – </p></li>
+<li><p><strong>------</strong> – </p></li>
+<li><p><strong>output; saves to disk</strong> (<em>No</em>) – </p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="module-public_wifi.utils.injection_utils">
+<span id="public-wifi-utils-injection-utils-module"></span><h2>public_wifi.utils.injection_utils module<a class="headerlink" href="#module-public_wifi.utils.injection_utils" title="Permalink to this headline">¶</a></h2>
+<p>Methods for finding sources and establishing detection limits.</p>
+<dl class="py function">
+<dt id="public_wifi.utils.injection_utils.get_radial_coordinate">
+<code class="sig-prename descclassname">public_wifi.utils.injection_utils.</code><code class="sig-name descname">get_radial_coordinate</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">shape</span></em>, <em class="sig-param"><span class="n">center</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#public_wifi.utils.injection_utils.get_radial_coordinate" title="Permalink to this definition">¶</a></dt>
+<dd><p>Transform a set of x-y coordinates into a set of radius-phi coordinates
+Args:</p>
+<blockquote>
+<div><p>shape: the image shape
+center: the center; if None, then do shape/2</p>
+</div></blockquote>
+<dl class="simple">
+<dt>Returns:</dt><dd><p>Nx x Ny grid of radii
+Nx x Ny grid of angles (0-2*pi)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="public_wifi.utils.injection_utils.get_stamp_coordinates">
+<code class="sig-prename descclassname">public_wifi.utils.injection_utils.</code><code class="sig-name descname">get_stamp_coordinates</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">center</span></em>, <em class="sig-param"><span class="n">drow</span></em>, <em class="sig-param"><span class="n">dcol</span></em>, <em class="sig-param"><span class="n">imshape</span></em>, <em class="sig-param"><span class="n">nanpad</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="headerlink" href="#public_wifi.utils.injection_utils.get_stamp_coordinates" title="Permalink to this definition">¶</a></dt>
+<dd><p>get pixel coordinates for a stamp with width dcol, height drow, and center <cite>center</cite> embedded
+in an image of dimensions imshape.
+This is a helper function - use get_stamp_from_image or get_stamp_from_cube
+Arguments:</p>
+<blockquote>
+<div><p>center: (row, col) center of the stamp
+drow: height of stamp
+dcol: width of stamp
+imshape: total size of image the stamp is a part of</p>
+</div></blockquote>
+<dl>
+<dt>Returns:</dt><dd><p>img_coords: the stamp indices for the full image array (i.e. stamp = img[img_coords[0], img_coords[1]xo])
+stamp_coords: the stamp indices for selecting the part of the stamp</p>
+<blockquote>
+<div><p>that goes in the image (i.e. stamp[stamp_coords[0], stamp_coords[1]]).
+this is relevant for stamps on the edge of the images -
+e.g. if you want to matched filter the image edge, you should
+plug these coordinates into your matched filter stamp to
+select only the relevant part of the matched filter</p>
+</div></blockquote>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="public_wifi.utils.injection_utils.inject_psf">
+<code class="sig-prename descclassname">public_wifi.utils.injection_utils.</code><code class="sig-name descname">inject_psf</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">img</span></em>, <em class="sig-param"><span class="n">psf</span></em>, <em class="sig-param"><span class="n">center</span></em>, <em class="sig-param"><span class="n">scale_flux</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">subtract_mean</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">return_flat</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="headerlink" href="#public_wifi.utils.injection_utils.inject_psf" title="Permalink to this definition">¶</a></dt>
+<dd><p>Inject a PSF into an image at a location given by center. Optional: scale PSF
+The PSF is injected by <em>adding</em> it to the provided image, not by replacing the pixels
+Input:</p>
+<blockquote>
+<div><p>img: 2-D img or 3-D cube. Last two dimensions define an img (i.e. [(Nimg,)Nx,Ny])
+psf: 2-D img or 3-D cube, smaller than or equal to img in size. If cube,</p>
+<blockquote>
+<div><p>must have same 1st dimension as img</p>
+</div></blockquote>
+<p>center: center (row, col) of the injection in the image (can be more than one location)
+scale_flux: multiply the PSF by this number. If this is an array,</p>
+<blockquote>
+<div><p>img and psf will be tiled to match its length
+if scale_flux is None, don’t scale psf</p>
+</div></blockquote>
+<p>subtract_mean: (False) mean-subtract before returning
+return_flat: (False) flatten the array along the pixels axis before returning
+hpf [None]: pass a high-pass filter width for high-pass filtering.</p>
+<blockquote>
+<div><p>If used, the psf must be the <em>unfiltered</em> version</p>
+</div></blockquote>
+</div></blockquote>
+<dl class="simple">
+<dt>Returns:</dt><dd><p>injected_img: 2-D image or 3D cube with the injected PSF(s)
+injection_psf: (if return_psf=True) 2-D normalized PSF full image</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="public_wifi.utils.injection_utils.inject_region">
+<code class="sig-prename descclassname">public_wifi.utils.injection_utils.</code><code class="sig-name descname">inject_region</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">flat_img</span></em>, <em class="sig-param"><span class="n">flat_psf</span></em>, <em class="sig-param"><span class="n">scaling</span><span class="o">=</span><span class="default_value">1</span></em>, <em class="sig-param"><span class="n">subtract_mean</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="headerlink" href="#public_wifi.utils.injection_utils.inject_region" title="Permalink to this definition">¶</a></dt>
+<dd><p>Inject a flattened psf into a flattened region with some scaling.
+Input:</p>
+<blockquote>
+<div><p>flat_img: 1-d array of the region of interest
+flat_psf: 1-d array of the psf in the region at the correct location
+scaling: (1) multiply the PSF by this number. If this is an array,</p>
+<blockquote>
+<div><p>img and psf will be tiled to match its length.</p>
+</div></blockquote>
+<p>subtract_mean: (False) mean-subtract images before returning</p>
+</div></blockquote>
+</dd></dl>
+
+<dl class="py function">
+<dt id="public_wifi.utils.injection_utils.mean_subtracted_fake_injections">
+<code class="sig-prename descclassname">public_wifi.utils.injection_utils.</code><code class="sig-name descname">mean_subtracted_fake_injections</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">flat_img</span></em>, <em class="sig-param"><span class="n">flat_psf</span></em>, <em class="sig-param"><span class="n">scaling</span><span class="o">=</span><span class="default_value">1</span></em><span class="sig-paren">)</span><a class="headerlink" href="#public_wifi.utils.injection_utils.mean_subtracted_fake_injections" title="Permalink to this definition">¶</a></dt>
+<dd><p>flat_img: 2-D image to inject into
+flat_psf: 2-D psf</p>
+</dd></dl>
+
+</div>
+<div class="section" id="public-wifi-utils-ks2-plot-utils-module">
+<h2>public_wifi.utils.ks2_plot_utils module<a class="headerlink" href="#public-wifi-utils-ks2-plot-utils-module" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-public_wifi.utils.ks2_tables">
+<span id="public-wifi-utils-ks2-tables-module"></span><h2>public_wifi.utils.ks2_tables module<a class="headerlink" href="#module-public_wifi.utils.ks2_tables" title="Permalink to this headline">¶</a></h2>
+<p>This module takes the KS2 tables and converts them to the final Tr14 format
+The tables are defined in tr14/docs/database/list_of_tables.org</p>
+<dl class="py function">
+<dt id="public_wifi.utils.ks2_tables.generate_stamp_table">
+<code class="sig-prename descclassname">public_wifi.utils.ks2_tables.</code><code class="sig-name descname">generate_stamp_table</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">ps_table</span></em>, <em class="sig-param"><span class="n">fits_folder</span></em>, <em class="sig-param"><span class="n">fits_file_mapper</span></em>, <em class="sig-param"><span class="n">stamp_size</span><span class="o">=</span><span class="default_value">11</span></em>, <em class="sig-param"><span class="n">verbose</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="headerlink" href="#public_wifi.utils.ks2_tables.generate_stamp_table" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generate a stamp table to hold the stamp metadata and arrays</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>ps_table</strong> (<em>pd.DataFrame</em>) – point source table</p></li>
+<li><p><strong>fits_folder</strong> (<em>str</em><em> or </em><em>Path</em>) – path to the parent folder where the fits images are keps</p></li>
+<li><p><strong>fits_file_mapper</strong> (<em>pd.DataFrame</em>) – dataframe that maps the KS2 exposure names to the source fits file names</p></li>
+<li><p><strong>stamp_size</strong> (<em>int</em><em> [</em><em>11</em><em>]</em>) – dimension of the square stamp to cut out</p></li>
+<li><p><strong>verbose</strong> (<em>bool</em><em> [</em><em>False</em><em>]</em>) – print extra output</p></li>
+<li><p><strong>Output</strong> – </p></li>
+<li><p><strong>------</strong> – </p></li>
+<li><p><strong>stamp_table</strong> (<em>pd.DataFrame</em>) – table of stamps and stamp metadata</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="public_wifi.utils.ks2_tables.make_cand_master_table">
+<code class="sig-prename descclassname">public_wifi.utils.ks2_tables.</code><code class="sig-name descname">make_cand_master_table</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#public_wifi.utils.ks2_tables.make_cand_master_table" title="Permalink to this definition">¶</a></dt>
+<dd><p>A master catalog for the candidates (i.e. each entry is for a unique candidate)</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>Output</strong> – </p></li>
+<li><p><strong>------</strong> – </p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="public_wifi.utils.ks2_tables.make_cand_ps_table">
+<code class="sig-prename descclassname">public_wifi.utils.ks2_tables.</code><code class="sig-name descname">make_cand_ps_table</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">args</span></em><span class="sig-paren">)</span><a class="headerlink" href="#public_wifi.utils.ks2_tables.make_cand_ps_table" title="Permalink to this definition">¶</a></dt>
+<dd><p>A point source catalog for the candidates (i.e. each entry is for each
+detection of a candidate)</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>Output</strong> – </p></li>
+<li><p><strong>------</strong> – </p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="public_wifi.utils.ks2_tables.make_lookup_tables">
+<code class="sig-prename descclassname">public_wifi.utils.ks2_tables.</code><code class="sig-name descname">make_lookup_tables</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">stars_tab</span></em>, <em class="sig-param"><span class="n">ps_tab</span></em>, <em class="sig-param"><span class="n">stamps_tab</span></em><span class="sig-paren">)</span><a class="headerlink" href="#public_wifi.utils.ks2_tables.make_lookup_tables" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generate the tables that link the star, point source, and stamp IDs
+with each other</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>stars_tab</strong> (<em>pd.DataFrame</em>) – table for unique astrophysical objects</p></li>
+<li><p><strong>ps_tab</strong> (<em>pd.DataFrame</em>) – table of point source detections</p></li>
+<li><p><strong>stamps_tab</strong> (<em>pd.DataFrame</em>) – table of stamps</p></li>
+<li><p><strong>Output</strong> – </p></li>
+<li><p><strong>------</strong> – </p></li>
+<li><p><strong>lookup_tables</strong> (<em>dict of the lookup tables</em>) – </p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="public_wifi.utils.ks2_tables.make_point_source_table">
+<code class="sig-prename descclassname">public_wifi.utils.ks2_tables.</code><code class="sig-name descname">make_point_source_table</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">ps_cat</span></em>, <em class="sig-param"><span class="n">lookup_nmast</span></em><span class="sig-paren">)</span><a class="headerlink" href="#public_wifi.utils.ks2_tables.make_point_source_table" title="Permalink to this definition">¶</a></dt>
+<dd><p>Take the KS2 point source catalog and put it in the right format for the
+Tr14 database</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>ps_cat</strong> (<em>pd.DataFrame</em>) – a KS2 point source catalog</p></li>
+<li><p><strong>lookup_nmast</strong> (<em>pd.DataFrame</em>) – a dataframe that maps between the star_id and corresponding KS2 NMAST
+value; otherwise there is no map between the PS table and star table!</p></li>
+<li><p><strong>Output</strong> – </p></li>
+<li><p><strong>------</strong> – </p></li>
+<li><p><strong>ps_table</strong> (<em>pd.DataFrame</em>) – a point source catalog according to the Tr14 specifications</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="public_wifi.utils.ks2_tables.make_stars_table">
+<code class="sig-prename descclassname">public_wifi.utils.ks2_tables.</code><code class="sig-name descname">make_stars_table</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">mast_cat</span></em>, <em class="sig-param"><span class="n">ks2_filtermapper</span></em><span class="sig-paren">)</span><a class="headerlink" href="#public_wifi.utils.ks2_tables.make_stars_table" title="Permalink to this definition">¶</a></dt>
+<dd><p>Take the KS2 master catalog and put it in the right format for the Tr14 database</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>mast_cat</strong> (<em>pd.DataFrame</em>) – a KS2 master catalog</p></li>
+<li><p><strong>Output</strong> – </p></li>
+<li><p><strong>------</strong> – </p></li>
+<li><p><strong>stars_table</strong> (<em>pd.DataFrame</em>) – a master catalog according to the Tr14 specifications</p></li>
+<li><p><strong>lookup_nmast</strong> (<em>pd.DataFrame</em>) – dataframe linking the new “star_id” field to the KS2 NMAST identifier</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="public_wifi.utils.ks2_tables.write_fundamental_db">
+<code class="sig-prename descclassname">public_wifi.utils.ks2_tables.</code><code class="sig-name descname">write_fundamental_db</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">db_file</span></em>, <em class="sig-param"><span class="n">config_file</span></em>, <em class="sig-param"><span class="n">stamps</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">verbose</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="headerlink" href="#public_wifi.utils.ks2_tables.write_fundamental_db" title="Permalink to this definition">¶</a></dt>
+<dd><p>Write the basic tables to the database file:
+- stars
+- point_sources
+- lookup_files
+- lookup_filters
+- lookup_nmast
+- fits headers
+- stamps
+- stamp_arrays
+If this file exists, it gets clobbered.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>db_file</strong> (<em>str</em><em> or </em><em>Path</em>) – file to write to</p></li>
+<li><p><strong>config_file</strong> (<em>str</em><em> or </em><em>Path</em>) – path to the config file that knows the paths to the KS2 and exposure files</p></li>
+<li><p><strong>stamps</strong> (<em>bool</em><em> [</em><em>False</em><em>]</em>) – if True, generate the stamps too (takes a long time)</p></li>
+<li><p><strong>verbose</strong> (<em>bool</em><em> [</em><em>False</em><em>]</em>) – enable extra printing</p></li>
+<li><p><strong>Output</strong> – </p></li>
+<li><p><strong>------</strong> – </p></li>
+<li><p><strong>an HDF5 file at the path specified</strong> (<em>generates</em>) – </p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="module-public_wifi.utils.ks2_utils">
+<span id="public-wifi-utils-ks2-utils-module"></span><h2>public_wifi.utils.ks2_utils module<a class="headerlink" href="#module-public_wifi.utils.ks2_utils" title="Permalink to this headline">¶</a></h2>
+<p>This file contains utilities for handling the KS2 point source catalog</p>
+<dl class="py function">
+<dt id="public_wifi.utils.ks2_utils.catalog_cut_ndet">
+<code class="sig-prename descclassname">public_wifi.utils.ks2_utils.</code><code class="sig-name descname">catalog_cut_ndet</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">cat</span></em>, <em class="sig-param"><span class="n">ndet_min</span><span class="o">=</span><span class="default_value">9</span></em>, <em class="sig-param"><span class="n">mast_cat</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#public_wifi.utils.ks2_utils.catalog_cut_ndet" title="Permalink to this definition">¶</a></dt>
+<dd><p>This function only keeps stars that are detected more than ndet times in all exposures.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>cat</strong> (<em>pd.DataFrame</em>) – a catalog of point source detections</p></li>
+<li><p><strong>ndet_min</strong> (<em>int</em><em> [</em><em>10</em><em>]</em>) – the lower threshold on the number of detections (&gt;=)</p></li>
+<li><p><strong>mast_cat</strong> (<em>None</em><em> or </em><em>pd.DataFrame</em>) – <p>if a dataframe containing the master catalog is given, make sure the
+entries in the master catalog are consistent with the new cuts in the
+point source catalog
+NOTE: this functionality is deprecated and has been moved to</p>
+<blockquote>
+<div><p>clean_master_catalog(). Kept for backwards compatibility</p>
+</div></blockquote>
+</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>cut_cat</strong> – a catalog containing only stars with &gt;= ndet_min detections</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>pd.DataFrame</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="public_wifi.utils.ks2_utils.clean_catalog_dtypes">
+<code class="sig-prename descclassname">public_wifi.utils.ks2_utils.</code><code class="sig-name descname">clean_catalog_dtypes</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">cat</span></em>, <em class="sig-param"><span class="n">dtype_dict</span></em><span class="sig-paren">)</span><a class="headerlink" href="#public_wifi.utils.ks2_utils.clean_catalog_dtypes" title="Permalink to this definition">¶</a></dt>
+<dd><p>Make sure each entry in a catalog has the right data type.
+If it doesn’t, assign None as the universal null value
+:param cat: the catalog where each column has an appropriate data type
+:type cat: pd.Dataframe
+:param dtype_dict: a dictionary whose keys are the column names and whose values are the dtypes
+:type dtype_dict: dict
+:param Output:
+:param ——:
+:param fixed: dataframe identical to cat except the wrongly-typed values have been set to None
+:type fixed: pd.DataFrame</p>
+</dd></dl>
+
+<dl class="py function">
+<dt id="public_wifi.utils.ks2_utils.clean_master_catalog">
+<code class="sig-prename descclassname">public_wifi.utils.ks2_utils.</code><code class="sig-name descname">clean_master_catalog</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">mast_cat</span></em>, <em class="sig-param"><span class="n">ps_cat</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">ks2_filtermapper</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">recompute</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">mag_cut</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#public_wifi.utils.ks2_utils.clean_master_catalog" title="Permalink to this definition">¶</a></dt>
+<dd><p>Clean the master catalog. If no point source catalog is given, this just checks the types and assigns proper null values. If a point source catalog is provided, then it also makes sure that the list of objects present in each catalog are in agreement.
+If an object is out of range, it gets dropped from the catalog
+:param mast_cat: the master catalog
+:type mast_cat: pd.DataFrame
+:param ps_cat: (optional) the point source catalog
+:type ps_cat: pd.DataFrame [None]
+:param ks2_filtermapper: dataframe that has list of filter names mapped to KS2 filter IDs
+:type ks2_filtermapper: pd.DataFrame
+:param recompute: if True, use ps_cat to recompute the zmast, szmast, q, and g columns of the</p>
+<blockquote>
+<div><p>master catalog</p>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>mag_cut</strong> (<em>float</em>) – magnitude faint limit (inclusive) for the continuum filter</p></li>
+<li><p><strong>Output</strong> – </p></li>
+<li><p><strong>------</strong> – </p></li>
+<li><p><strong>mast_cat_clean</strong> (<em>pd.DataFrame</em>) – the master catalog with dtypes fixed and all objects in agreement with the point source catalog</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="public_wifi.utils.ks2_utils.clean_point_source_catalog">
+<code class="sig-prename descclassname">public_wifi.utils.ks2_utils.</code><code class="sig-name descname">clean_point_source_catalog</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">cat</span></em>, <em class="sig-param"><span class="n">q_min</span><span class="o">=</span><span class="default_value">0.95</span></em>, <em class="sig-param"><span class="n">cut_ndet_args</span><span class="o">=</span><span class="default_value">{}</span></em><span class="sig-paren">)</span><a class="headerlink" href="#public_wifi.utils.ks2_utils.clean_point_source_catalog" title="Permalink to this definition">¶</a></dt>
+<dd><p>This function, when called, cleans the point source catalog by applying the listed series of cuts:
+1) q &gt; 0 for q1, q2, q3
+2) z &gt; 0 for z1, z2, z3
+3) q &gt; some threshold
+4) number of detections &gt; some threshold</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>cat</strong> (<em>pd.DataFrame</em>) – point source catalog</p></li>
+<li><p><strong>q_min</strong> (<em>float</em><em> [</em><em>0.99</em><em>]</em>) – lower bound on PSF fit parameter</p></li>
+<li><p><strong>cut_ndet_args</strong> (<em>dict</em><em> [</em><em>{}</em><em>]</em>) – arguments to pass to catalog_cut_ndet, e.g. {‘ndet_min’: 9}</p></li>
+<li><p><strong>Output</strong> – </p></li>
+<li><p><strong>------</strong> – </p></li>
+<li><p><strong>clean_cat</strong> (<em>pd.DataFrame</em>) – point source catalog with cuts applied</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="public_wifi.utils.ks2_utils.frtn2py_ind">
+<code class="sig-prename descclassname">public_wifi.utils.ks2_utils.</code><code class="sig-name descname">frtn2py_ind</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">ind</span></em><span class="sig-paren">)</span><a class="headerlink" href="#public_wifi.utils.ks2_utils.frtn2py_ind" title="Permalink to this definition">¶</a></dt>
+<dd><p>Given pixel indices (dataframe, array, whatever), subtract 1 to have them
+be indexed from 0 instead of 1
+Returns the same object with all the values subtracted by 1</p>
+</dd></dl>
+
+<dl class="py function">
+<dt id="public_wifi.utils.ks2_utils.get_epoch_from_ks2id">
+<code class="sig-prename descclassname">public_wifi.utils.ks2_utils.</code><code class="sig-name descname">get_epoch_from_ks2id</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">file_id</span></em>, <em class="sig-param"><span class="n">ks2_epoch_mapper</span></em><span class="sig-paren">)</span><a class="headerlink" href="#public_wifi.utils.ks2_utils.get_epoch_from_ks2id" title="Permalink to this definition">¶</a></dt>
+<dd><p>Find out in which epoch an exposure was taken</p>
+</dd></dl>
+
+<dl class="py function">
+<dt id="public_wifi.utils.ks2_utils.get_epoch_mapper">
+<code class="sig-prename descclassname">public_wifi.utils.ks2_utils.</code><code class="sig-name descname">get_epoch_mapper</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">ks2_filemapper</span></em>, <em class="sig-param"><span class="n">prihdrs</span></em>, <em class="sig-param"><span class="n">verbose</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="headerlink" href="#public_wifi.utils.ks2_utils.get_epoch_mapper" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the epoch mapper</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>ks2_filemapper</strong> (<em>mapper between exposure IDs and primary headers</em>) – </p></li>
+<li><p><strong>prihdrs</strong> (<em>dataframe of all the primary headers</em>) – </p></li>
+<li><p><strong>verbose</strong> (<em>[</em><em>False</em><em>] </em><em>print extra info</em>) – </p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>epoch_mapper</strong> – a mapper between file_id, proposal_id, and epoch_id</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>pd.DataFrame</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="public_wifi.utils.ks2_utils.get_file_mapper">
+<code class="sig-prename descclassname">public_wifi.utils.ks2_utils.</code><code class="sig-name descname">get_file_mapper</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">ks2_input_file</span></em><span class="sig-paren">)</span><a class="headerlink" href="#public_wifi.utils.ks2_utils.get_file_mapper" title="Permalink to this definition">¶</a></dt>
+<dd><p>Given a KS2 INPUT.KS2 file, parse the file to get a dataframe that maps between the file numbers and file names.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>ks2_input_file</strong> (<em>pathlib.Path</em><em> or </em><em>str</em>) – full path to KS2 file</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>filemapper_df</strong> – pandas dataframe with two columns: file_id, and file_name
+file_id is the KS2-assigned file identifier; file_name is the name on disk</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>pd.DataFrame</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="public_wifi.utils.ks2_utils.get_file_name_from_ks2id">
+<code class="sig-prename descclassname">public_wifi.utils.ks2_utils.</code><code class="sig-name descname">get_file_name_from_ks2id</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">file_id</span></em>, <em class="sig-param"><span class="n">file_mapper</span></em><span class="sig-paren">)</span><a class="headerlink" href="#public_wifi.utils.ks2_utils.get_file_name_from_ks2id" title="Permalink to this definition">¶</a></dt>
+<dd><p>Given a KS2 file identifier, get the name of the FLT file</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>file_id</strong> (<em>str</em>) – The identifier assigned to each file by KS2. Typically F followed by a number, like F1 or F2.</p></li>
+<li><p><strong>file_mapper</strong> (<em>pd.DataFrame</em><em> (</em><em>default: result of ks2_utils.get_file_mapper</em><em>(</em><em>)</em><em>)</em>) – The dataframe that tracks the file IDs and the corresponding file names</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>file_name</strong></p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>the HST identifier for the file</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="public_wifi.utils.ks2_utils.get_filter_mapper">
+<code class="sig-prename descclassname">public_wifi.utils.ks2_utils.</code><code class="sig-name descname">get_filter_mapper</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">ks2_input_file</span></em><span class="sig-paren">)</span><a class="headerlink" href="#public_wifi.utils.ks2_utils.get_filter_mapper" title="Permalink to this definition">¶</a></dt>
+<dd><p>Given a KS2 INPUT.KS2 file, parse the file to get a dataframe that maps between the filter numbers and filter names.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>ks2_input_file</strong> (<em>pathlib.Path</em><em> or </em><em>str</em>) – full path to KS2 file</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>filtermapper_df</strong> – pandas dataframe with two columns: filter_id, and filter_name</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>pd.DataFrame</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="public_wifi.utils.ks2_utils.get_filter_name_from_ks2id">
+<code class="sig-prename descclassname">public_wifi.utils.ks2_utils.</code><code class="sig-name descname">get_filter_name_from_ks2id</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">filter_id</span></em>, <em class="sig-param"><span class="n">filter_mapper</span></em><span class="sig-paren">)</span><a class="headerlink" href="#public_wifi.utils.ks2_utils.get_filter_name_from_ks2id" title="Permalink to this definition">¶</a></dt>
+<dd><p>Given a KS2 filter identifier, get the name of the HST filter</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>filter_id</strong> (<em>str</em>) – The identifier assigned to each filter by KS2. Typically F followed by a number, like F1 or F2.</p></li>
+<li><p><strong>filter_mapper</strong> (<em>pd.DataFrame</em><em> (</em><em>default: result of ks2_utils.get_filter_mapper</em><em>(</em><em>)</em><em>)</em>) – The dataframe that tracks the filter IDs and the corresponding filter names</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>filter_name</strong></p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>the HST name of the filter</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="public_wifi.utils.ks2_utils.get_img_from_ks2_file_id">
+<code class="sig-prename descclassname">public_wifi.utils.ks2_utils.</code><code class="sig-name descname">get_img_from_ks2_file_id</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">ks2_exp_id</span></em>, <em class="sig-param"><span class="n">ks2_file_mapper</span></em>, <em class="sig-param"><span class="n">fits_path</span></em>, <em class="sig-param"><span class="n">hdr</span><span class="o">=</span><span class="default_value">'SCI'</span></em><span class="sig-paren">)</span><a class="headerlink" href="#public_wifi.utils.ks2_utils.get_img_from_ks2_file_id" title="Permalink to this definition">¶</a></dt>
+<dd><p>Pull out an image from the fits file, given the KS2 exposure identifier.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>ks2_exp_id</strong> (<em>str</em>) – the exposure identifier assigned by KS2</p></li>
+<li><p><strong>ks2_file_mapper</strong> (<em>pd.DataFrame</em>) – mapper between KS2 file names and root names</p></li>
+<li><p><strong>fits_path</strong> (<em>str</em><em> or </em><em>Path</em>) – path to the folder where the fits files are stored</p></li>
+<li><p><strong>hdr</strong> (<em>str</em><em> or </em><em>int</em><em> [</em><em>'SCI'</em><em>]</em>) – which header? allowed values: [‘SCI’,’ERR’,’DQ’,’SAMP’,’TIME’]</p></li>
+<li><p><strong>Returns</strong> – </p></li>
+<li><p><strong>img</strong> (<em>numpy.array</em>) – 2-D image from the fits file</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="public_wifi.utils.ks2_utils.get_ks2_catalogs">
+<code class="sig-prename descclassname">public_wifi.utils.ks2_utils.</code><code class="sig-name descname">get_ks2_catalogs</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">mast_file</span></em>, <em class="sig-param"><span class="n">ps_file</span></em>, <em class="sig-param"><span class="n">ks2_epochmapper</span></em>, <em class="sig-param"><span class="n">ks2_filtermapper</span></em>, <em class="sig-param"><span class="n">raw</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">q_min</span><span class="o">=</span><span class="default_value">0.95</span></em>, <em class="sig-param"><span class="n">mag_min</span><span class="o">=</span><span class="default_value">- 3.0</span></em><span class="sig-paren">)</span><a class="headerlink" href="#public_wifi.utils.ks2_utils.get_ks2_catalogs" title="Permalink to this definition">¶</a></dt>
+<dd><p>This function reads the KS2 output files, applies the cleaning and cutting procedures, and returns the dataframes.
+Cuts:
+First, the columns are forced into the proper datatypes, and entries with conflicting data types are set to None. Second, a cut on q is applied to the point source catalog. The master catalog is then brought into agreement with the cleaned point source catalog (i.e. stars no longer in the point source catalog are rejected), and the following columns are recomputed: z, sz, q, f, and mmast1. mmast2 is newly computed, as is the color mmast1-mmast2. Finally, a magnitude cut is applied for mag1 (F127M, the continuum filter).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>mast_file</strong> (<em>string</em><em> or </em><em>path</em>) – full path to the KS2 master catalog file. If None, use default</p></li>
+<li><p><strong>ps_file</strong> (<em>string</em><em> or </em><em>path</em>) – full path to the KS2 point source catalog file. If None, use default</p></li>
+<li><p><strong>ks2_epochmapper</strong> (<em>pd.DataFrame</em>) – dataframe mapping files and proposal ids to epochs</p></li>
+<li><p><strong>raw</strong> (<em>bool</em><em> [</em><em>False</em><em>]</em>) – if True, do not apply cleaning</p></li>
+<li><p><strong>q_min</strong> (<em>float</em><em> [</em><em>0.95</em><em>]</em>) – lower bound on q.</p></li>
+<li><p><strong>mag_min</strong> (<em>float</em><em> [</em><em>-3.0</em><em>]</em>) – lower bound on the instrumental magnitude.</p></li>
+<li><p><strong>Output</strong> – </p></li>
+<li><p><strong>------</strong> – </p></li>
+<li><p><strong>(</strong><strong>mast_cat</strong> (<em>tuple</em>) – </p></li>
+<li><p><strong>ps_cat</strong><strong>)</strong> – </p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="public_wifi.utils.ks2_utils.get_master_catalog">
+<code class="sig-prename descclassname">public_wifi.utils.ks2_utils.</code><code class="sig-name descname">get_master_catalog</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">ks2_master_file</span></em>, <em class="sig-param"><span class="n">clean</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">ps_cat</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">clean_args</span><span class="o">=</span><span class="default_value">{}</span></em><span class="sig-paren">)</span><a class="headerlink" href="#public_wifi.utils.ks2_utils.get_master_catalog" title="Permalink to this definition">¶</a></dt>
+<dd><p>From LOGR.XYVIQ1, pull out the master catalog of information about astrophysical objects</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>ks2_master_file</strong> (<em>str</em><em> or </em><em>pathlib.Path</em>) – full path to the file</p></li>
+<li><p><strong>clean</strong> (<em>bool</em><em> (</em><em>True</em><em>)</em>) – if True, returns the cleaned version of the catalog (i.e. with cuts)</p></li>
+<li><p><strong>ps_cat</strong> (<em>pd.DataFrame</em><em> [</em><em>None</em><em>]</em>) – point source catalog to use for cleaning the master catalog.
+if None, just fixes dtypes</p></li>
+<li><p><strong>clean_args</strong> (<em>dict</em><em> [</em><em>{}</em><em>]</em>) – arguments to pass to clean_master_catalog</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><p><strong>master_catalog_df</strong> –</p>
+<dl class="simple">
+<dt>pandas dataframe with the following columns:</dt><dd><p>NMAST : ID for the astrophysical object
+umast0, vmast0 :  average x and y position [pix]
+zmast1, szmast1 : filter 1 counts and count sigma,
+q1, o1 : filter 1 fit quality and crowding
+f1, g1 : num exposures and good measurements where star was found in filter 1
+zmast, szmast, q, o, f, and g columns with higher indices indicate different filters</p>
+</dd>
+</dl>
+</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>pd.DataFrame</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="public_wifi.utils.ks2_utils.get_point_source_catalog">
+<code class="sig-prename descclassname">public_wifi.utils.ks2_utils.</code><code class="sig-name descname">get_point_source_catalog</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">ps_file</span></em>, <em class="sig-param"><span class="n">ks2_epochmapper</span></em>, <em class="sig-param"><span class="n">clean</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">clean_args</span><span class="o">=</span><span class="default_value">{}</span></em><span class="sig-paren">)</span><a class="headerlink" href="#public_wifi.utils.ks2_utils.get_point_source_catalog" title="Permalink to this definition">¶</a></dt>
+<dd><p>This function reads the KS2 FIND_NIMFO file that stores <em>every</em> point source</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>ps_file</strong> (<em>pathlib.Path</em><em> or </em><em>string</em>) – full path to the LOGR.FIND_NIMFO</p></li>
+<li><p><strong>clean</strong> (<em>bool</em><em> [</em><em>True</em><em>]</em>) – if False, return the cleaned point source catalog. If True, return the
+original KS2 catalog.</p></li>
+<li><p><strong>clean_args</strong> (<em>dict {}</em>) – arguments to pass to clean_point_source_catalog()</p></li>
+<li><p><strong>Output</strong> – </p></li>
+<li><p><strong>------</strong> – </p></li>
+<li><p><strong>point_sources_df</strong> (<em>pd.DataFrame</em>) – catalog of all point sources detected and associated information.
+For documentation on the column names, see docs/database/ks2_output_definitions.org</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="public_wifi.utils.ks2_utils.get_stamp_from_ks2">
+<code class="sig-prename descclassname">public_wifi.utils.ks2_utils.</code><code class="sig-name descname">get_stamp_from_ks2</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">row</span></em>, <em class="sig-param"><span class="n">ks2_file_mapper</span></em>, <em class="sig-param"><span class="n">fits_path</span></em>, <em class="sig-param"><span class="n">stamp_size</span><span class="o">=</span><span class="default_value">11</span></em>, <em class="sig-param"><span class="n">return_img_ind</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">hdr</span><span class="o">=</span><span class="default_value">'SCI'</span></em><span class="sig-paren">)</span><a class="headerlink" href="#public_wifi.utils.ks2_utils.get_stamp_from_ks2" title="Permalink to this definition">¶</a></dt>
+<dd><p>Given a row of the FIND_NIMFO dataframe, this gets a stamp of the specified
+size of the given point source
+TODO: accept multiple rows</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>row</strong> (<em>pd.DataFrame row</em>) – a row containing the position and file information for the source</p></li>
+<li><p><strong>ks2_file_mapper</strong> (<em>pd.DataFrame</em>) – mapper between KS2 file names and root names</p></li>
+<li><p><strong>fits_path</strong> (<em>str</em><em> or </em><em>Path</em>) – path to the folder where the fits files are stored</p></li>
+<li><p><strong>stamp_size</strong> (<em>int</em><em> or </em><em>tuple</em><em> [</em><em>11</em><em>]</em>) – (row, col) size of the stamp [(int, int) if only int given]</p></li>
+<li><p><strong>return_img_ind</strong> (<em>bool</em><em> (</em><em>False</em><em>)</em>) – if True, return the row and col indices of the stamp in the image</p></li>
+<li><p><strong>hdr</strong> (<em>str</em><em> or </em><em>int</em>) – which header to get the stamp from</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p></p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>stamp_size-sized stamp</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="public_wifi.utils.ks2_utils.load_config_path">
+<code class="sig-prename descclassname">public_wifi.utils.ks2_utils.</code><code class="sig-name descname">load_config_path</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">sec</span></em>, <em class="sig-param"><span class="n">key</span></em>, <em class="sig-param"><span class="n">config_file</span></em><span class="sig-paren">)</span><a class="headerlink" href="#public_wifi.utils.ks2_utils.load_config_path" title="Permalink to this definition">¶</a></dt>
+<dd><p>Load a path from the config file. Also handles case of key not found.
+Run with empty strings for list of options.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>sec</strong> (<em>str</em>) – the section in the config file</p></li>
+<li><p><strong>key</strong> (<em>str</em>) – a key in the given section of the config file</p></li>
+<li><p><strong>as_str</strong> (<em>bool</em><em> [</em><em>False</em><em>]</em>) – if True, returns path as a string (default is pathlib.Path object)</p></li>
+<li><p><strong>config_file</strong> (<em>str</em><em> or </em><em>Path</em>) – path to the config file to use</p></li>
+<li><p><strong>Output</strong> – </p></li>
+<li><p><strong>-------</strong> – </p></li>
+<li><p><strong>path</strong> (<em>pathlib.Path</em><em> or </em><em>None</em>) – absolute path to the target in the config file.
+Prints warning if the path does not exist.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="public_wifi.utils.ks2_utils.recompute_master_catalog">
+<code class="sig-prename descclassname">public_wifi.utils.ks2_utils.</code><code class="sig-name descname">recompute_master_catalog</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">mast_cat</span></em>, <em class="sig-param"><span class="n">ps_cat</span></em>, <em class="sig-param"><span class="n">ks2_filtermapper</span></em><span class="sig-paren">)</span><a class="headerlink" href="#public_wifi.utils.ks2_utils.recompute_master_catalog" title="Permalink to this definition">¶</a></dt>
+<dd><p>After making cuts on the point source catalog, recompute relevant
+values in the master catalog.
+Assumes the master catalog has the same stars as the point source catalog
+:param mast_cat: the master catalog
+:type mast_cat: pd.DataFrame
+:param ps_cat: the point source catalog
+:type ps_cat: pd.DataFrame
+:param ks2_filtermapper: map[per between filter IDs and names
+:type ks2_filtermapper: pd.DataFrame
+:param Output:
+:param ——:
+:param mast_cat_new: the master catalog with updated values
+:type mast_cat_new: pd.DataFrame</p>
+</dd></dl>
+
+<dl class="py function">
+<dt id="public_wifi.utils.ks2_utils.remove_duplicates">
+<code class="sig-prename descclassname">public_wifi.utils.ks2_utils.</code><code class="sig-name descname">remove_duplicates</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">ps_cat</span></em>, <em class="sig-param"><span class="n">verbose</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="headerlink" href="#public_wifi.utils.ks2_utils.remove_duplicates" title="Permalink to this definition">¶</a></dt>
+<dd><p>Remove duplicate entries from the point source catalog.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>ps_cat</strong> (<em>pd.DataFrame</em>) – pandas dataframe containing the point source catalog</p></li>
+<li><p><strong>verbose</strong> (<em>bool</em><em> [</em><em>False</em><em>]</em>) – if True, print out the number of duplicates found</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>ps_cat_nodup</strong> (<em>pd.DataFrame</em>) – pandas dataframe of the point source catalog with duplicate entries removed</p></li>
+<li><p><strong>master_cat_nodup</strong> (<em>pd.DataFrame</em>) – pandas dataframe of the master catalog that matches the remaining point sources</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="public_wifi.utils.ks2_utils.remove_duplicates_old">
+<code class="sig-prename descclassname">public_wifi.utils.ks2_utils.</code><code class="sig-name descname">remove_duplicates_old</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">ps_cat</span></em>, <em class="sig-param"><span class="n">master_cat</span></em>, <em class="sig-param"><span class="n">verbose</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="headerlink" href="#public_wifi.utils.ks2_utils.remove_duplicates_old" title="Permalink to this definition">¶</a></dt>
+<dd><p>Remove duplicate entries from the point source catalog and master catalogs.
+For all duplicate entries with different NMAST designations, a primary
+designation is chosen (“primary id”), and the alternative NMAST
+designations are referred to as “aliases”.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>ps_cat</strong> (<em>pd.DataFrame</em>) – pandas dataframe containing the point source catalog</p></li>
+<li><p><strong>master_cat</strong> (<em>pd.DataFrame</em>) – pandas dataframe containing the master catalog</p></li>
+<li><p><strong>verbose</strong> (<em>bool</em><em> [</em><em>False</em><em>]</em>) – if True, print out the number of duplicates found</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>ps_cat_nodup</strong> (<em>pd.DataFrame</em>) – pandas dataframe of the point source catalog with duplicate entries removed</p></li>
+<li><p><strong>master_cat_nodup</strong> (<em>pd.DataFrame</em>) – pandas dataframe of the master catalog that matches the remaining point sources</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="public-wifi-utils-plot-library-module">
+<h2>public_wifi.utils.plot_library module<a class="headerlink" href="#public-wifi-utils-plot-library-module" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="public-wifi-utils-plot-utils-module">
+<h2>public_wifi.utils.plot_utils module<a class="headerlink" href="#public-wifi-utils-plot-utils-module" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="public-wifi-utils-psf-corr-analysis-module">
+<h2>public_wifi.utils.psf_corr_analysis module<a class="headerlink" href="#public-wifi-utils-psf-corr-analysis-module" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-public_wifi.utils.shared_utils">
+<span id="public-wifi-utils-shared-utils-module"></span><h2>public_wifi.utils.shared_utils module<a class="headerlink" href="#module-public_wifi.utils.shared_utils" title="Permalink to this headline">¶</a></h2>
+<p>Includes shared useful stuff, like path definitions and file formats</p>
+<dl class="py function">
+<dt id="public_wifi.utils.shared_utils.debug_print">
+<code class="sig-prename descclassname">public_wifi.utils.shared_utils.</code><code class="sig-name descname">debug_print</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">debug_flag</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="o">*</span><span class="n">debug_args</span></em><span class="sig-paren">)</span><a class="headerlink" href="#public_wifi.utils.shared_utils.debug_print" title="Permalink to this definition">¶</a></dt>
+<dd><p>Easy-to-enable/disable function for debug printing.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>debug_flag</strong> (<em>bool</em><em> [</em><em>True</em><em>]</em>) – Turns printing on and off. You can set a flag at the top of the module, or
+turn on/off each statement individually.</p></li>
+<li><p><strong>debug_args</strong> (<em>arbitrary number of arguments</em><em>, </em><em>they get passed to print</em><em>(</em><em>)</em>) – Optional string to print. If empty, just prints ‘DEBUG’</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="public_wifi.utils.shared_utils.find_column">
+<code class="sig-prename descclassname">public_wifi.utils.shared_utils.</code><code class="sig-name descname">find_column</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">columns</span></em>, <em class="sig-param"><span class="n">qstr</span></em><span class="sig-paren">)</span><a class="headerlink" href="#public_wifi.utils.shared_utils.find_column" title="Permalink to this definition">¶</a></dt>
+<dd><p>Given a list of columns, this function returns the name of the column that
+contains the string in qstr</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>columns</strong> (<em>list-like</em>) – list of columns</p></li>
+<li><p><strong>qstr</strong> (<em>string to search for</em><em> (</em><em>e.g. star_id</em><em>, </em><em>u_mast</em><em>, </em><em>v_mast</em><em>)</em>) – </p></li>
+<li><p><strong>Output</strong> – </p></li>
+<li><p><strong>------</strong> – </p></li>
+<li><p><strong>col</strong> (<em>str</em>) – name of the desired column</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="public_wifi.utils.shared_utils.find_star_id_col">
+<code class="sig-prename descclassname">public_wifi.utils.shared_utils.</code><code class="sig-name descname">find_star_id_col</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">columns</span></em><span class="sig-paren">)</span><a class="headerlink" href="#public_wifi.utils.shared_utils.find_star_id_col" title="Permalink to this definition">¶</a></dt>
+<dd><p>Given a list of columns, this function returns the name of the column that
+contains the star_id identifier (e.g. star_id, ps_star_id, stamp_star_id)</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>columns</strong> (<em>list-like</em>) – list of columns</p></li>
+<li><p><strong>Output</strong> – </p></li>
+<li><p><strong>------</strong> – </p></li>
+<li><p><strong>star_col</strong> (<em>str</em>) – name of the column with the star_id</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="public_wifi.utils.shared_utils.get_data_file">
+<code class="sig-prename descclassname">public_wifi.utils.shared_utils.</code><code class="sig-name descname">get_data_file</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">file_name</span></em>, <em class="sig-param"><span class="n">config_file</span></em><span class="sig-paren">)</span><a class="headerlink" href="#public_wifi.utils.shared_utils.get_data_file" title="Permalink to this definition">¶</a></dt>
+<dd><p>Given a FITS file name (no path), return the full path the file so it can be read</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>file_name</strong> (<em>str</em><em> or </em><em>pathlib.Path</em>) – the file name, e.g. icct01hrq_flt.fits</p></li>
+<li><p><strong>config_file</strong> (<em>str</em><em> or </em><em>Path</em>) – config file with the path where the exposures are kept (DATA_PATH)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>file_path</strong> – the full file path</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>pathlib.Path</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="public_wifi.utils.shared_utils.load_config_path">
+<code class="sig-prename descclassname">public_wifi.utils.shared_utils.</code><code class="sig-name descname">load_config_path</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">sec</span></em>, <em class="sig-param"><span class="n">key</span></em>, <em class="sig-param"><span class="n">as_str</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">config_file</span><span class="o">=</span><span class="default_value">PosixPath('/System/Volumes/Data/user/jaguilar/public_wifi/public_wifi/config-public_wifi.cfg')</span></em><span class="sig-paren">)</span><a class="headerlink" href="#public_wifi.utils.shared_utils.load_config_path" title="Permalink to this definition">¶</a></dt>
+<dd><p>Load a path from the config file. Also handles case of key not found.
+Run with empty strings for list of options.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>sec</strong> (<em>str</em>) – the section in the config file</p></li>
+<li><p><strong>key</strong> (<em>str</em>) – a key in the given section of the config file</p></li>
+<li><p><strong>as_str</strong> (<em>bool</em><em> [</em><em>False</em><em>]</em>) – if True, returns path as a string (default is pathlib.Path object)</p></li>
+<li><p><strong>config_file</strong> (<em>str</em><em> or </em><em>Path</em>) – path to the config file to use</p></li>
+<li><p><strong>Output</strong> – </p></li>
+<li><p><strong>-------</strong> – </p></li>
+<li><p><strong>path</strong> (<em>pathlib.Path</em><em> or </em><em>None</em>) – absolute path to the target in the config file.
+Prints warning if the path does not exist.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py data">
+<dt id="public_wifi.utils.shared_utils.pw_config_file">
+<code class="sig-prename descclassname">public_wifi.utils.shared_utils.</code><code class="sig-name descname">pw_config_file</code><em class="property"> = PosixPath('/System/Volumes/Data/user/jaguilar/public_wifi/public_wifi/config-public_wifi.cfg')</em><a class="headerlink" href="#public_wifi.utils.shared_utils.pw_config_file" title="Permalink to this definition">¶</a></dt>
+<dd><p>This block defines some useful paths, as well as a wrapper function for loading paths from the config file and handling them properly, like turning relative paths into absolute paths</p>
+</dd></dl>
+
+</div>
+<div class="section" id="module-public_wifi.utils.subtr_results_dashboard">
+<span id="public-wifi-utils-subtr-results-dashboard-module"></span><h2>public_wifi.utils.subtr_results_dashboard module<a class="headerlink" href="#module-public_wifi.utils.subtr_results_dashboard" title="Permalink to this headline">¶</a></h2>
+<p>Result visualization dashboard. Uses Bokeh to draw interactive plots.</p>
+<dl class="py function">
+<dt id="public_wifi.utils.subtr_results_dashboard.cube_scroller_app">
+<code class="sig-prename descclassname">public_wifi.utils.subtr_results_dashboard.</code><code class="sig-name descname">cube_scroller_app</code><span class="sig-paren">(</span><em class="sig-param">cube</em>, <em class="sig-param">title=''</em>, <em class="sig-param">scroll_title=''</em>, <em class="sig-param">cmap_class=&lt;class 'bokeh.models.mappers.LinearColorMapper'&gt;</em><span class="sig-paren">)</span><a class="headerlink" href="#public_wifi.utils.subtr_results_dashboard.cube_scroller_app" title="Permalink to this definition">¶</a></dt>
+<dd><p>Make an app to scroll through a datacube. Returns the app; display using bokeh.io.show</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>cube</strong> (<em>pd.Series</em>) – pandas.Series object whose entries are arrays</p></li>
+<li><p><strong>title</strong> (<em>str</em>) – title to put on the plot</p></li>
+<li><p><strong>scroll_title</strong> (<em>str</em><em> [</em><em>''</em><em>]</em>) – title for the scroll bar</p></li>
+<li><p><strong>cmap_class</strong> (<em>bokeh.models.ColorMapper class</em><em> [</em><em>bkmdls.LinearColorMapper</em><em>]</em>) – a color mapper for scaling the images</p></li>
+<li><p><strong>Output</strong> – </p></li>
+<li><p><strong>------</strong> – </p></li>
+<li><p><strong>application</strong> (<em>bokeh</em>) – </p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="public_wifi.utils.subtr_results_dashboard.cube_scroller_plot_slider">
+<code class="sig-prename descclassname">public_wifi.utils.subtr_results_dashboard.</code><code class="sig-name descname">cube_scroller_plot_slider</code><span class="sig-paren">(</span><em class="sig-param">cube</em>, <em class="sig-param">title</em>, <em class="sig-param">scroll_title=''</em>, <em class="sig-param">cmap_class=&lt;class 'bokeh.models.mappers.LinearColorMapper'&gt;</em>, <em class="sig-param">plot_size=400</em><span class="sig-paren">)</span><a class="headerlink" href="#public_wifi.utils.subtr_results_dashboard.cube_scroller_plot_slider" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generate the plot and scroller objects for a cube_scroller application.
+Separating it out this way makes it easier to add multiple cube scrollers
+to the same figure.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>cube</strong> (<em>pd.Series</em>) – pandas.Series object whose entries are arrays</p></li>
+<li><p><strong>title</strong> (<em>str</em>) – title to put on the plot</p></li>
+<li><p><strong>scroll_title</strong> (<em>str</em><em> [</em><em>''</em><em>]</em>) – title for the scroll bar</p></li>
+<li><p><strong>cmap_class</strong> (<em>bokeh.models.ColorMapper class</em><em> [</em><em>bkmdls.LinearColorMapper</em><em>]</em>) – a color mapper for scaling the images</p></li>
+<li><p><strong>Output</strong> – </p></li>
+<li><p><strong>------</strong> – </p></li>
+<li><p><strong>figure</strong> (<em>bokeh</em>) – </p></li>
+<li><p><strong>widget</strong> (<em>slider</em>) – </p></li>
+<li><p><strong>the that stores the data</strong> (<em>and</em>) – </p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="public_wifi.utils.subtr_results_dashboard.df_scroller_app">
+<code class="sig-prename descclassname">public_wifi.utils.subtr_results_dashboard.</code><code class="sig-name descname">df_scroller_app</code><span class="sig-paren">(</span><em class="sig-param">df</em>, <em class="sig-param">title</em>, <em class="sig-param">scroll_title=''</em>, <em class="sig-param">cmap_class=&lt;class 'bokeh.models.mappers.LinearColorMapper'&gt;</em>, <em class="sig-param">plot_size=400</em><span class="sig-paren">)</span><a class="headerlink" href="#public_wifi.utils.subtr_results_dashboard.df_scroller_app" title="Permalink to this definition">¶</a></dt>
+<dd><p>Make an app to scroll through a dataframe. Assume the cubes are stored column-wise.
+Select the cube (column) to scroll though using a select widget.
+Returns the app; display using bokeh.io.show</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>df</strong> (<em>pd.DataFrame</em>) – pandas.DataFrame object whose entries are arrays</p></li>
+<li><p><strong>title</strong> (<em>str</em>) – title to put on the plot</p></li>
+<li><p><strong>scroll_title</strong> (<em>str</em><em> [</em><em>''</em><em>]</em>) – title for the scroll bar</p></li>
+<li><p><strong>cmap_class</strong> (<em>bokeh.models.ColorMapper class</em><em> [</em><em>bkmdls.LinearColorMapper</em><em>]</em>) – a color mapper for scaling the images</p></li>
+<li><p><strong>Output</strong> – </p></li>
+<li><p><strong>------</strong> – </p></li>
+<li><p><strong>application</strong> (<em>bokeh</em>) – </p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="public_wifi.utils.subtr_results_dashboard.generate_inspector">
+<code class="sig-prename descclassname">public_wifi.utils.subtr_results_dashboard.</code><code class="sig-name descname">generate_inspector</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">star_id</span></em>, <em class="sig-param"><span class="n">dbm</span></em>, <em class="sig-param"><span class="n">alt_dbm</span></em>, <em class="sig-param"><span class="n">subtr_results_dict</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">snr_maps</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">plot_size_unit</span><span class="o">=</span><span class="default_value">100</span></em><span class="sig-paren">)</span><a class="headerlink" href="#public_wifi.utils.subtr_results_dashboard.generate_inspector" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create a Bokeh server app using the provided information.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>star_id</strong> (<em>the target star</em>) – </p></li>
+<li><p><strong>dbm</strong> (<em>db_manager object for the sector</em>) – </p></li>
+<li><p><strong>alt_dbm</strong> (<em>[</em><em>None</em><em>] </em><em>alternate db_manager</em><em>, </em><em>for plotting sources not selected</em>) – </p></li>
+<li><p><strong>snr_stamps</strong> (<em>pd.Series of SNR stamps</em>) – </p></li>
+<li><p><strong>residual_stamps</strong> (<em>pd.Series of PSF subtraction residuals</em>) – </p></li>
+<li><p><strong>model_stamps</strong> (<em>pd.Series of PSF models</em>) – </p></li>
+<li><p><strong>reference_stamps</strong> (<em>pd.Series of the reference stamps used to construct the PSF</em>) – </p></li>
+<li><p><strong>subtr_results_dict</strong> (<em>[</em><em>None</em><em>] </em><em>dict with keys 'references'</em><em>, </em><em>'residuals'</em><em>, </em><em>'models'</em><em>, </em><em>and 'snr'</em>) – </p></li>
+<li><p><strong>plot_size</strong> (<em>[</em><em>100</em><em>] </em><em>size of the plot increments</em>) – </p></li>
+<li><p><strong>Output</strong> – </p></li>
+<li><p><strong>------</strong> – </p></li>
+<li><p><strong>app for use with show</strong><strong>(</strong><strong>app</strong><strong>)</strong> (<em>bokeh</em>) – </p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="public_wifi.utils.subtr_results_dashboard.generate_inspector_ana">
+<code class="sig-prename descclassname">public_wifi.utils.subtr_results_dashboard.</code><code class="sig-name descname">generate_inspector_ana</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">ana_mgr</span></em>, <em class="sig-param"><span class="n">star_id</span></em>, <em class="sig-param"><span class="n">alt_dbs</span><span class="o">=</span><span class="default_value">{}</span></em>, <em class="sig-param"><span class="n">plot_size_unit</span><span class="o">=</span><span class="default_value">100</span></em><span class="sig-paren">)</span><a class="headerlink" href="#public_wifi.utils.subtr_results_dashboard.generate_inspector_ana" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create a Bokeh server app using the provided information.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>ana_mgr</strong> (<em>an ana_utils.AnaManager instance</em>) – contains the database, subtraction manager, and other analysis products</p></li>
+<li><p><strong>star_id</strong> (<em>star to show</em>) – </p></li>
+<li><p><strong>alt_dbs</strong> (<em>[</em><em>{}</em><em>] </em><em>dictionary of databases</em>) – other databases to show on plots. Keys will be used for legend labels</p></li>
+<li><p><strong>plot_size</strong> (<em>[</em><em>100</em><em>] </em><em>size of the plot increments</em>) – </p></li>
+<li><p><strong>Output</strong> – </p></li>
+<li><p><strong>------</strong> – </p></li>
+<li><p><strong>app for use with show</strong><strong>(</strong><strong>app</strong><strong>)</strong> (<em>bokeh</em>) – </p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="public_wifi.utils.subtr_results_dashboard.show_detector_scene">
+<code class="sig-prename descclassname">public_wifi.utils.subtr_results_dashboard.</code><code class="sig-name descname">show_detector_scene</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">star_id</span></em>, <em class="sig-param"><span class="n">dbm</span></em>, <em class="sig-param"><span class="n">alt_dbm</span><span class="o">=</span><span class="default_value">{}</span></em>, <em class="sig-param"><span class="n">plot_size</span><span class="o">=</span><span class="default_value">300</span></em><span class="sig-paren">)</span><a class="headerlink" href="#public_wifi.utils.subtr_results_dashboard.show_detector_scene" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plot all the point sources on the detector sector</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>star_id</strong> (<em>the target star</em>) – </p></li>
+<li><p><strong>dbm</strong> (<em>db_manager object for the sector</em>) – </p></li>
+<li><p><strong>plot_size</strong> (<em>[</em><em>300</em><em>] </em><em>size of the plot</em><em> (</em><em>x and y</em><em>)</em>) – </p></li>
+<li><p><strong>alt_dbm</strong> (<em>[</em><em>{}</em><em>] </em><em>alternate db_manager</em><em>, </em><em>will plot all point sources not in dbm</em>) – </p></li>
+<li><p><strong>Output</strong> – </p></li>
+<li><p><strong>------</strong> – </p></li>
+<li><p><strong>Figure object containing the plot</strong> (<em>Bokeh</em>) – </p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="public_wifi.utils.subtr_results_dashboard.show_sky_scene">
+<code class="sig-prename descclassname">public_wifi.utils.subtr_results_dashboard.</code><code class="sig-name descname">show_sky_scene</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">star_id</span></em>, <em class="sig-param"><span class="n">dbm</span></em>, <em class="sig-param"><span class="n">zoom</span><span class="o">=</span><span class="default_value">61</span></em>, <em class="sig-param"><span class="n">alt_dbm</span><span class="o">=</span><span class="default_value">{}</span></em>, <em class="sig-param"><span class="n">stamp_size</span><span class="o">=</span><span class="default_value">11</span></em>, <em class="sig-param"><span class="n">plot_size</span><span class="o">=</span><span class="default_value">300</span></em><span class="sig-paren">)</span><a class="headerlink" href="#public_wifi.utils.subtr_results_dashboard.show_sky_scene" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plot the scene on sky</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>star_id</strong> (<em>the target star</em>) – </p></li>
+<li><p><strong>dbm</strong> (<em>database manager for the active selection of stars</em><em>, </em><em>that includes the target star</em>) – </p></li>
+<li><p><strong>zoom</strong> (<em>[</em><em>61</em><em>] </em><em>size of the initial region to zoom in on</em>) – </p></li>
+<li><p><strong>alt_dbm</strong> (<em>[</em><em>{}</em><em>] </em><em>alternate star table</em><em>(</em><em>s</em><em>)</em><em>, </em><em>will plot stars not in main database</em>) – </p></li>
+<li><p><strong>stamp_size</strong> (<em>[</em><em>11</em><em>] </em><em>size of a box to draw around the star that indicates the stamp size</em>) – </p></li>
+<li><p><strong>plot_size</strong> (<em>[</em><em>300</em><em>] </em><em>size of the plot</em><em> (</em><em>x and y</em><em>)</em>) – </p></li>
+<li><p><strong>Output</strong> – </p></li>
+<li><p><strong>------</strong> – </p></li>
+<li><p><strong>Figure object containing the plot</strong> (<em>Bokeh</em>) – </p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="public_wifi.utils.subtr_results_dashboard.show_target_stamps">
+<code class="sig-prename descclassname">public_wifi.utils.subtr_results_dashboard.</code><code class="sig-name descname">show_target_stamps</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">star_id</span></em>, <em class="sig-param"><span class="n">dbm</span></em>, <em class="sig-param"><span class="n">plot_size</span><span class="o">=</span><span class="default_value">300</span></em><span class="sig-paren">)</span><a class="headerlink" href="#public_wifi.utils.subtr_results_dashboard.show_target_stamps" title="Permalink to this definition">¶</a></dt>
+<dd><p>Docstring goes here</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>star_id</strong> (<em>str</em>) – star identifier</p></li>
+<li><p><strong>dbm</strong> (<em>db_manager instance</em>) – database manager containing the star</p></li>
+<li><p><strong>plot_size</strong> (<em>int</em><em> [</em><em>300</em><em>]</em>) – size of the plot</p></li>
+<li><p><strong>Output</strong> – </p></li>
+<li><p><strong>------</strong> – </p></li>
+<li><p><strong>figure that can be displayed with show</strong><strong>(</strong><strong>)</strong> (<em>Bokeh</em>) – </p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="module-public_wifi.utils.table_io">
+<span id="public-wifi-utils-table-io-module"></span><h2>public_wifi.utils.table_io module<a class="headerlink" href="#module-public_wifi.utils.table_io" title="Permalink to this headline">¶</a></h2>
+<p>This module contains the API for reading, writing, and updating the data tables</p>
+<dl class="py function">
+<dt id="public_wifi.utils.table_io.load_table">
+<code class="sig-prename descclassname">public_wifi.utils.table_io.</code><code class="sig-name descname">load_table</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">key</span></em>, <em class="sig-param"><span class="n">db_file</span></em>, <em class="sig-param"><span class="n">verbose</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="headerlink" href="#public_wifi.utils.table_io.load_table" title="Permalink to this definition">¶</a></dt>
+<dd><p>Load a table into a dataframe</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>key</strong> (<em>str</em>) – the key under which the table is stored</p></li>
+<li><p><strong>db_file</strong> (<em>str</em><em> or </em><em>pathlib.Path</em>) – the file to read from</p></li>
+<li><p><strong>Output</strong> – </p></li>
+<li><p><strong>------</strong> – </p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="public_wifi.utils.table_io.update_table">
+<code class="sig-prename descclassname">public_wifi.utils.table_io.</code><code class="sig-name descname">update_table</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">key</span></em>, <em class="sig-param"><span class="n">pk_name</span></em>, <em class="sig-param"><span class="n">pk_val</span></em>, <em class="sig-param"><span class="n">column</span></em>, <em class="sig-param"><span class="n">val</span></em>, <em class="sig-param"><span class="n">db_file</span></em>, <em class="sig-param"><span class="n">verbose</span><span class="o">=</span><span class="default_value">True</span></em><span class="sig-paren">)</span><a class="headerlink" href="#public_wifi.utils.table_io.update_table" title="Permalink to this definition">¶</a></dt>
+<dd><p>Update table value</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>key</strong> (<em>str</em>) – key under which the table is stored in the hdf5 file</p></li>
+<li><p><strong>pk_name</strong> (<em>str</em>) – name of the table column with the primary key (serves as a proxy for the index)</p></li>
+<li><p><strong>pk_val</strong> (<em>str</em><em> or </em><em>list</em>) – primary key value (can be list-like)</p></li>
+<li><p><strong>column</strong> (<em>str</em>) – the column to update</p></li>
+<li><p><strong>val</strong> (<em>the new value</em><em> (</em><em>can be list-like; must be single-valued</em><em> or </em><em>same shape as pk_val</em><em>)</em>) – </p></li>
+<li><p><strong>db_file</strong> (<em>path to the table file</em>) – </p></li>
+<li><p><strong>Output</strong> – </p></li>
+<li><p><strong>------</strong> – </p></li>
+<li><p><strong>None</strong> – </p></li>
+<li><p><strong>updated values to file</strong> (<em>writes</em>) – </p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="public_wifi.utils.table_io.write_table">
+<code class="sig-prename descclassname">public_wifi.utils.table_io.</code><code class="sig-name descname">write_table</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">key</span></em>, <em class="sig-param"><span class="n">df</span></em>, <em class="sig-param"><span class="n">db_file</span></em>, <em class="sig-param"><span class="n">pk</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">verbose</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">h5py_args</span><span class="o">=</span><span class="default_value">{}</span></em>, <em class="sig-param"><span class="n">clobber</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="headerlink" href="#public_wifi.utils.table_io.write_table" title="Permalink to this definition">¶</a></dt>
+<dd><p>Write a table to file</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>key</strong> (<em>str</em>) – the table’s key to use in the HDF file</p></li>
+<li><p><strong>df</strong> (<em>pd.DataFrame</em>) – the dataframe with the table</p></li>
+<li><p><strong>db_file</strong> (<em>str</em><em> or </em><em>pathlib.Path</em>) – the filename to write to</p></li>
+<li><p><strong>pk</strong> (<em>str</em><em> [</em><em>None</em><em>]</em>) – (optional) the name of the table’s primary key</p></li>
+<li><p><strong>h5py_args</strong> (<em>dict</em><em> [</em><em>{}</em><em>]</em>) – any other keyword arguments to pass to h5py.File</p></li>
+<li><p><strong>clobber</strong> (<em>bool</em><em> [</em><em>False</em><em>]</em>) – overwrite a table if it exists</p></li>
+<li><p><strong>Output</strong> – </p></li>
+<li><p><strong>------</strong> – </p></li>
+<li><p><strong>the table to the specified file</strong> (<em>Writes</em>) – </p></li>
+<li><p><strong>the file if necessary.</strong> (<em>creating</em>) – </p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="module-public_wifi.utils.table_utils">
+<span id="public-wifi-utils-table-utils-module"></span><h2>public_wifi.utils.table_utils module<a class="headerlink" href="#module-public_wifi.utils.table_utils" title="Permalink to this headline">¶</a></h2>
+<p>This module contains the API for interacting with data tables</p>
+<dl class="py function">
+<dt id="public_wifi.utils.table_utils.create_database_subset">
+<code class="sig-prename descclassname">public_wifi.utils.table_utils.</code><code class="sig-name descname">create_database_subset</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">list_of_stars</span></em>, <em class="sig-param"><span class="n">tables</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#public_wifi.utils.table_utils.create_database_subset" title="Permalink to this definition">¶</a></dt>
+<dd><p>Load a subset of the database: pick a subset of stars to work on, and make
+sure you have a set of tables that are self-consistent</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>list_of_stars</strong> (<em>list</em><em> (or </em><em>iterable</em><em>)</em>) – a list of star_ids to use for generating a new database</p></li>
+<li><p><strong>tables</strong> (<em>list</em><em> [</em><em>None</em><em>]</em>) – list of tables (as dataframes) to include in the subset parsing.
+Must have the star_id stored in a column. If None, then
+[‘stars’, ‘point_sources’] is used and tables are read from file.</p></li>
+<li><p><strong>Output</strong> – </p></li>
+<li><p><strong>------</strong> – </p></li>
+<li><p><strong>subset_tables</strong> (<em>list</em>) – a list of tables - one for each that was passed in, and in the same order</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="public_wifi.utils.table_utils.get_file_name_from_exp_id">
+<code class="sig-prename descclassname">public_wifi.utils.table_utils.</code><code class="sig-name descname">get_file_name_from_exp_id</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">exp_id</span></em>, <em class="sig-param"><span class="n">file_mapper</span></em>, <em class="sig-param"><span class="n">root</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="headerlink" href="#public_wifi.utils.table_utils.get_file_name_from_exp_id" title="Permalink to this definition">¶</a></dt>
+<dd><p>Given a KS2 file identifier, get the name of the FLT file</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>exp_id</strong> (<em>str</em>) – The identifier assigned to each exposure file. Typically E followed by a number.</p></li>
+<li><p><strong>file_mapper</strong> (<em>pd.DataFrame</em><em> (</em><em>default: result of table_utils.get_file_mapper</em><em>(</em><em>)</em><em>)</em>) – The dataframe that tracks the file IDs and the corresponding file names</p></li>
+<li><p><strong>root</strong> (<em>bool</em><em> [</em><em>False</em><em>]</em>) – if True, return the root name (i.e. filename without the _flt.fits extension)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>file_name</strong></p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>the HST identifier for the file</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="public_wifi.utils.table_utils.get_file_name_from_file_id">
+<code class="sig-prename descclassname">public_wifi.utils.table_utils.</code><code class="sig-name descname">get_file_name_from_file_id</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">file_id</span></em>, <em class="sig-param"><span class="n">path</span></em><span class="sig-paren">)</span><a class="headerlink" href="#public_wifi.utils.table_utils.get_file_name_from_file_id" title="Permalink to this definition">¶</a></dt>
+<dd><p>The header files don’t store the whole filename, so this function fills in
+the rest of the name as well as the path.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>file_id</strong> (<em>str</em>) – the file identifier (everything except _flt.fits)</p></li>
+<li><p><strong>path</strong> (<em>str</em><em> or </em><em>Path</em>) – path to the folder where the FITS files are kept</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>filename</strong> – the full absolute path to the fits file</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>pathlib.Path</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="public_wifi.utils.table_utils.get_filter_name_from_filter_id">
+<code class="sig-prename descclassname">public_wifi.utils.table_utils.</code><code class="sig-name descname">get_filter_name_from_filter_id</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">filter_id</span></em>, <em class="sig-param"><span class="n">filter_mapper</span></em><span class="sig-paren">)</span><a class="headerlink" href="#public_wifi.utils.table_utils.get_filter_name_from_filter_id" title="Permalink to this definition">¶</a></dt>
+<dd><p>Given a filter identifier, get the name of the HST filter</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>filter_id</strong> (<em>str</em>) – The identifier assigned to each filter by the database.
+Typically F followed by a number, like F1 or F2.</p></li>
+<li><p><strong>filter_mapper</strong> (<em>pd.DataFrame</em><em> (</em><em>default: result of ks2_utils.get_filter_mapper</em><em>(</em><em>)</em><em>)</em>) – The dataframe that tracks the filter IDs and the corresponding filter names</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>filter_name</strong></p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>the HST name of the filter</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="public_wifi.utils.table_utils.get_hdr_from_exp_id">
+<code class="sig-prename descclassname">public_wifi.utils.table_utils.</code><code class="sig-name descname">get_hdr_from_exp_id</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">exp_id</span></em>, <em class="sig-param"><span class="n">hdr</span></em>, <em class="sig-param"><span class="n">db_file</span></em><span class="sig-paren">)</span><a class="headerlink" href="#public_wifi.utils.table_utils.get_hdr_from_exp_id" title="Permalink to this definition">¶</a></dt>
+<dd><p>Pull out a header from the fits file, given the exposure identifier.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>exp_id</strong> (<em>str</em>) – the identifier for the exposure (usu something like ‘E001’)</p></li>
+<li><p><strong>hdr</strong> (<em>fits header object</em>) – which header? allowed values: [‘SCI’,’ERR’,’DQ’,’SAMP’,’TIME’]</p></li>
+<li><p><strong>Returns</strong> – </p></li>
+<li><p><strong>hdr</strong> – </p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="public_wifi.utils.table_utils.get_header_kw_for_exp">
+<code class="sig-prename descclassname">public_wifi.utils.table_utils.</code><code class="sig-name descname">get_header_kw_for_exp</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">exp_id</span></em>, <em class="sig-param"><span class="n">kw</span></em>, <em class="sig-param"><span class="n">hdr_id</span></em>, <em class="sig-param"><span class="n">db_file</span></em><span class="sig-paren">)</span><a class="headerlink" href="#public_wifi.utils.table_utils.get_header_kw_for_exp" title="Permalink to this definition">¶</a></dt>
+<dd><p>Shortcut to get the value of a particular header keyword for an exposure</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>exp_id</strong> (<em>str</em>) – exposure identifier (e.g. E123)</p></li>
+<li><p><strong>kw</strong> (<em>str</em>) – header keyword whose value you want</p></li>
+<li><p><strong>hdr</strong> (<em>str</em>) – which header to search for the keyword</p></li>
+<li><p><strong>db_file</strong> (<em>str</em><em> or </em><em>Path</em>) – path to the database file</p></li>
+<li><p><strong>Output</strong> – </p></li>
+<li><p><strong>------</strong> – </p></li>
+<li><p><strong>kw_val</strong> (<em>the value stored at the header keyword</em>) – </p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="public_wifi.utils.table_utils.get_img_from_exp_id">
+<code class="sig-prename descclassname">public_wifi.utils.table_utils.</code><code class="sig-name descname">get_img_from_exp_id</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">exp_id</span></em>, <em class="sig-param"><span class="n">hdr</span></em>, <em class="sig-param"><span class="n">db_file</span></em>, <em class="sig-param"><span class="n">config_file</span></em><span class="sig-paren">)</span><a class="headerlink" href="#public_wifi.utils.table_utils.get_img_from_exp_id" title="Permalink to this definition">¶</a></dt>
+<dd><p>Pull out an image from the fits file, given the exposure identifier.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>exp_id</strong> (<em>str</em>) – the identifier for the exposure (usu something like ‘E001’)</p></li>
+<li><p><strong>hdr</strong> (<em>str</em><em> or </em><em>int</em>) – which header? allowed values: [‘SCI’,’ERR’,’DQ’,’SAMP’,’TIME’]</p></li>
+<li><p><strong>db_file</strong> (<em>str</em><em> or </em><em>Path</em>) – path to the active database file</p></li>
+<li><p><strong>Returns</strong> – </p></li>
+<li><p><strong>img</strong> (<em>numpy.array</em>) – 2-D image from the fits file</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="public_wifi.utils.table_utils.get_img_from_file_id">
+<code class="sig-prename descclassname">public_wifi.utils.table_utils.</code><code class="sig-name descname">get_img_from_file_id</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">file_id</span></em>, <em class="sig-param"><span class="n">hdr</span></em>, <em class="sig-param"><span class="n">db_file</span></em>, <em class="sig-param"><span class="n">config_file</span></em><span class="sig-paren">)</span><a class="headerlink" href="#public_wifi.utils.table_utils.get_img_from_file_id" title="Permalink to this definition">¶</a></dt>
+<dd><p>Pull out an image from the fits file, given the exposure identifier.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>file_id</strong> (<em>str</em>) – the identifier for the file/exposure (usu something like ‘E001’)</p></li>
+<li><p><strong>hdr</strong> (<em>str</em><em> or </em><em>int</em><em> [</em><em>'SCI'</em><em>]</em>) – which header? allowed values: [‘SCI’,’ERR’,’DQ’,’SAMP’,’TIME’]</p></li>
+<li><p><strong>db_file</strong> (<em>str</em><em> or </em><em>Path</em>) – path to the active database file</p></li>
+<li><p><strong>config_file</strong> (<em>str</em><em> or </em><em>Path</em>) – config file that tells you where the FITS files are</p></li>
+<li><p><strong>Returns</strong> – </p></li>
+<li><p><strong>img</strong> (<em>numpy.array</em>) – 2-D image from the fits file</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="public_wifi.utils.table_utils.get_stamp_coords_from_center">
+<code class="sig-prename descclassname">public_wifi.utils.table_utils.</code><code class="sig-name descname">get_stamp_coords_from_center</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">x</span></em>, <em class="sig-param"><span class="n">y</span></em>, <em class="sig-param"><span class="n">stamp_size</span></em><span class="sig-paren">)</span><a class="headerlink" href="#public_wifi.utils.table_utils.get_stamp_coords_from_center" title="Permalink to this definition">¶</a></dt>
+<dd><p>Docstring goes here</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x</strong> (<em>int</em>) – x/col index</p></li>
+<li><p><strong>y</strong> (<em>int</em>) – y/row index</p></li>
+<li><p><strong>stamp_size</strong> (<em>int</em><em> or </em><em>tuple</em><em> [</em><em>11</em><em>]</em>) – </p></li>
+<li><p><strong>Output</strong> – </p></li>
+<li><p><strong>------</strong> – </p></li>
+<li><p><strong>stamp_ind</strong> (<em>np.array</em>) – 2xN array of (row, col) coordinates</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="public_wifi.utils.table_utils.get_wcs_from_exp_id">
+<code class="sig-prename descclassname">public_wifi.utils.table_utils.</code><code class="sig-name descname">get_wcs_from_exp_id</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">exp_id</span></em>, <em class="sig-param"><span class="n">file_mapper</span></em>, <em class="sig-param"><span class="n">config_file</span></em><span class="sig-paren">)</span><a class="headerlink" href="#public_wifi.utils.table_utils.get_wcs_from_exp_id" title="Permalink to this definition">¶</a></dt>
+<dd><p>Given an exposure ID, get the WCS header for the file</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>exp_id</strong> (<em>str</em>) – a string of format E000 corresponding to an exposure that comes from
+a unique fits file</p></li>
+<li><p><strong>file_mapper</strong> (<em>pd.DataFrame</em>) – dataframe linking the exposure IDs to the file names</p></li>
+<li><p><strong>config_file</strong> (<em>str</em><em> or </em><em>Path</em>) – path to the config file that stores folder where the FITS files are kept</p></li>
+<li><p><strong>Output</strong> – </p></li>
+<li><p><strong>------</strong> – </p></li>
+<li><p><strong>wcs</strong> (<em>a WCS object</em>) – </p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="public_wifi.utils.table_utils.index_into_table">
+<code class="sig-prename descclassname">public_wifi.utils.table_utils.</code><code class="sig-name descname">index_into_table</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">table</span></em>, <em class="sig-param"><span class="n">index_col</span></em>, <em class="sig-param"><span class="n">values</span></em><span class="sig-paren">)</span><a class="headerlink" href="#public_wifi.utils.table_utils.index_into_table" title="Permalink to this definition">¶</a></dt>
+<dd><p>Shortcut for pulling out a table subset of <cite>values</cite> matching entries in the
+<cite>index_col</cite> of <cite>table</cite>.
+Basically a wrapper for table.set_index(index_col).loc[values]</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>table</strong> (<em>pd.DataFrame</em>) – a table you want a subset of</p></li>
+<li><p><strong>index_col</strong> (<em>str</em>) – the table column you want to filter</p></li>
+<li><p><strong>values</strong> (<em>the values in index_col you want to match</em>) – </p></li>
+<li><p><strong>Output</strong> – </p></li>
+<li><p><strong>------</strong> – </p></li>
+<li><p><strong>table_subset</strong> (<em>pd.DataFrame</em>) – subset of the input table containing only rows whose entry in the
+index_col are in <cite>values</cite></p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="public_wifi.utils.table_utils.initialize_table">
+<code class="sig-prename descclassname">public_wifi.utils.table_utils.</code><code class="sig-name descname">initialize_table</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">table_name</span></em>, <em class="sig-param"><span class="n">nrows</span></em><span class="sig-paren">)</span><a class="headerlink" href="#public_wifi.utils.table_utils.initialize_table" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create an empty table based on the definitions found in table_definitions.cfg</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>table_name</strong> (<em>str</em>) – A valid table name</p></li>
+<li><p><strong>nrows</strong> (<em>the length of the table</em>) – </p></li>
+<li><p><strong>Output</strong> – </p></li>
+<li><p><strong>------</strong> – </p></li>
+<li><p><strong>table</strong> (<em>pd.DataFrame</em>) – the specified table</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="public_wifi.utils.table_utils.list_available_tables">
+<code class="sig-prename descclassname">public_wifi.utils.table_utils.</code><code class="sig-name descname">list_available_tables</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">db_file</span></em>, <em class="sig-param"><span class="n">return_list</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="headerlink" href="#public_wifi.utils.table_utils.list_available_tables" title="Permalink to this definition">¶</a></dt>
+<dd><p>Print a list of tables and their descriptions. Alternately, return a list of the tables.
+TODO print the subtables, too
+:param return_list: if True, instead of printing out the table names, return a list.
+:type return_list: bool [False]
+:param Output:
+:param ——:
+:param table_names: a list of available keys
+:type table_names: list [optional]</p>
+</dd></dl>
+
+<dl class="py function">
+<dt id="public_wifi.utils.table_utils.load_header">
+<code class="sig-prename descclassname">public_wifi.utils.table_utils.</code><code class="sig-name descname">load_header</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">extname</span></em>, <em class="sig-param"><span class="n">db_file</span></em><span class="sig-paren">)</span><a class="headerlink" href="#public_wifi.utils.table_utils.load_header" title="Permalink to this definition">¶</a></dt>
+<dd><p>Helper function to load the right header file</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>extname</strong> (<em>str</em><em> [</em><em>pri</em><em>]</em>) – shorthand name for the extension whose dataframe you want
+options are: pri, sci, err, dq, samp, and time</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>df</strong> – a dataframe with the right header selected</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>pd.DataFrame</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="public_wifi.utils.table_utils.load_table_definition">
+<code class="sig-prename descclassname">public_wifi.utils.table_utils.</code><code class="sig-name descname">load_table_definition</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">table_name</span></em>, <em class="sig-param"><span class="n">config_file</span><span class="o">=</span><span class="default_value">PosixPath('/System/Volumes/Data/user/jaguilar/public_wifi/public_wifi/table_definitions.cfg')</span></em><span class="sig-paren">)</span><a class="headerlink" href="#public_wifi.utils.table_utils.load_table_definition" title="Permalink to this definition">¶</a></dt>
+<dd><p>Load a path from the config file. Also handles case of key not found</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>table_name</strong> (<em>str</em>) – the name for the table (see docs)</p></li>
+<li><p><strong>config_file</strong> (<em>str</em><em> or </em><em>Path</em><em> (</em><em>&quot;../table_definitions.cfg&quot;</em><em>)</em>) – Path to a config file where the table columns and dtypes are defined</p></li>
+<li><p><strong>Output</strong> – </p></li>
+<li><p><strong>-------</strong> – </p></li>
+<li><p><strong>col_dict</strong> (<em>dict</em>) – a dictionary of column names and dtypes</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="public_wifi.utils.table_utils.match_value_in_table">
+<code class="sig-prename descclassname">public_wifi.utils.table_utils.</code><code class="sig-name descname">match_value_in_table</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">table</span></em>, <em class="sig-param"><span class="n">query_col</span></em>, <em class="sig-param"><span class="n">match_val</span></em>, <em class="sig-param"><span class="n">return_col</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#public_wifi.utils.table_utils.match_value_in_table" title="Permalink to this definition">¶</a></dt>
+<dd><p>Retrieve a value from a table. Assumes the equality operator (‘==’)
+Remember to cast any field names into lower case
+:param table: the table to query
+:type table: pd.DataFrame
+:param query_col: the name of the column to query
+:type query_col: string
+:param match_val: the value to match in the query column
+:type match_val: type(query_column)
+:param return_col: the column whose value you want to return. If left as default (None),</p>
+<blockquote>
+<div><p>returns the full matching dataframe/row</p>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p><strong>return_value</strong> – query. If only one item matches the query, returns the item itself (i.e.
+not in a dataframe/series.)</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>a series (or dataframe) of all the values that match the</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="public_wifi.utils.table_utils.set_reference_quality_flag">
+<code class="sig-prename descclassname">public_wifi.utils.table_utils.</code><code class="sig-name descname">set_reference_quality_flag</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">stamp_ids</span></em>, <em class="sig-param"><span class="n">flag</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">stamp_table</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#public_wifi.utils.table_utils.set_reference_quality_flag" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set the reference quality flag for the given stamp ids.
+True -&gt; stamp <em>can</em> be used as a reference
+False -&gt; stamp <em>cannot</em> be used as a reference</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>stamp_ids</strong> (<em>string</em><em> or </em><em>list-like</em>) – one or more stamp IDs whose reference flags need to be set.</p></li>
+<li><p><strong>flag</strong> (<em>bool</em><em> [</em><em>True</em><em>]</em>) – the value of the flag</p></li>
+<li><p><strong>stamp_table</strong> (<em>pd.DataFrame</em><em> [</em><em>None</em><em>]</em>) – the table to modify, passed by reference. If None, read from the default file</p></li>
+<li><p><strong>Output</strong> – </p></li>
+<li><p><strong>------</strong> – </p></li>
+<li><p><strong>None</strong> (<em>stamp_table is modified in-place</em>) – </p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="module-public_wifi.utils.wfc3_utils">
+<span id="public-wifi-utils-wfc3-utils-module"></span><h2>public_wifi.utils.wfc3_utils module<a class="headerlink" href="#module-public_wifi.utils.wfc3_utils" title="Permalink to this headline">¶</a></h2>
+<p>This file contains data particular to handling WFC3 data, such as error codes</p>
+<dl class="py function">
+<dt id="public_wifi.utils.wfc3_utils.dq_flag_parser">
+<code class="sig-prename descclassname">public_wifi.utils.wfc3_utils.</code><code class="sig-name descname">dq_flag_parser</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">flag_int</span></em><span class="sig-paren">)</span><a class="headerlink" href="#public_wifi.utils.wfc3_utils.dq_flag_parser" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convert a DQ HDU 32-bit word from an integer to base-2 and return the state of all the flags</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>flag_int</strong> (<em>int</em>) – the flag interpreted as an integer</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>flag_dict</strong> – a dict with True or False for each flag described in dq_flags</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>dict</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="public_wifi.utils.wfc3_utils.dq_flag_parser_old">
+<code class="sig-prename descclassname">public_wifi.utils.wfc3_utils.</code><code class="sig-name descname">dq_flag_parser_old</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">flag_int</span></em><span class="sig-paren">)</span><a class="headerlink" href="#public_wifi.utils.wfc3_utils.dq_flag_parser_old" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convert a DQ HDU 32-bit word from an integer to base-2 and return the state of all the flags</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>flag_int</strong> (<em>int</em>) – the flag interpreted as an integer</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>flag_dict</strong> – a dict with True or False for each flag described in dq_flags</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>dict</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="module-public_wifi.utils">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-public_wifi.utils" title="Permalink to this headline">¶</a></h2>
+</div>
+</div>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">public_wifi.utils package</a><ul>
+<li><a class="reference internal" href="#submodules">Submodules</a></li>
+<li><a class="reference internal" href="#public-wifi-utils-cat-utils-module">public_wifi.utils.cat_utils module</a></li>
+<li><a class="reference internal" href="#public-wifi-utils-cleaning-utils-module">public_wifi.utils.cleaning_utils module</a></li>
+<li><a class="reference internal" href="#module-public_wifi.utils.distance_utils">public_wifi.utils.distance_utils module</a></li>
+<li><a class="reference internal" href="#module-public_wifi.utils.dq_utils">public_wifi.utils.dq_utils module</a></li>
+<li><a class="reference internal" href="#module-public_wifi.utils.header_utils">public_wifi.utils.header_utils module</a></li>
+<li><a class="reference internal" href="#module-public_wifi.utils.image_utils">public_wifi.utils.image_utils module</a></li>
+<li><a class="reference internal" href="#module-public_wifi.utils.injection_utils">public_wifi.utils.injection_utils module</a></li>
+<li><a class="reference internal" href="#public-wifi-utils-ks2-plot-utils-module">public_wifi.utils.ks2_plot_utils module</a></li>
+<li><a class="reference internal" href="#module-public_wifi.utils.ks2_tables">public_wifi.utils.ks2_tables module</a></li>
+<li><a class="reference internal" href="#module-public_wifi.utils.ks2_utils">public_wifi.utils.ks2_utils module</a></li>
+<li><a class="reference internal" href="#public-wifi-utils-plot-library-module">public_wifi.utils.plot_library module</a></li>
+<li><a class="reference internal" href="#public-wifi-utils-plot-utils-module">public_wifi.utils.plot_utils module</a></li>
+<li><a class="reference internal" href="#public-wifi-utils-psf-corr-analysis-module">public_wifi.utils.psf_corr_analysis module</a></li>
+<li><a class="reference internal" href="#module-public_wifi.utils.shared_utils">public_wifi.utils.shared_utils module</a></li>
+<li><a class="reference internal" href="#module-public_wifi.utils.subtr_results_dashboard">public_wifi.utils.subtr_results_dashboard module</a></li>
+<li><a class="reference internal" href="#module-public_wifi.utils.table_io">public_wifi.utils.table_io module</a></li>
+<li><a class="reference internal" href="#module-public_wifi.utils.table_utils">public_wifi.utils.table_utils module</a></li>
+<li><a class="reference internal" href="#module-public_wifi.utils.wfc3_utils">public_wifi.utils.wfc3_utils module</a></li>
+<li><a class="reference internal" href="#module-public_wifi.utils">Module contents</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="public_wifi.instruments.html"
+                        title="previous chapter">public_wifi.instruments package</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/public_wifi.utils.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="public_wifi.instruments.html" title="public_wifi.instruments package"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">PUBLIC WIFI 0.1 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="modules.html" >public_wifi</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="public_wifi.html" >public_wifi package</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">public_wifi.utils package</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2021, Jonathan Aguilar.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 3.2.1.
+    </div>
+  </body>
+</html>

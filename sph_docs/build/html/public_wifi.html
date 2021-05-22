@@ -1,0 +1,1145 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>public_wifi package &#8212; PUBLIC WIFI 0.1 documentation</title>
+    <link rel="stylesheet" href="_static/pyramid.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="public_wifi.instruments package" href="public_wifi.instruments.html" />
+    <link rel="prev" title="public_wifi" href="modules.html" />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Neuton&amp;subset=latin" type="text/css" media="screen" charset="utf-8" />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Nobile:regular,italic,bold,bolditalic&amp;subset=latin" type="text/css" media="screen" charset="utf-8" />
+<!--[if lte IE 6]>
+<link rel="stylesheet" href="_static/ie6.css" type="text/css" media="screen" charset="utf-8" />
+<![endif]-->
+
+  </head><body>
+
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="public_wifi.instruments.html" title="public_wifi.instruments package"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="modules.html" title="public_wifi"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">PUBLIC WIFI 0.1 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="modules.html" accesskey="U">public_wifi</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">public_wifi package</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="public-wifi-package">
+<h1>public_wifi package<a class="headerlink" href="#public-wifi-package" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="subpackages">
+<h2>Subpackages<a class="headerlink" href="#subpackages" title="Permalink to this headline">¶</a></h2>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="public_wifi.instruments.html">public_wifi.instruments package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="public_wifi.instruments.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="public_wifi.instruments.html#module-public_wifi.instruments.Instrument">public_wifi.instruments.Instrument module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="public_wifi.instruments.html#module-public_wifi.instruments.WFC3_IR">public_wifi.instruments.WFC3_IR module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="public_wifi.instruments.html#module-public_wifi.instruments">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="public_wifi.utils.html">public_wifi.utils package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="public_wifi.utils.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="public_wifi.utils.html#public-wifi-utils-cat-utils-module">public_wifi.utils.cat_utils module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="public_wifi.utils.html#public-wifi-utils-cleaning-utils-module">public_wifi.utils.cleaning_utils module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="public_wifi.utils.html#module-public_wifi.utils.distance_utils">public_wifi.utils.distance_utils module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="public_wifi.utils.html#module-public_wifi.utils.dq_utils">public_wifi.utils.dq_utils module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="public_wifi.utils.html#module-public_wifi.utils.header_utils">public_wifi.utils.header_utils module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="public_wifi.utils.html#module-public_wifi.utils.image_utils">public_wifi.utils.image_utils module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="public_wifi.utils.html#module-public_wifi.utils.injection_utils">public_wifi.utils.injection_utils module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="public_wifi.utils.html#public-wifi-utils-ks2-plot-utils-module">public_wifi.utils.ks2_plot_utils module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="public_wifi.utils.html#module-public_wifi.utils.ks2_tables">public_wifi.utils.ks2_tables module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="public_wifi.utils.html#module-public_wifi.utils.ks2_utils">public_wifi.utils.ks2_utils module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="public_wifi.utils.html#public-wifi-utils-plot-library-module">public_wifi.utils.plot_library module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="public_wifi.utils.html#public-wifi-utils-plot-utils-module">public_wifi.utils.plot_utils module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="public_wifi.utils.html#public-wifi-utils-psf-corr-analysis-module">public_wifi.utils.psf_corr_analysis module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="public_wifi.utils.html#module-public_wifi.utils.shared_utils">public_wifi.utils.shared_utils module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="public_wifi.utils.html#module-public_wifi.utils.subtr_results_dashboard">public_wifi.utils.subtr_results_dashboard module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="public_wifi.utils.html#module-public_wifi.utils.table_io">public_wifi.utils.table_io module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="public_wifi.utils.html#module-public_wifi.utils.table_utils">public_wifi.utils.table_utils module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="public_wifi.utils.html#module-public_wifi.utils.wfc3_utils">public_wifi.utils.wfc3_utils module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="public_wifi.utils.html#module-public_wifi.utils">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</div>
+</div>
+<div class="section" id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-public_wifi.ana_manager">
+<span id="public-wifi-ana-manager-module"></span><h2>public_wifi.ana_manager module<a class="headerlink" href="#module-public_wifi.ana_manager" title="Permalink to this headline">¶</a></h2>
+<p>Detecting point sources and analyzing results</p>
+<dl class="py class">
+<dt id="public_wifi.ana_manager.AnaManager">
+<em class="property">class </em><code class="sig-prename descclassname">public_wifi.ana_manager.</code><code class="sig-name descname">AnaManager</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">sub_mgr</span></em>, <em class="sig-param"><span class="n">instrument</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">compute_snr</span><span class="o">=</span><span class="default_value">True</span></em><span class="sig-paren">)</span><a class="headerlink" href="#public_wifi.ana_manager.AnaManager" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Class to handle various analysis tasks like:
+- rotation
+- detection
+- photometry
+- fake injection and recovery</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>sub_mgr</strong> (<em>public_wifi.SubtrManager instance</em>) – </p></li>
+<li><p><strong>instrument</strong> (<em>[</em><em>None</em><em>] </em><em>public_wifi.instruments.Instrument class</em>) – </p></li>
+<li><p><strong>compute_snr</strong> (<em>[</em><em>True</em><em>] </em><em>if True</em><em>, </em><em>compute pixel-wise SNR. If False</em><em>, </em><em>don't. Takes time.</em>) – </p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt id="public_wifi.ana_manager.AnaManager.compute_snr">
+<code class="sig-name descname">compute_snr</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">mode</span><span class="o">=</span><span class="default_value">'pixel'</span></em><span class="sig-paren">)</span><a class="headerlink" href="#public_wifi.ana_manager.AnaManager.compute_snr" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute SNR maps for the residuals</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="public_wifi.ana_manager.AnaManager.compute_std">
+<code class="sig-name descname">compute_std</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">mode</span><span class="o">=</span><span class="default_value">'pixel'</span></em><span class="sig-paren">)</span><a class="headerlink" href="#public_wifi.ana_manager.AnaManager.compute_std" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute noise maps for the residuals</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="public_wifi.ana_manager.AnaManager.make_star_result_mosaics">
+<code class="sig-name descname">make_star_result_mosaics</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">star_id</span></em>, <em class="sig-param"><span class="n">key</span><span class="o">=</span><span class="default_value">'residuals'</span></em>, <em class="sig-param"><span class="n">res_factor</span><span class="o">=</span><span class="default_value">1</span></em><span class="sig-paren">)</span><a class="headerlink" href="#public_wifi.ana_manager.AnaManager.make_star_result_mosaics" title="Permalink to this definition">¶</a></dt>
+<dd><p>Make a mosaic out of the star.
+:param star_id:
+:type star_id: the star you want a mosaic of
+:param key:
+:type key: valid key to self.results_cutouts
+:param res_factor:
+:type res_factor: factor by which to multiply the pixel scale</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="public_wifi.ana_manager.AnaManager.stamps2cutout">
+<code class="sig-name descname">stamps2cutout</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#public_wifi.ana_manager.AnaManager.stamps2cutout" title="Permalink to this definition">¶</a></dt>
+<dd><p>get WCS for the original stamps</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="public_wifi.ana_manager.AnaManager.subtr2cutout">
+<code class="sig-name descname">subtr2cutout</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#public_wifi.ana_manager.AnaManager.subtr2cutout" title="Permalink to this definition">¶</a></dt>
+<dd><p>Turn all the subtraction stamps into NDData objects.
+If self.results_cutouts exists, sets that; otherwise, returns dict.
+Returned objects have same keys and shape as results_stamps objects</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt id="public_wifi.ana_manager.count_thresh_pixels">
+<code class="sig-prename descclassname">public_wifi.ana_manager.</code><code class="sig-name descname">count_thresh_pixels</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">snr_df</span></em><span class="sig-paren">)</span><a class="headerlink" href="#public_wifi.ana_manager.count_thresh_pixels" title="Permalink to this definition">¶</a></dt>
+<dd><p>Docstring goes here</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>snr_df</strong> (<em>a dataframe of SNR stamps</em>) – </p></li>
+<li><p><strong>Output</strong> – </p></li>
+<li><p><strong>------</strong> – </p></li>
+<li><p><strong>indices that have detections</strong> (<em>pixel</em>) – </p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="public_wifi.ana_manager.create_snr_map">
+<code class="sig-prename descclassname">public_wifi.ana_manager.</code><code class="sig-name descname">create_snr_map</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">subtr_results</span></em>, <em class="sig-param"><span class="n">mode</span><span class="o">=</span><span class="default_value">'pixel'</span></em>, <em class="sig-param"><span class="n">normalize</span><span class="o">=</span><span class="default_value">True</span></em><span class="sig-paren">)</span><a class="headerlink" href="#public_wifi.ana_manager.create_snr_map" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create an SNR map from a subtraction results tuple</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>subtr_results</strong> (<em>a Results named tuple generated by a subtraction manager object</em>) – </p></li>
+<li><p><strong>Output</strong> – </p></li>
+<li><p><strong>------</strong> – </p></li>
+<li><p><strong>as the residuals dataframe</strong> (<em>same</em>) – </p></li>
+<li><p><strong>with SNR maps instead of residuals</strong> (<em>but</em>) – </p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="public_wifi.ana_manager.create_std_map">
+<code class="sig-prename descclassname">public_wifi.ana_manager.</code><code class="sig-name descname">create_std_map</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">subtr_results</span></em>, <em class="sig-param"><span class="n">mode</span><span class="o">=</span><span class="default_value">'pixel'</span></em>, <em class="sig-param"><span class="n">normalize</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="headerlink" href="#public_wifi.ana_manager.create_std_map" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>subtr_results</strong> – </p></li>
+<li><p><strong>mode</strong> (<em>'pixel'</em><em> or </em><em>'stamp'</em>) – </p></li>
+<li><p><strong>normalize</strong> (<em>False</em>) – transform residual stamps to N(0, 1)</p></li>
+<li><p><strong>Output</strong> – </p></li>
+<li><p><strong>------</strong> – </p></li>
+<li><p><strong>std_map</strong> (<em>pd.DataFrame</em><em>, </em><em>same form as subtr_results.residuals</em><em>,</em>) – with the standard deviations</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="public_wifi.ana_manager.get_base_cutouts">
+<code class="sig-prename descclassname">public_wifi.ana_manager.</code><code class="sig-name descname">get_base_cutouts</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">db</span></em>, <em class="sig-param"><span class="n">stamp_size</span></em><span class="sig-paren">)</span><a class="headerlink" href="#public_wifi.ana_manager.get_base_cutouts" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get Cutout2D objects of all the stamps in a database, with the appropriate
+WCS information. Do it in a way that minizes File IO, which can take a long
+time for fits files (in my experience, and depending on the files).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>db</strong> (<em>db_manager.DBManager object</em>) – </p></li>
+<li><p><strong>Output</strong> – </p></li>
+<li><p><strong>------</strong> – </p></li>
+<li><p><strong>cutouts</strong> (<em>pd.Series of cutouts with the stamp ID as the index</em>) – </p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="public_wifi.ana_manager.get_mosaic">
+<code class="sig-prename descclassname">public_wifi.ana_manager.</code><code class="sig-name descname">get_mosaic</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">cutouts</span></em>, <em class="sig-param"><span class="n">resolution</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">verbose</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="headerlink" href="#public_wifi.ana_manager.get_mosaic" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create a mosaic from a series of nddata images.
+Run using pd.Series.apply to a series of NDData objects.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>imgs</strong> (<em>pd.Series</em>) – Series whose elements are nddata.NDData (or nddata.Cutout2D)</p></li>
+<li><p><strong>resolution</strong> (<em>[</em><em>None</em><em>] </em><em>astropy.units.Quantity</em><em> (</em><em>arcsec</em><em>)</em>) – the desired pixel scale for the final mosaic</p></li>
+<li><p><strong>verbose</strong> (<em>[</em><em>False</em><em>] </em><em>if True</em><em>, </em><em>notifiy when finished</em><em> (</em><em>useful when running on groupby</em><em>)</em>) – </p></li>
+<li><p><strong>Output</strong> – </p></li>
+<li><p><strong>------</strong> – </p></li>
+<li><p><strong>mosaic</strong> (<em>pd.Series with the footprint and mosaic</em>) – </p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="public_wifi.ana_manager.normalize_stamp">
+<code class="sig-prename descclassname">public_wifi.ana_manager.</code><code class="sig-name descname">normalize_stamp</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">stamp</span></em><span class="sig-paren">)</span><a class="headerlink" href="#public_wifi.ana_manager.normalize_stamp" title="Permalink to this definition">¶</a></dt>
+<dd><p>Normalize the stmap to the unit normal distribution.
+This only works with KLIP residuals, which are whitened.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt id="public_wifi.ana_manager.subtr2cutout">
+<code class="sig-prename descclassname">public_wifi.ana_manager.</code><code class="sig-name descname">subtr2cutout</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">subtr_results</span></em>, <em class="sig-param"><span class="n">wcs_series</span></em><span class="sig-paren">)</span><a class="headerlink" href="#public_wifi.ana_manager.subtr2cutout" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convert subtraction stamps to an nddata.NDData object (i.e. find the right WCS and add it)
+Dataframe must not have NaNs</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>sutbr_results</strong> (<em>pd.DataFrame</em>) – a subtraction results table (index is star+stamp, column is Ncomponent)</p></li>
+<li><p><strong>wcs_series</strong> (<em>pd.Seriees</em>) – a series of WCS coordinates with the WCS of the original target stamp cutout
+index must be the original stamp ID
+e.g. the result of cutouts.apply(lambda x: x.wcs)</p></li>
+<li><p><strong>Output</strong> – </p></li>
+<li><p><strong>------</strong> – </p></li>
+<li><p><strong>subtr_cutouts</strong> (<em>pd.DataFrame of identical shape to the input df except with</em>) – NDData objects for entries instead of arrays</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="module-public_wifi.db_manager">
+<span id="public-wifi-db-manager-module"></span><h2>public_wifi.db_manager module<a class="headerlink" href="#module-public_wifi.db_manager" title="Permalink to this headline">¶</a></h2>
+<p>This module implements the DBManager class, which manages the storage and
+manipulation of the data tables (stars, point sources, stamps, etc)</p>
+<dl class="py class">
+<dt id="public_wifi.db_manager.DBManager">
+<em class="property">class </em><code class="sig-prename descclassname">public_wifi.db_manager.</code><code class="sig-name descname">DBManager</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">db_path</span></em>, <em class="sig-param"><span class="n">config_file</span></em><span class="sig-paren">)</span><a class="headerlink" href="#public_wifi.db_manager.DBManager" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="py method">
+<dt id="public_wifi.db_manager.DBManager.create_subtr_subset_db">
+<code class="sig-name descname">create_subtr_subset_db</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">key</span></em><span class="sig-paren">)</span><a class="headerlink" href="#public_wifi.db_manager.DBManager.create_subtr_subset_db" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generate a database subset for subtraction according to the groups in self.subtr_groups</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>key</strong> (<em>tuple</em>) – key for the self.subtr_groups groupby object</p></li>
+<li><p><strong>Output</strong> – </p></li>
+<li><p><strong>------</strong> – </p></li>
+<li><p><strong>object with the subset</strong> (<a class="reference internal" href="#public_wifi.db_manager.DBSubset" title="public_wifi.db_manager.DBSubset"><em>DBSubset</em></a>) – </p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="public_wifi.db_manager.DBManager.do_subtr_groupby">
+<code class="sig-name descname">do_subtr_groupby</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">keys</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#public_wifi.db_manager.DBManager.do_subtr_groupby" title="Permalink to this definition">¶</a></dt>
+<dd><p>Group the database into self-contained units for PSF subtraction.
+These quantities are as follows:
+filter, epoch, sector</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>keys</strong> (<em>str</em><em> or </em><em>list</em><em> [</em><em>self.subtr_groupby_keys</em><em>]</em>) – key or list of keys in the point source table to use for grouping the
+psf subtraction targets</p></li>
+<li><p><strong>Output</strong> – </p></li>
+<li><p><strong>------</strong> – </p></li>
+<li><p><strong>self.subtr_groups</strong> (<em>sets</em>) – each group in this grouopby has the star, point source, and stamp IDs
+that go together to make a database subset for PSF subtraction.
+use like subtr_groups.get_group(key) and pass the results to DBSubset</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="public_wifi.db_manager.DBManager.find_header_key">
+<code class="sig-name descname">find_header_key</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">ident</span></em>, <em class="sig-param"><span class="n">key</span></em>, <em class="sig-param"><span class="n">header</span><span class="o">=</span><span class="default_value">'SCI'</span></em><span class="sig-paren">)</span><a class="headerlink" href="#public_wifi.db_manager.DBManager.find_header_key" title="Permalink to this definition">¶</a></dt>
+<dd><p>Given a point source or stamp identifier, find the exposure it came
+from and pull out the requested header keywords</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>ident</strong> (<em>str</em><em> or </em><em>list of str</em>) – either a point source or stamp identifier</p></li>
+<li><p><strong>key</strong> (<em>str</em>) – a valid header keyword. If “*”, return all values in the header</p></li>
+<li><p><strong>header</strong> (<em>str</em><em> [</em><em>SCI</em><em>]</em>) – which header to read from?</p></li>
+<li><p><strong>Output</strong> – </p></li>
+<li><p><strong>------</strong> – </p></li>
+<li><p><strong>header_values</strong> (<em>pd.DataFrame</em>) – returns a dataframe of the requested keywords along with the associated identifiers
+and exposure IDs</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="public_wifi.db_manager.DBManager.find_lookup_table">
+<code class="sig-name descname">find_lookup_table</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">lkp1</span></em>, <em class="sig-param"><span class="n">lkp2</span></em><span class="sig-paren">)</span><a class="headerlink" href="#public_wifi.db_manager.DBManager.find_lookup_table" title="Permalink to this definition">¶</a></dt>
+<dd><p>Find the lookup table that matches lkp1 to lkp2, using the table names
+lkp1 and lkp2 must be strings in the table names.</p>
+<dl class="simple">
+<dt>lkp_table<span class="classifier">pd.DataFrame or None</span></dt><dd><p>a lookup table</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="public_wifi.db_manager.DBManager.find_matching_id">
+<code class="sig-name descname">find_matching_id</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">ids</span></em>, <em class="sig-param"><span class="n">want_this_id</span></em><span class="sig-paren">)</span><a class="headerlink" href="#public_wifi.db_manager.DBManager.find_matching_id" title="Permalink to this definition">¶</a></dt>
+<dd><p>Given a set of ids (star IDs, stamp IDs, etc), find the matching IDs
+in the lookup table specified.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>ids</strong> (<em>string</em><em> or </em><em>list-like</em>) – identifiers you want to look up</p></li>
+<li><p><strong>want_this_id</strong> (<em>str</em>) – The kind of identifier you wish to return.
+‘S’ : star, ‘P’: point source, ‘T’: stamp
+obsolete: ‘star’,’stamp’, ‘ps’, etc - the kind of identifier you want</p></li>
+<li><p><strong>Output</strong> – </p></li>
+<li><p><strong>------</strong> – </p></li>
+<li><p><strong>targ_ids</strong> (<em>str</em><em> or </em><em>list-like</em>) – the corresponding identifiers</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="public_wifi.db_manager.DBManager.find_sector">
+<code class="sig-name descname">find_sector</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">ps_id</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">sector_id</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#public_wifi.db_manager.DBManager.find_sector" title="Permalink to this definition">¶</a></dt>
+<dd><p>Given one or several point source identifiers, find their sectors.
+Or, given one or several sectors, find their point sources
+One of ps_id and sector_id must be None, and the other must not be</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>ps_id</strong> (<em>str</em><em> or </em><em>list</em><em> [</em><em>None</em><em>]</em>) – string or list of point source ids (format: P000000)</p></li>
+<li><p><strong>sector_id</strong> (<em>int</em><em> [</em><em>None</em><em>]</em>) – int or list of ints for the sector IDs</p></li>
+<li><p><strong>Output</strong> – </p></li>
+<li><p><strong>------</strong> – </p></li>
+<li><p><strong>sector_df</strong> (<em>pd.DataFrame</em><em>, </em><em>columns are 'ps_id' and 'sector_id'</em>) – the sector number(s) for each given point sources</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="public_wifi.db_manager.DBManager.find_stamp_mag">
+<code class="sig-name descname">find_stamp_mag</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">stamp_id</span></em><span class="sig-paren">)</span><a class="headerlink" href="#public_wifi.db_manager.DBManager.find_stamp_mag" title="Permalink to this definition">¶</a></dt>
+<dd><p>Given a stamp id or list of stamps, find their corresponding magnitudes
+from the point source table.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>stamp_id</strong> (<em>str</em>) – stamp ID of the form T000000</p></li>
+<li><p><strong>Output</strong> – </p></li>
+<li><p><strong>------</strong> – </p></li>
+<li><p><strong>mags</strong> (<em>float</em><em> or </em><em>series</em>) – if one stamp_id is passed, then one float
+if multiple stamp_ids are passed, then series indexed by the stamp_id</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="public_wifi.db_manager.DBManager.get_exposure_from_id">
+<code class="sig-name descname">get_exposure_from_id</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">obj_id</span></em>, <em class="sig-param"><span class="n">hdr</span><span class="o">=</span><span class="default_value">'SCI'</span></em><span class="sig-paren">)</span><a class="headerlink" href="#public_wifi.db_manager.DBManager.get_exposure_from_id" title="Permalink to this definition">¶</a></dt>
+<dd><p>Pull out an image from the fits file, given the exposure identifier.
+if more than one obj_id is given, returns a list of images</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>obj_id</strong> (<em>str</em><em> or </em><em>list</em>) – the object identifier whose exposure you want</p></li>
+<li><p><strong>hdr</strong> (<em>str</em><em> or </em><em>int</em><em> [</em><em>'SCI'</em><em>]</em>) – which header? allowed values: [‘SCI’,’ERR’,’DQ’,’SAMP’,’TIME’]</p></li>
+<li><p><strong>Returns</strong> – </p></li>
+<li><p><strong>img</strong> (<em>numpy.array</em><em> or </em><em>pandas series containing 2-D image from the fits file</em>) – </p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="public_wifi.db_manager.DBManager.get_header_from_id">
+<code class="sig-name descname">get_header_from_id</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">obj_id</span></em>, <em class="sig-param"><span class="n">hdr</span><span class="o">=</span><span class="default_value">'SCI'</span></em><span class="sig-paren">)</span><a class="headerlink" href="#public_wifi.db_manager.DBManager.get_header_from_id" title="Permalink to this definition">¶</a></dt>
+<dd><p>Pull out a header from a fits file, given the target object identifier.
+if more than one obj_id is given, returns a list of headers</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>obj_id</strong> (<em>str</em><em> or </em><em>list</em>) – the object identifier whose exposure you want</p></li>
+<li><p><strong>hdr</strong> (<em>fits.header</em><em> or </em><em>pandas series containing headers</em>) – which header? allowed values: [‘SCI’,’ERR’,’DQ’,’SAMP’,’TIME’]</p></li>
+<li><p><strong>Returns</strong> – </p></li>
+<li><p><strong>hdr</strong> – </p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="public_wifi.db_manager.DBManager.get_wcs_from_id">
+<code class="sig-name descname">get_wcs_from_id</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">obj_id</span></em><span class="sig-paren">)</span><a class="headerlink" href="#public_wifi.db_manager.DBManager.get_wcs_from_id" title="Permalink to this definition">¶</a></dt>
+<dd><p>Given an identifier (star, point source, stamp), get the corresponding WCS headers.
+Class wrapper for table_utils.get_wcs_from_exp_id
+WARNING: this gives a WCS centered at the exposure, not the stamp</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>obj_id</strong> (<em>star</em><em>, </em><em>point source</em><em>, or </em><em>stamp id</em><em> (or </em><em>IDs</em><em>)</em>) – </p></li>
+<li><p><strong>Output</strong> – </p></li>
+<li><p><strong>------</strong> – </p></li>
+<li><p><strong>with obj_id as the index and corresponding wcs as the values</strong> (<em>series</em>) – </p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="public_wifi.db_manager.DBManager.group_by_filter_epoch">
+<code class="sig-name descname">group_by_filter_epoch</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#public_wifi.db_manager.DBManager.group_by_filter_epoch" title="Permalink to this definition">¶</a></dt>
+<dd><p>Group the stars, stamps, and point sources by filter and epoch.
+Not sure what to do with these. Return them as separate objects?
+Assign them as object attributes?</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>self</strong> – </p></li>
+<li><p><strong>Output</strong> – </p></li>
+<li><p><strong>------</strong> – </p></li>
+<li><p><strong>to self.fe_dict</strong> (<em>assigns</em>) – </p></li>
+<li><p><strong>is a dict whose keys are the filter</strong> (<em>which</em>) – </p></li>
+<li><p><strong>epoch keys</strong> (<em>and</em>) – </p></li>
+<li><p><strong>each value is a dict that stores the star</strong> (<em>and</em>) – </p></li>
+<li><p><strong>ps</strong> – </p></li>
+<li><p><strong>and</strong> – </p></li>
+<li><p><strong>tables for that filter and epoch combo</strong> (<em>stamp</em>) – </p></li>
+<li><p><strong>keys are the concatenated group keys</strong> (<em>dict</em>) – </p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="public_wifi.db_manager.DBManager.join_all_tables">
+<code class="sig-name descname">join_all_tables</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#public_wifi.db_manager.DBManager.join_all_tables" title="Permalink to this definition">¶</a></dt>
+<dd><p>Merge the stamp, star, and point source tables</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>None</strong> – </p></li>
+<li><p><strong>Output</strong> – </p></li>
+<li><p><strong>------</strong> – </p></li>
+<li><p><strong>full_table</strong> (<em>pd.DataFrame</em>) – the full merged table!</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="public_wifi.db_manager.DBManager.list_available_tables">
+<code class="sig-name descname">list_available_tables</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">return_list</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="headerlink" href="#public_wifi.db_manager.DBManager.list_available_tables" title="Permalink to this definition">¶</a></dt>
+<dd><p>Print a list of tables (and their descriptions?).
+Alternately, return a list of the tables.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>return_list</strong> (<em>bool</em><em> [</em><em>False</em><em>]</em>) – if True, instead of printing out the table names, return a list.</p></li>
+<li><p><strong>Output</strong> – </p></li>
+<li><p><strong>------</strong> – </p></li>
+<li><p><strong>table_names</strong> (<em>list</em><em> [</em><em>optional</em><em>]</em>) – a list of available keys</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="public_wifi.db_manager.DBManager.list_loaded_table">
+<code class="sig-name descname">list_loaded_table</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#public_wifi.db_manager.DBManager.list_loaded_table" title="Permalink to this definition">¶</a></dt>
+<dd><p>Print the tables that have been loaded into the DB Manager</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="public_wifi.db_manager.DBManager.load_header_tables">
+<code class="sig-name descname">load_header_tables</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#public_wifi.db_manager.DBManager.load_header_tables" title="Permalink to this definition">¶</a></dt>
+<dd><p>Load all the tables that start with <em>hdr_</em></p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>path</strong> (<em>path to the database file</em>) – </p></li>
+<li><p><strong>Output</strong> – </p></li>
+<li><p><strong>------</strong> – </p></li>
+<li><p><strong>hdr_dict</strong> (<em>dictionary of header tables</em>) – </p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="public_wifi.db_manager.DBManager.load_lookup_tables">
+<code class="sig-name descname">load_lookup_tables</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#public_wifi.db_manager.DBManager.load_lookup_tables" title="Permalink to this definition">¶</a></dt>
+<dd><p>Load all the tables that start with <em>lookup_</em></p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>path</strong> (<em>path to the database file</em>) – </p></li>
+<li><p><strong>Output</strong> – </p></li>
+<li><p><strong>------</strong> – </p></li>
+<li><p><strong>lkp_dict</strong> (<em>dictionary of lookup tables</em>) – </p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="public_wifi.db_manager.DBManager.load_table">
+<code class="sig-name descname">load_table</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">key</span></em>, <em class="sig-param"><span class="n">verbose</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="headerlink" href="#public_wifi.db_manager.DBManager.load_table" title="Permalink to this definition">¶</a></dt>
+<dd><p>Load a table. Wrapper for table_io.load_table.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>key</strong> (<em>string</em><em> or </em><em>list</em>) – </p></li>
+<li><p><strong>path</strong> (<em>path to the database file that holds the table</em>) – </p></li>
+<li><p><strong>Output</strong> – </p></li>
+<li><p><strong>------</strong> – </p></li>
+<li><p><strong>df</strong> (<em>pd.DataFrame</em><em> or </em><em>dict of dataframes</em>) – the table (or, if <cite>key</cite> is a list, then a dict of dataframes)</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="public_wifi.db_manager.DBManager.set_reference_quality_flag">
+<code class="sig-name descname">set_reference_quality_flag</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">stamp_ids</span></em>, <em class="sig-param"><span class="n">flag</span><span class="o">=</span><span class="default_value">True</span></em><span class="sig-paren">)</span><a class="headerlink" href="#public_wifi.db_manager.DBManager.set_reference_quality_flag" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set the reference quality flag for the given stamp ids.
+True -&gt; stamp <em>can</em> be used as a reference
+False -&gt; stamp <em>cannot</em> be used as a reference</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>stamp_ids</strong> (<em>string</em><em> or </em><em>list-like</em>) – one or more stamp IDs whose reference flags need to be set.</p></li>
+<li><p><strong>flag</strong> (<em>bool</em><em> [</em><em>True</em><em>]</em>) – the value of the flag</p></li>
+<li><p><strong>stamp_table</strong> (<em>pd.DataFrame</em><em> [</em><em>None</em><em>]</em>) – the table to modify, passed by reference. If None, read from the default file</p></li>
+<li><p><strong>Output</strong> – </p></li>
+<li><p><strong>------</strong> – </p></li>
+<li><p><strong>None</strong> (<em>stamp_table is modified in-place</em>) – </p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="public_wifi.db_manager.DBManager.subtr_groupby_keys">
+<em class="property">property </em><code class="sig-name descname">subtr_groupby_keys</code><a class="headerlink" href="#public_wifi.db_manager.DBManager.subtr_groupby_keys" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="public_wifi.db_manager.DBManager.update_table">
+<code class="sig-name descname">update_table</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">key</span></em>, <em class="sig-param"><span class="n">pk_name</span></em>, <em class="sig-param"><span class="n">pk_val</span></em>, <em class="sig-param"><span class="n">column</span></em>, <em class="sig-param"><span class="n">val</span></em>, <em class="sig-param"><span class="n">verbose</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="headerlink" href="#public_wifi.db_manager.DBManager.update_table" title="Permalink to this definition">¶</a></dt>
+<dd><p>Update a table entry to disk</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>key</strong> (<em>str</em>) – key under which the table is stored in the hdf5 file</p></li>
+<li><p><strong>pk_name</strong> (<em>str</em>) – name of the table column with the primary key (serves as a proxy for the index)</p></li>
+<li><p><strong>pk_val</strong> (<em>str</em><em> or </em><em>list</em>) – primary key value (can be list-like)</p></li>
+<li><p><strong>column</strong> (<em>str</em>) – the column to update</p></li>
+<li><p><strong>val</strong> (<em>the new value</em><em> (</em><em>can be list-like; must be single-valued</em><em> or </em><em>same shape as pk_val</em><em>)</em>) – </p></li>
+<li><p><strong>table_file</strong> (<em>path to the table file</em>) – </p></li>
+<li><p><strong>Output</strong> – </p></li>
+<li><p><strong>------</strong> – </p></li>
+<li><p><strong>None</strong> – </p></li>
+<li><p><strong>updated values to file</strong> (<em>writes</em>) – </p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="public_wifi.db_manager.DBManager.write_table">
+<code class="sig-name descname">write_table</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">key</span></em>, <em class="sig-param"><span class="n">table</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">verbose</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="headerlink" href="#public_wifi.db_manager.DBManager.write_table" title="Permalink to this definition">¶</a></dt>
+<dd><p>Write a table to the class DB file</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>key</strong> (<em>str</em>) – key for the table in the HDF file and in the class self.tables dict</p></li>
+<li><p><strong>table</strong> (<em>pd.DataFrame</em><em> [</em><em>None</em><em>]</em>) – the table to write. if None, use the key to look it up in self.tables</p></li>
+<li><p><strong>verbose</strong> (<em>bool</em><em> [</em><em>True</em><em>]</em>) – print some output</p></li>
+<li><p><strong>Output</strong> – </p></li>
+<li><p><strong>-------</strong> – </p></li>
+<li><p><strong>writes to file</strong> (<em>Nothing;</em>) – </p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="public_wifi.db_manager.DBSector">
+<em class="property">class </em><code class="sig-prename descclassname">public_wifi.db_manager.</code><code class="sig-name descname">DBSector</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">sector_id</span></em>, <em class="sig-param"><span class="n">db_path</span></em>, <em class="sig-param"><span class="n">db_master</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#public_wifi.db_manager.DBSector" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#public_wifi.db_manager.DBManager" title="public_wifi.db_manager.DBManager"><code class="xref py py-class docutils literal notranslate"><span class="pre">public_wifi.db_manager.DBManager</span></code></a></p>
+<p>This class holds a subset of star, point source, and stamp tables for a WFC3 detector sector.
+Basically it initializes a regular DBManager object and then filters down to the requested sector</p>
+<dl class="py method">
+<dt id="public_wifi.db_manager.DBSector.select_sector">
+<code class="sig-name descname">select_sector</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">sector_id</span></em><span class="sig-paren">)</span><a class="headerlink" href="#public_wifi.db_manager.DBSector.select_sector" title="Permalink to this definition">¶</a></dt>
+<dd><p>Given a sector ID, return only the point sources, stamps, and stars in that sector</p>
+<p>Output:
+None; sets self.star_tab, self.ps_tab, and self.stamps_tab</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="public_wifi.db_manager.DBSubset">
+<em class="property">class </em><code class="sig-prename descclassname">public_wifi.db_manager.</code><code class="sig-name descname">DBSubset</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">star_ids</span></em>, <em class="sig-param"><span class="n">ps_ids</span></em>, <em class="sig-param"><span class="n">stamp_ids</span></em>, <em class="sig-param"><span class="n">db_path</span></em>, <em class="sig-param"><span class="n">config_file</span></em>, <em class="sig-param"><span class="n">db_master</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#public_wifi.db_manager.DBSubset" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#public_wifi.db_manager.DBManager" title="public_wifi.db_manager.DBManager"><code class="xref py py-class docutils literal notranslate"><span class="pre">public_wifi.db_manager.DBManager</span></code></a></p>
+<p>This class holds a subset of star, point source, and stamp tables.
+All other tables contain their full versions.
+It accepts as arguments a list of star IDs, point source IDs, and stamp IDs.
+if db_master is given (i.e. not None), uses the passed DBManager instance
+to initialize instead of initializing from scratch</p>
+<dl class="py method">
+<dt id="public_wifi.db_manager.DBSubset.get_db_subset">
+<code class="sig-name descname">get_db_subset</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">star_ids</span></em>, <em class="sig-param"><span class="n">ps_ids</span></em>, <em class="sig-param"><span class="n">stamp_ids</span></em><span class="sig-paren">)</span><a class="headerlink" href="#public_wifi.db_manager.DBSubset.get_db_subset" title="Permalink to this definition">¶</a></dt>
+<dd><p>query the tables down to the reduced set and update the table list</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>star_ids</strong> (<em>list-like of star IDs</em>) – </p></li>
+<li><p><strong>ps_ids</strong> (<em>list-like of point source IDs</em>) – </p></li>
+<li><p><strong>stamp_ids</strong> (<em>list-like of stamp IDs</em>) – </p></li>
+<li><p><strong>Output</strong> – </p></li>
+<li><p><strong>------</strong> – </p></li>
+<li><p><strong>self.stars_tab</strong> (<em>sets</em>) – </p></li>
+<li><p><strong>self.ps_tab</strong> – </p></li>
+<li><p><strong>self.stamps_tab</strong> (<em>and</em>) – </p></li>
+</ul>
+</dd>
+</dl>
+<p>:param :
+:param and updates self.tables:</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-public_wifi.subtr_manager">
+<span id="public-wifi-subtr-manager-module"></span><h2>public_wifi.subtr_manager module<a class="headerlink" href="#module-public_wifi.subtr_manager" title="Permalink to this headline">¶</a></h2>
+<p>Utilities for PSF subtraction:
+- PSF correlation metrics
+- KLIP utilities and wrappers
+- KLIP PSF model reconstruction</p>
+<dl class="py class">
+<dt id="public_wifi.subtr_manager.Results">
+<em class="property">class </em><code class="sig-prename descclassname">public_wifi.subtr_manager.</code><code class="sig-name descname">Results</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">residuals</span></em>, <em class="sig-param"><span class="n">models</span></em>, <em class="sig-param"><span class="n">references</span></em><span class="sig-paren">)</span><a class="headerlink" href="#public_wifi.subtr_manager.Results" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code></p>
+<dl class="py method">
+<dt id="public_wifi.subtr_manager.Results.models">
+<em class="property">property </em><code class="sig-name descname">models</code><a class="headerlink" href="#public_wifi.subtr_manager.Results.models" title="Permalink to this definition">¶</a></dt>
+<dd><p>Alias for field number 1</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="public_wifi.subtr_manager.Results.references">
+<em class="property">property </em><code class="sig-name descname">references</code><a class="headerlink" href="#public_wifi.subtr_manager.Results.references" title="Permalink to this definition">¶</a></dt>
+<dd><p>Alias for field number 2</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="public_wifi.subtr_manager.Results.residuals">
+<em class="property">property </em><code class="sig-name descname">residuals</code><a class="headerlink" href="#public_wifi.subtr_manager.Results.residuals" title="Permalink to this definition">¶</a></dt>
+<dd><p>Alias for field number 0</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="public_wifi.subtr_manager.SubtrManager">
+<em class="property">class </em><code class="sig-prename descclassname">public_wifi.subtr_manager.</code><code class="sig-name descname">SubtrManager</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">db_manager</span></em>, <em class="sig-param"><span class="n">calc_corr_flag</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">instrument</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#public_wifi.subtr_manager.SubtrManager" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Class to manage PSF subtraction for a self-contained set of stamps.
+Initializes with a DBManager instance as argument. Optionally, calculate the PSF correlations</p>
+<dl class="py method">
+<dt id="public_wifi.subtr_manager.SubtrManager.calc_psf_corr">
+<code class="sig-name descname">calc_psf_corr</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#public_wifi.subtr_manager.SubtrManager.calc_psf_corr" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute the correlation matrices. Sets self.corr_mats, a namedtuple
+with all the matrices as attributes</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="public_wifi.subtr_manager.SubtrManager.get_reference_stamps">
+<code class="sig-name descname">get_reference_stamps</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">targ_stamp_id</span></em>, <em class="sig-param"><span class="n">ids_only</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">dmag_max</span><span class="o">=</span><span class="default_value">1</span></em><span class="sig-paren">)</span><a class="headerlink" href="#public_wifi.subtr_manager.SubtrManager.get_reference_stamps" title="Permalink to this definition">¶</a></dt>
+<dd><p>Given a target stamp, find the list of appropriate reference stamps
+using e.g. the star_id and the stamp_ref_flag value
+Raises an exception if no references are found</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>targ_stamp_id</strong> (<em>str</em>) – the stamp_id of the PSF targeted for subtraction</p></li>
+<li><p><strong>ids_only</strong> (<em>bool</em><em> [</em><em>False</em><em>]</em>) – if True, return only the stamp labels, not the arrays</p></li>
+<li><p><strong>dmag_max</strong> (<em>int</em><em> [</em><em>1</em><em>]</em>) – absolute delta magnitude limit on references</p></li>
+<li><p><strong>Output</strong> – </p></li>
+<li><p><strong>------</strong> – </p></li>
+<li><p><strong>ref_stamps</strong> (<em>pd.Series</em>) – pd.Series of the reference stamp arrays, where the index is the stamp id</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="public_wifi.subtr_manager.SubtrManager.get_targets_references_by_star">
+<code class="sig-name descname">get_targets_references_by_star</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">targ_star</span></em>, <em class="sig-param"><span class="n">dmag</span><span class="o">=</span><span class="default_value">1</span></em><span class="sig-paren">)</span><a class="headerlink" href="#public_wifi.subtr_manager.SubtrManager.get_targets_references_by_star" title="Permalink to this definition">¶</a></dt>
+<dd><p>Used for when you want to do the subtraction by star, not by target</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="public_wifi.subtr_manager.SubtrManager.perform_table_subtraction">
+<code class="sig-name descname">perform_table_subtraction</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">func</span></em>, <em class="sig-param"><span class="n">func_args</span><span class="o">=</span><span class="default_value">{}</span></em><span class="sig-paren">)</span><a class="headerlink" href="#public_wifi.subtr_manager.SubtrManager.perform_table_subtraction" title="Permalink to this definition">¶</a></dt>
+<dd><p>This seems like the perfect candidate for a decorator
+Apply the subtraction function to the whole table using table.apply()</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>func</strong> (<em>PSF subtraction function</em>) – </p></li>
+<li><p><strong>func_args</strong> (<em>{}</em>) – dictionary of arguments</p></li>
+<li><p><strong>Output</strong> – </p></li>
+<li><p><strong>------</strong> – </p></li>
+<li><p><strong>self.subtr_results</strong> (<em>sets</em>) – </p></li>
+<li><p><strong>contains the residuals</strong> (<em>which</em>) – </p></li>
+<li><p><strong>models</strong> – </p></li>
+<li><p><strong>references</strong> (<em>and</em>) – </p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="public_wifi.subtr_manager.SubtrManager.perform_table_subtraction_klip">
+<code class="sig-name descname">perform_table_subtraction_klip</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">numbasis</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#public_wifi.subtr_manager.SubtrManager.perform_table_subtraction_klip" title="Permalink to this definition">¶</a></dt>
+<dd><p>Do PSF subtraction on the whole table</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>None</strong> – </p></li>
+<li><p><strong>Output</strong> – </p></li>
+<li><p><strong>------</strong> – </p></li>
+<li><p><strong>self.psf_subtr and self.psf_model</strong> (<em>sets</em>) – </p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="public_wifi.subtr_manager.SubtrManager.remove_nans_from_psf_subtr">
+<code class="sig-name descname">remove_nans_from_psf_subtr</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#public_wifi.subtr_manager.SubtrManager.remove_nans_from_psf_subtr" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sometimes the PSF subtraction table has columns that are entirely NaN. Remove them.
+modifies self.psf_subtr in place</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="public_wifi.subtr_manager.SubtrManager.stamp_mask">
+<em class="property">property </em><code class="sig-name descname">stamp_mask</code><a class="headerlink" href="#public_wifi.subtr_manager.SubtrManager.stamp_mask" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="public_wifi.subtr_manager.SubtrManager.stamp_mask_ind">
+<em class="property">property </em><code class="sig-name descname">stamp_mask_ind</code><a class="headerlink" href="#public_wifi.subtr_manager.SubtrManager.stamp_mask_ind" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="public_wifi.subtr_manager.SubtrManager.subtr_by_star">
+<code class="sig-name descname">subtr_by_star</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">subtr_func</span></em>, <em class="sig-param"><span class="n">arg_dict</span></em>, <em class="sig-param"><span class="n">return_results</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">verbose</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="headerlink" href="#public_wifi.subtr_manager.SubtrManager.subtr_by_star" title="Permalink to this definition">¶</a></dt>
+<dd><p>Aggregator for results for the subtraction functions</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>func</strong> (<em>the subtraction function</em><em>, </em><em>takes only the name of a star</em><em> (</em><em>and other arguments</em><em>)</em>) – </p></li>
+<li><p><strong>arg_dict</strong> (<em>dictionary of keyword arguments</em>) – </p></li>
+<li><p><strong>return_results</strong> (<em>bool</em><em> [</em><em>False</em><em>]</em>) – if True, return the results tuple. Otherwise, just sets self.subtr_results</p></li>
+<li><p><strong>Output</strong> – </p></li>
+<li><p><strong>------</strong> – </p></li>
+<li><p><strong>tuple of results with attributes residuals</strong> (<em>named</em>) – </p></li>
+<li><p><strong>models</strong> – </p></li>
+<li><p><strong>references</strong> – </p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="public_wifi.subtr_manager.SubtrManager.subtr_klip">
+<code class="sig-name descname">subtr_klip</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">targ</span></em>, <em class="sig-param"><span class="n">refs</span></em>, <em class="sig-param"><span class="n">kwargs</span><span class="o">=</span><span class="default_value">{}</span></em><span class="sig-paren">)</span><a class="headerlink" href="#public_wifi.subtr_manager.SubtrManager.subtr_klip" title="Permalink to this definition">¶</a></dt>
+<dd><p>Designed to use stamps_tab.apply to do klip subtraction to a whole table of stamps
+Assumes return_basis is True; otherwise, fails
+Returns a named tuple with fields residuals, models, and ref_ids</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="public_wifi.subtr_manager.SubtrManager.subtr_klip_by_star">
+<code class="sig-name descname">subtr_klip_by_star</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">klip_args</span><span class="o">=</span><span class="default_value">{}</span></em>, <em class="sig-param"><span class="n">return_results</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="headerlink" href="#public_wifi.subtr_manager.SubtrManager.subtr_klip_by_star" title="Permalink to this definition">¶</a></dt>
+<dd><p>This function aggregates the results from subtr_klip_one_star
+Sets self.subtr_results</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="public_wifi.subtr_manager.SubtrManager.subtr_klip_one_star">
+<code class="sig-name descname">subtr_klip_one_star</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">targ_star</span></em>, <em class="sig-param"><span class="n">kwargs</span><span class="o">=</span><span class="default_value">{}</span></em>, <em class="sig-param"><span class="n">ref_args</span><span class="o">=</span><span class="default_value">{}</span></em><span class="sig-paren">)</span><a class="headerlink" href="#public_wifi.subtr_manager.SubtrManager.subtr_klip_one_star" title="Permalink to this definition">¶</a></dt>
+<dd><p>Perform KLIP subtraction on all the stamps for one star. Since stamps
+of the same star share the same references, this computes the Z_k’s for
+a star and then projects all the star stamps onto them.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>targ_star</strong> (<em>star ID of the target</em><em> (</em><em>S000000</em><em>)</em>) – </p></li>
+<li><p><strong>kwargs</strong> (<em>{}</em>) – dict of args to pass to KLIP subtraction. Default: self.klip_args_dict</p></li>
+<li><p><strong>ref_args</strong> (<em>{}</em>) – dict of args to pass to get_targets_references_by_star, like dmag cut.</p></li>
+<li><p><strong>Output</strong> – </p></li>
+<li><p><strong>------</strong> – </p></li>
+<li><p><strong>results</strong> (<em>named tuple</em>) – tuple has attributes residuals, models, and references. Each has a dataframe
+of the results</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="public_wifi.subtr_manager.SubtrManager.subtr_nmf">
+<code class="sig-name descname">subtr_nmf</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">targ</span></em>, <em class="sig-param"><span class="n">refs</span></em>, <em class="sig-param"><span class="n">kwargs</span><span class="o">=</span><span class="default_value">{}</span></em><span class="sig-paren">)</span><a class="headerlink" href="#public_wifi.subtr_manager.SubtrManager.subtr_nmf" title="Permalink to this definition">¶</a></dt>
+<dd><p>Perform NMF subtraction on one target and its references</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>targ</strong> (<em>2-D target stamp</em>) – </p></li>
+<li><p><strong>refs</strong> (<em>pd.Series of reference stamps</em>) – </p></li>
+<li><p><strong>kwargs</strong> (<em>{}</em>) – other arguments, some to pass to NonnegNMFPy’s NMFPy.SolveNMF</p></li>
+<li><p><strong>Output</strong> – </p></li>
+<li><p><strong>------</strong> – </p></li>
+<li><p><strong>with residuals and psf_models</strong> (<em>tuple</em>) – </p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="public_wifi.subtr_manager.SubtrManager.subtr_nmf_by_star">
+<code class="sig-name descname">subtr_nmf_by_star</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">nmf_args</span><span class="o">=</span><span class="default_value">{}</span></em>, <em class="sig-param"><span class="n">return_results</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="headerlink" href="#public_wifi.subtr_manager.SubtrManager.subtr_nmf_by_star" title="Permalink to this definition">¶</a></dt>
+<dd><p>This function aggregates the results from subtr_nmf_one_star
+Sets self.subtr_results</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="public_wifi.subtr_manager.SubtrManager.subtr_nmf_one_star">
+<code class="sig-name descname">subtr_nmf_one_star</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">targ_star</span></em>, <em class="sig-param"><span class="n">kwargs</span><span class="o">=</span><span class="default_value">{}</span></em>, <em class="sig-param"><span class="n">ref_args</span><span class="o">=</span><span class="default_value">{}</span></em><span class="sig-paren">)</span><a class="headerlink" href="#public_wifi.subtr_manager.SubtrManager.subtr_nmf_one_star" title="Permalink to this definition">¶</a></dt>
+<dd><p>Same as subtr_nmf except it operates grouping by star ID, since
+all the detections of the same star will in principle use the same
+reference stamps
+Speeds up by almost an order of magnitude
+Still needs a wrapper in the end to organize the output into a single table</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>targ_star</strong> (<em>star_id of the target star</em>) – </p></li>
+<li><p><strong>ref_args</strong> (<em>dict of arguments to pass to get_targets_references_by_star</em>) – </p></li>
+<li><p><strong>kwargs</strong> (<em>dict of NMF arguments</em>) – </p></li>
+<li><p><strong>Output</strong> – </p></li>
+<li><p><strong>------</strong> – </p></li>
+<li><p><strong>results</strong> (<em>named tuple</em>) – tuple has attributes residuals, models, and references. Each has a dataframe
+of the results</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py exception">
+<dt id="public_wifi.subtr_manager.ZeroRefsError">
+<em class="property">exception </em><code class="sig-prename descclassname">public_wifi.subtr_manager.</code><code class="sig-name descname">ZeroRefsError</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">value</span></em><span class="sig-paren">)</span><a class="headerlink" href="#public_wifi.subtr_manager.ZeroRefsError" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Exception</span></code></p>
+<p>Raised when there are zero references found</p>
+</dd></dl>
+
+<dl class="py function">
+<dt id="public_wifi.subtr_manager.calc_corr_mat">
+<code class="sig-prename descclassname">public_wifi.subtr_manager.</code><code class="sig-name descname">calc_corr_mat</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">stamps</span></em>, <em class="sig-param"><span class="n">corr_func</span></em>, <em class="sig-param"><span class="n">corr_func_args</span><span class="o">=</span><span class="default_value">{}</span></em>, <em class="sig-param"><span class="n">rescale</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="headerlink" href="#public_wifi.subtr_manager.calc_corr_mat" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculate a correlation matrix between the stamps.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>stamps</strong> (<em>pd.Series</em><em> (or </em><em>castable to pd.Series</em><em>)</em>) – the stamp images whose correlations will be calculated.</p></li>
+<li><p><strong>corr_func</strong> (<em>python function</em>) – a correlation function that accepts arguments as (targ, refs, <a href="#id1"><span class="problematic" id="id2">**</span></a>kwargs)</p></li>
+<li><p><strong>corr_func_args</strong> (<em>dict</em><em> [</em><em>{}</em><em>]</em>) – dictionary of keyword arguments to pass to the correlation function</p></li>
+<li><p><strong>rescale</strong> (<em>bool</em><em> [</em><em>False</em><em>]</em>) – if True, rescale all the stamps so the max flux is 1 before computing
+their correlation</p></li>
+<li><p><strong>Output</strong> – </p></li>
+<li><p><strong>------</strong> – </p></li>
+<li><p><strong>corr_mat</strong> (<em>pd.DataFrame</em>) – the final correlation matrix. The index and columns are whatever the
+stamps index is</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="public_wifi.subtr_manager.calc_refcube_mse">
+<code class="sig-prename descclassname">public_wifi.subtr_manager.</code><code class="sig-name descname">calc_refcube_mse</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">targ</span></em>, <em class="sig-param"><span class="n">references</span></em>, <em class="sig-param"><span class="n">kw_args</span><span class="o">=</span><span class="default_value">{}</span></em><span class="sig-paren">)</span><a class="headerlink" href="#public_wifi.subtr_manager.calc_refcube_mse" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculate the pixel-wise mean squared error (MSE) for each reference
+compared to the target. Returns -log10(MSE) so that the largest values
+indicate the most similarity</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>targ</strong> (<em>the target image to subtract</em>) – </p></li>
+<li><p><strong>references</strong> (<em>the cube of references</em><em> [</em><em>Nimg x Npix</em><em>] </em><em>(</em><em>can also be 3-d</em><em>)</em>) – </p></li>
+</ul>
+</dd>
+</dl>
+<blockquote>
+<div><p>mse: Nref array of MSE values</p>
+</div></blockquote>
+</dd></dl>
+
+<dl class="py function">
+<dt id="public_wifi.subtr_manager.calc_refcube_pcc">
+<code class="sig-prename descclassname">public_wifi.subtr_manager.</code><code class="sig-name descname">calc_refcube_pcc</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">targ</span></em>, <em class="sig-param"><span class="n">references</span></em>, <em class="sig-param"><span class="n">kw_args</span><span class="o">=</span><span class="default_value">{}</span></em><span class="sig-paren">)</span><a class="headerlink" href="#public_wifi.subtr_manager.calc_refcube_pcc" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute the Pearson correlation coefficient (PCC) between the target and the refs
+PCC(a, b) = cov(a, b)/(std(a) std(b))
+does higher or lower mean more similar?
+:param targ:
+:type targ: 1- or 2-d target image
+:param references:
+:type references: 2- or 3-D cube of references</p>
+<blockquote>
+<div><p>pcc: Nref array of PCC values</p>
+</div></blockquote>
+</dd></dl>
+
+<dl class="py function">
+<dt id="public_wifi.subtr_manager.calc_refcube_ssim">
+<code class="sig-prename descclassname">public_wifi.subtr_manager.</code><code class="sig-name descname">calc_refcube_ssim</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">targ</span></em>, <em class="sig-param"><span class="n">references</span></em>, <em class="sig-param"><span class="n">kw_args</span><span class="o">=</span><span class="default_value">{}</span></em><span class="sig-paren">)</span><a class="headerlink" href="#public_wifi.subtr_manager.calc_refcube_ssim" title="Permalink to this definition">¶</a></dt>
+<dd><p>Use the scikit-image library function to calculate the SSIM</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>targ</strong> (<em>np.array</em>) – 2-D target image</p></li>
+<li><p><strong>references</strong> (<em>np.array</em>) – 3-D [Nref, Nx, Ny] reference image stack</p></li>
+<li><p><strong>win_size</strong> (<em>int</em>) – window size for calculating SSM (must be odd)</p></li>
+<li><p><strong>kw_args</strong> (<em>{}</em>) – any additional keyword arguments to pass to
+skimage.metrics.structural_similarity()</p></li>
+<li><p><strong>Output</strong> – </p></li>
+<li><p><strong>------</strong> – </p></li>
+<li><p><strong>ssim_vals</strong> (<em>np.array</em>) – Nref array of SSIM values between the target and the indicated reference image</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="public_wifi.subtr_manager.klip_subtr_wrapper">
+<code class="sig-prename descclassname">public_wifi.subtr_manager.</code><code class="sig-name descname">klip_subtr_wrapper</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">target_stamp</span></em>, <em class="sig-param"><span class="n">refs_table</span></em>, <em class="sig-param"><span class="n">klip_args</span><span class="o">=</span><span class="default_value">{}</span></em><span class="sig-paren">)</span><a class="headerlink" href="#public_wifi.subtr_manager.klip_subtr_wrapper" title="Permalink to this definition">¶</a></dt>
+<dd><p>Wrapper for RDI klip subtraction so you can pass in a table without extra processing</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>target_stamp</strong> (<em>MxN np.array</em>) – stamp to be subtracted, as an image</p></li>
+<li><p><strong>refs_table</strong> (<em>pd.Series</em>) – pandas series containing the reference stamps (index can be the reference IDs)</p></li>
+<li><p><strong>klip_args</strong> (<em>dict</em><em> [</em><em>{}</em><em>]</em>) – dictionary of optional arguments passed to pyklip.klip.klip_math</p></li>
+<li><p><strong>Output</strong> – </p></li>
+<li><p><strong>------</strong> – </p></li>
+<li><p><strong>kl_sub_img</strong> (<em>np.array</em>) – an array of klip-subtracted images. the shape of the returned array is
+whatever is appropriate for the passed KLIP parameters, but the final two
+dimensions are always the row, col image coordinates</p></li>
+<li><p><strong>kl_basis_img</strong> (<em>np.array</em>) – array of the klip basis, as images.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="public_wifi.subtr_manager.psf_model_from_basis">
+<code class="sig-prename descclassname">public_wifi.subtr_manager.</code><code class="sig-name descname">psf_model_from_basis</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">target</span></em>, <em class="sig-param"><span class="n">kl_basis</span></em>, <em class="sig-param"><span class="n">numbasis</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#public_wifi.subtr_manager.psf_model_from_basis" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generate a model PSF from the KLIP basis vectors. See Soummer et al 2012.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>target</strong> (<em>np.array</em>) – the target PSF, 1-D</p></li>
+<li><p><strong>kl_basis</strong> (<em>np.array</em>) – Nklip x Npix array</p></li>
+<li><p><strong>numbasis</strong> (<em>int</em><em> or </em><em>np.array</em><em> [</em><em>None</em><em>]</em>) – number of Kklips to use. Default is None, meaning use all the KL vectors</p></li>
+<li><p><strong>Output</strong> – </p></li>
+<li><p><strong>------</strong> – </p></li>
+<li><p><strong>psf_model</strong> (<em>np.array</em>) – Nklip x Nrows x Ncols array of the model PSFs. Dimensionality depends on the value
+of num_basis</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="public_wifi.subtr_manager.rescale_mse">
+<code class="sig-prename descclassname">public_wifi.subtr_manager.</code><code class="sig-name descname">rescale_mse</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">mse_scores</span></em><span class="sig-paren">)</span><a class="headerlink" href="#public_wifi.subtr_manager.rescale_mse" title="Permalink to this definition">¶</a></dt>
+<dd><p>Remap linearly from 0 to 1</p>
+</dd></dl>
+
+<dl class="py function">
+<dt id="public_wifi.subtr_manager.subtr_nmf_sklearn">
+<code class="sig-prename descclassname">public_wifi.subtr_manager.</code><code class="sig-name descname">subtr_nmf_sklearn</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">targ</span></em>, <em class="sig-param"><span class="n">refs</span></em>, <em class="sig-param"><span class="n">kwargs</span><span class="o">=</span><span class="default_value">{}</span></em><span class="sig-paren">)</span><a class="headerlink" href="#public_wifi.subtr_manager.subtr_nmf_sklearn" title="Permalink to this definition">¶</a></dt>
+<dd><p>Perform NMF subtraction on one target and its references</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>targ</strong> (<em>target stamp</em>) – </p></li>
+<li><p><strong>refs</strong> (<em>pd.Series of reference stamps</em>) – </p></li>
+<li><p><strong>kwargs</strong> (<em>{}</em>) – other arguments to pass to sklearn’s NMF</p></li>
+<li><p><strong>Output</strong> – </p></li>
+<li><p><strong>------</strong> – </p></li>
+<li><p><strong>residuals</strong> – </p></li>
+<li><p><strong>psf_models</strong> – </p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="public-wifi-table-templates-module">
+<h2>public_wifi.table_templates module<a class="headerlink" href="#public-wifi-table-templates-module" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-public_wifi">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-public_wifi" title="Permalink to this headline">¶</a></h2>
+</div>
+</div>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">public_wifi package</a><ul>
+<li><a class="reference internal" href="#subpackages">Subpackages</a></li>
+<li><a class="reference internal" href="#submodules">Submodules</a></li>
+<li><a class="reference internal" href="#module-public_wifi.ana_manager">public_wifi.ana_manager module</a></li>
+<li><a class="reference internal" href="#module-public_wifi.db_manager">public_wifi.db_manager module</a></li>
+<li><a class="reference internal" href="#module-public_wifi.subtr_manager">public_wifi.subtr_manager module</a></li>
+<li><a class="reference internal" href="#public-wifi-table-templates-module">public_wifi.table_templates module</a></li>
+<li><a class="reference internal" href="#module-public_wifi">Module contents</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="modules.html"
+                        title="previous chapter">public_wifi</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="public_wifi.instruments.html"
+                        title="next chapter">public_wifi.instruments package</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/public_wifi.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="public_wifi.instruments.html" title="public_wifi.instruments package"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="modules.html" title="public_wifi"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">PUBLIC WIFI 0.1 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="modules.html" >public_wifi</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">public_wifi package</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2021, Jonathan Aguilar.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 3.2.1.
+    </div>
+  </body>
+</html>
