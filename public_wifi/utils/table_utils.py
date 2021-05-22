@@ -324,6 +324,7 @@ def match_value_in_table(table, query_col, match_val, return_col=None):
     """
     Retrieve a value from a table. Assumes the equality operator ('==')
     Remember to cast any field names into lower case
+
     Parameters
     ----------
     table : pd.DataFrame
@@ -341,7 +342,6 @@ def match_value_in_table(table, query_col, match_val, return_col=None):
     return_value : a series (or dataframe) of all the values that match the
       query. If only one item matches the query, returns the item itself (i.e.
       not in a dataframe/series.)
-
     """
     # all columns are in lowercase
     #query_column = query_column.lower()
