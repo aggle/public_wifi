@@ -1,6 +1,9 @@
 PUBLIC WIFI USER GUIDE
 ----------------------
 
+A warning to the user: this is Not A Good README
+
+
 Table of Contents
 
 1. Usage
