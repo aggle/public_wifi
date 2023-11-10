@@ -255,8 +255,9 @@ class AnaManager:
             "models": sub_mgr.subtr_results.models,
         }
         # compute SNR maps
-        self.results_stamps["std"] = self.compute_std(mode='pixel')
-        self.results_stamps["snr"] = self.results_stamps['residuals']/self.results_stamps['std']
+        if compute_snr == True:
+            self.results_stamps["std"] = self.compute_std(mode='pixel')
+            self.results_stamps["snr"] = self.results_stamps['residuals']/self.results_stamps['std']
         # make the target stamp cutouts
         self.stamp_cutouts = self.stamps2cutout()
         # this holds the wcs data
