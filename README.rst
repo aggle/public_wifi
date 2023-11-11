@@ -6,6 +6,7 @@ A warning to the user: this is Not A Good README
 
 Table of Contents
 
+0. Philosophy
 1. Usage
 .. 1. Instantiating the database
 .. 2. Performing PSF subtraction
@@ -35,6 +36,11 @@ is provided in ``docs/conda-public_wifi.yml`` (it has more packages than
 are strictly necessary). You can create the environment from a terminal
 with the command ``conda env create -f conda-public_wifi.yml``. You can
 then activate the environment with ``conda activate public_wifi``.
+
+0 Philosophy
+============
+
+The exposures are sorted into tables (how)?
 
 
 1 Usage
@@ -87,6 +93,9 @@ then activate the environment with ``conda activate public_wifi``.
   (`ps_id'), and stamp (`stamp_id') identifiers that belong to a
   subtraction group. To create a subset of the database, get the key and
   call `DBManager.create_subtr_subset_db(key)'
+
+
+  TODO: OK, first we obviously need instructions on how to create the database.
 
 
 1.2 Performing PSF subtraction
