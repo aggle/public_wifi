@@ -21,7 +21,7 @@ def get_radial_coordinate(shape, center=None):
     """
     if center is None:
         center = np.array(shape)/2.
-    grid = np.mgrid[:np.float(shape[0]), :np.float(shape[1])]
+    grid = np.mgrid[:float(shape[0]), :float(shape[1])]
     grid = np.rollaxis(np.rollaxis(grid, 0, grid.ndim) - center + 0.5, -1, 0)
     rad2D = np.linalg.norm(grid, axis=0)
     phi2D = np.arctan2(grid[0], grid[1]) + np.pi  # 0 to 2*pi
@@ -48,11 +48,11 @@ def get_stamp_coordinates(center, drow, dcol, imshape, nanpad=False):
     """
     # handle odd and even: 1 if odd, 0 if even
     oddflag = np.array((dcol%2, drow%2))
-    colrad = np.int(np.floor(dcol))/2
-    rowrad = np.int(np.floor(drow))/2
+    colrad = int(np.floor(dcol))/2
+    rowrad = int(np.floor(drow))/2
 
-    rads = np.array([rowrad, colrad], dtype=np.int)
-    center = np.array([center[0],center[1]],dtype=np.int) #+ oddflag
+    rads = np.array([rowrad, colrad], dtype=int)
+    center = np.array([center[0],center[1]],dtype=int) #+ oddflag
     img = np.zeros(imshape)
     stamp = np.ones((drow,dcol))
     full_stamp_coord = np.indices(stamp.shape) + center[:,None,None]  - rads[:,None,None]

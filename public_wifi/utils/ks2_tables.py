@@ -236,9 +236,9 @@ def generate_stamp_table(ps_table,
     stamp_table['stamp_star_id'] = star_ids
     # get the centers of the stamps
     stamp_x_cent = ps_table.loc[stamp_table['stamp_ps_id'], 'ps_x_exp']
-    stamp_table['stamp_x_cent'] = stamp_x_cent.apply(lambda x: np.int(np.floor(x))).values[:]
+    stamp_table['stamp_x_cent'] = stamp_x_cent.apply(lambda x: int(np.floor(x))).values[:]
     stamp_y_cent = ps_table.loc[stamp_table['stamp_ps_id'], 'ps_y_exp']
-    stamp_table['stamp_y_cent'] = stamp_y_cent.apply(lambda x: np.int(np.floor(x))).values[:]
+    stamp_table['stamp_y_cent'] = stamp_y_cent.apply(lambda x: int(np.floor(x))).values[:]
     # store the arrays
     stamp_table['stamp_array'] = stamps['stamp_array'].copy()
     # assert data types and return

@@ -298,7 +298,7 @@ class DBManager:
 
         # if you accidentally ask for the same kind of ID that you provide,
         # return the ids
-        if id_lead.upper() == want_this_id.upper():
+        if str(id_lead).upper() == str(want_this_id).upper():
             #print("find_matching_id: same type of ID requested as provided.")
             return pd.Series(ids)
 

@@ -93,7 +93,7 @@ def pix2sky(filename, x=None, y=None):
     inwcs = wcsutil.HSTWCS(filename.as_posix()+"[sci,1]")
     # pass in an Nx2 array of the raveled indices for each axis
     # this should also work if x and y are just numbers
-    radec = inwcs.all_pix2world(np.array([x, y], dtype=np.float).T,
+    radec = inwcs.all_pix2world(np.array([x, y], dtype=float).T,
                                 0) # 0 is the origin in python (vs 1 for matlab/DS9)
     radec = np.reshape(radec.T, shape) 
     return radec
@@ -124,7 +124,7 @@ def compile_radec(list_of_file_ids, verbose=False):
     radec_df = pd.DataFrame(np.nan,
                             index=index,
                             columns=np.arange(1014**2),#radec.shape[-2]*radec.shape[-1]),
-                            dtype=np.float)
+                            dtype=float)
     # loop through the file_ids, updating the series each time
     for i, file_id in enumerate(list_of_file_ids):
         filename = tutils.get_file_from_file_id(file_id)

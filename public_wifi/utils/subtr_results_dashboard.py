@@ -209,7 +209,7 @@ def show_target_stamps(star_id, dbm, plot_size=300):
     target_stamp_ids = dbm.find_matching_id(star_id, 'T')
     target_stamp_ids = dbm.stamps_tab.query('stamp_id in @target_stamp_ids')['stamp_id']
     ncols = min(len(target_stamp_ids), 3)
-    nrows = np.ceil(len(target_stamp_ids)/ncols).astype(np.int)
+    nrows = np.ceil(len(target_stamp_ids)/ncols).astype(int)
     stamps = dbm.stamps_tab.set_index("stamp_id").loc[target_stamp_ids, 'stamp_array']
     p_stamps = stamps.reset_index()['stamp_id'].apply(lambda x: figure(tools='', title=f'{x}'))
     mapper = bkmdls.LogColorMapper(palette='Magma256',
@@ -224,8 +224,8 @@ def show_target_stamps(star_id, dbm, plot_size=300):
 
     grid = bklyts.gridplot(list(p_stamps), ncols=ncols,
                            #sizing_mode='scale_both',
-                           plot_height=np.int(plot_size/nrows),
-                           plot_width=np.int(plot_size/ncols),
+                           plot_height=int(plot_size/nrows),
+                           plot_width=int(plot_size/ncols),
                            merge_tools=True, toolbar_location=None)
     return grid
 

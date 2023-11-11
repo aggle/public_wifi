@@ -58,7 +58,7 @@ def get_dq_table(point_sources_table, get_stamp_args={}):
     dq_stamps = image_utils.get_stamps_from_ps_table(point_sources_table,
                                                      kwargs=get_stamp_args)
     dq_stamps = dq_stamps.reset_index(name='dq_array')
-    dq_stamps['dq_array'] = dq_stamps['dq_array'].apply(lambda x: x.astype(np.int16))
+    dq_stamps['dq_array'] = dq_stamps['dq_array'].apply(lambda x: x.astype(int))
     dq_stamps['dq_star_id'] = pd.merge(dq_stamps,
                                        point_sources_table,
                                        on='ps_id')['ps_star_id']

@@ -21,7 +21,7 @@ def test_parse_dq_binword(num, numstr, test_flags):
     When you apply the integer parser to the number,
     It should give you back the binary components
     """
-    flags = header_utils.parse_dq_binword(np.int16(num))
+    flags = header_utils.parse_dq_binword(int(num))
     assert(sorted(flags) == sorted(test_flags))
 
 

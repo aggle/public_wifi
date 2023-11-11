@@ -1,7 +1,6 @@
 """
 This file contains utilities for handling the KS2 point source catalog
 """
-
 import re
 from pathlib import Path
 import numpy as np
@@ -16,7 +15,7 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 
 import configparser
-from . import header_utils
+from . import shared_utils
 
 
 def frtn2py_ind(ind):
@@ -39,47 +38,49 @@ LOGR.XYVIQ1 gives the average position for each source on the master frame (cols
 LOGR.FIND_NIMFO gives you the coordinates and fluxes of each star in each exposure. Cols 14 and 15 contain the x and y coordinates in the flt images (i.e. *before* geometric distortion correction). col 36 is the ID number for each star (starts with R). col 39 is the ID for the image (starts with G). col 40 (starts with F) is the ID for the filter.
 """
 # Use this function to load paths from the config file
-def load_config_path(sec, key, config_file):
-    """
-    Load a path from the config file. Also handles case of key not found.
-    Run with empty strings for list of options.
+# for backwards compatibility
+load_config_path = shared_utils.load_config_path
+# def load_config_path(sec, key, config_file):
+#     """
+#     Load a path from the config file. Also handles case of key not found.
+#     Run with empty strings for list of options.
 
-    Parameters
-    ----------
-    sec : str
-      the section in the config file
-    key : str
-      a key in the given section of the config file
-    as_str : bool [False]
-      if True, returns path as a string (default is pathlib.Path object)
-    config_file : str or Path
-      path to the config file to use
-    Output
-    -------
-    path : pathlib.Path or None
-      absolute path to the target in the config file.
-      Prints warning if the path does not exist.
-    """
-    # reread the file whenever the function is called so you don't have to
-    # reload the entire module if the config file gets updated
-    config = configparser.ConfigParser(interpolation=configparser.ExtendedInterpolation())
-    config.read(config_file)
-    sec = sec.upper()
-    key = key.upper()
-    try:
-        path = Path(config[sec][key]).resolve()
-    except KeyError:
-        print("Error: bad keys for config file. Options are (section \\n\\t keys):")
-        for sec in config.sections():
-            print(sec)
-            print("\t", ", ".join(i.upper() for i in config.options(sec)))
-        return None
-    # test that the path exists
-    try:
-        assert(path.exists())
-    except AssertionError:
-        print(f"Warning: {path} not found.")
-    return path
+#     Parameters
+#     ----------
+#     sec : str
+#       the section in the config file
+#     key : str
+#       a key in the given section of the config file
+#     as_str : bool [False]
+#       if True, returns path as a string (default is pathlib.Path object)
+#     config_file : str or Path
+#       path to the config file to use
+#     Output
+#     -------
+#     path : pathlib.Path or None
+#       absolute path to the target in the config file.
+#       Prints warning if the path does not exist.
+#     """
+#     # reread the file whenever the function is called so you don't have to
+#     # reload the entire module if the config file gets updated
+#     config = configparser.ConfigParser(interpolation=configparser.ExtendedInterpolation())
+#     config.read(config_file)
+#     sec = sec.upper()
+#     key = key.upper()
+#     try:
+#         path = Path(config[sec][key]).resolve()
+#     except KeyError:
+#         print("Error: bad keys for config file. Options are (section \\n\\t keys):")
+#         for sec in config.sections():
+#             print(sec)
+#             print("\t", ", ".join(i.upper() for i in config.options(sec)))
+#         return None
+#     # test that the path exists
+#     try:
+#         assert(path.exists())
+#     except AssertionError:
+#         print(f"Warning: {path} not found.")
+#     return path
 
 # ks2_files = [shared_utils.ks2_path / i for i in ["LOGR.XYVIQ1",
 #                                                  "LOGR.FIND_NIMFO",
@@ -216,7 +217,7 @@ def get_file_name_from_ks2id(file_id, file_mapper):#=get_file_mapper()):
 # # make a dataframe to serve as a linking table, and a function to access it
 # def get_epoch_from_proposid(proposid):
 #     """Given a proposal id, find the epoch label"""
-#     proposid = np.int(proposid)
+#     proposid = int(proposid)
 #     epoch_id = epoch_labels.query(f"proposid == {proposid}")['epoch_id'].squeeze()
 #     return epoch_id
 
@@ -246,7 +247,7 @@ def get_epoch_mapper(ks2_filemapper, prihdrs, verbose=False):
     # make a dataframe to serve as a linking table, and a function to access it
     def get_epoch_from_proposid(proposid):
         """Given a proposal id, find the epoch label"""
-        proposid = np.int(proposid)
+        proposid = int(proposid)
         epoch_id = epoch_labels.query(f"proposid == {proposid}")['epoch_id'].squeeze()
         return epoch_id
 
@@ -290,22 +291,22 @@ column_name_mapper = { # no longer used
 }
 
 master_dtypes = {
-    "umast0": np.float,
-    "vmast0": np.float,
-    "mmast1": np.float,
+    "umast0": float,
+    "vmast0": float,
+    "mmast1": float,
     "NMAST": object,
-    "zmast1": np.float,
-    "szmast1": np.float,
-    "q1": np.float,
-    "o1": np.float,
-    "f1": np.int,
-    "g1": np.int,
-    "zmast2": np.float,
-    "szmast2": np.float,
-    "q2": np.float,
-    "o2": np.float,
-    "f2": np.int,
-    "g2": np.int,
+    "zmast1": float,
+    "szmast1": float,
+    "q1": float,
+    "o1": float,
+    "f1": int,
+    "g1": int,
+    "zmast2": float,
+    "szmast2": float,
+    "q2": float,
+    "o2": float,
+    "f2": int,
+    "g2": int,
 }
 def get_master_catalog(ks2_master_file,#=ks2_files[0],
                        clean=True,
@@ -426,40 +427,40 @@ nimfo_cols = {
 }
 # this stores the data types for the FIND_NIMFO columns
 nimfo_dtypes = {
-    "umast": np.float64,
-    "vmast": np.float64,
-    "magu": np.float64,
-    "utile": np.float64,
-    "vtile": np.float64,
-    "z0": np.float64,
-    "sz0": np.float64,
-    "f0": np.int64,
-    "g0": np.int64,
-    "u1": np.float64,
-    "v1": np.float64,
-    "x1": np.float64,
-    "y1": np.float64,
-    "xraw1": np.float64,
-    "yraw1": np.float64,
-    "z1": np.float64,
-    "sz1": np.float64,
-    "q1": np.float64,
-    "o1": np.float64,
-    "f1": np.int64,
+    "umast": float,
+    "vmast": float,
+    "magu": float,
+    "utile": float,
+    "vtile": float,
+    "z0": float,
+    "sz0": float,
+    "f0": int,
+    "g0": int,
+    "u1": float,
+    "v1": float,
+    "x1": float,
+    "y1": float,
+    "xraw1": float,
+    "yraw1": float,
+    "z1": float,
+    "sz1": float,
+    "q1": float,
+    "o1": float,
+    "f1": int,
     "g1": object,
-    "x0": np.float64,
-    "y0": np.float64,
-    "z2": np.float64,
-    "sz2": np.float64,
-    "q2": np.float64,
-    "o2": np.float64,
-    "f2": np.int64,
+    "x0": float,
+    "y0": float,
+    "z2": float,
+    "sz2": float,
+    "q2": float,
+    "o2": float,
+    "f2": int,
     "g2": object,
-    "z3": np.float64,
-    "sz3": np.float64,
-    "q3": np.float64,
-    "o3": np.float64,
-    "f3": np.int64,
+    "z3": float,
+    "sz3": float,
+    "q3": float,
+    "o3": float,
+    "f3": int,
     "g3": object,
     "NMAST": object,
     "ps_tile_id": object,
@@ -467,7 +468,7 @@ nimfo_dtypes = {
     "exp_id": object,
     "filt_id": object,
     "unk": object,
-    "chip_id": np.int64,
+    "chip_id": int,
     "epoch_id": object,
 }
 

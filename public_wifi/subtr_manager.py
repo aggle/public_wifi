@@ -169,7 +169,7 @@ def calc_corr_mat(stamps, corr_func, corr_func_args={}, rescale=False):
     # initialize the correlation matrix and use it for looping
     corr_mat = pd.DataFrame(np.nan,
                             index=stamps.index, columns=stamps.index,
-                            dtype=np.float)
+                            dtype=float)
     # rescale the stamps to max value = 1
     if rescale == True:
         stamps = stamps.apply(lambda x: x/np.nanmax(x))
@@ -279,7 +279,7 @@ def psf_model_from_basis(target, kl_basis, numbasis=None):
         numbasis = len(kl_basis)
     if isinstance(numbasis, int):
         numbasis = np.array([numbasis])
-    numbasis = numbasis.astype(np.int)
+    numbasis = numbasis.astype(int)
 
     coeffs = np.inner(target, kl_basis)
     psf_model = kl_basis * np.expand_dims(coeffs, [i+1 for i in range(kl_basis.ndim-1)])
@@ -500,7 +500,7 @@ class SubtrManager:
         if numbasis is None:
             # by default, use a log-spaced numbasis
             numbasis = np.logspace(0, np.log10(self.db.stamps_tab.shape[0]-1), 20)
-            numbasis = np.unique(numbasis.astype(np.int))
+            numbasis = np.unique(numbasis.astype(int))
             self.klip_args_dict['numbasis'] = numbasis
             #numbasis = np.arange(1, self.db.stamps_tab.shape[0]-1, 20)
         subtr_mapper = lambda x: self.subtr_klip(x,

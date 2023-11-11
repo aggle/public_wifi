@@ -63,7 +63,7 @@ def dq_flag_parser_old(flag_int):
         flag_results[0] = False
     # loop over the rest and use the index to match the key
     for i, val in enumerate(flag_bin[1:][::-1]):
-        flag_key = 2**np.int(i)
+        flag_key = 2**int(i)
         flag_results[flag_key] = (val == template_str[i])
     return flag_results
 
@@ -97,7 +97,7 @@ def dq_flag_parser(flag_int):
         flag_results[0] = False
     # loop over the rest and use the index to match the key
     for i, val in enumerate(flag_bin[1:][::-1]):
-        flag_key = 2**np.int(i)
+        flag_key = 2**int(i)
         flag_results[flag_key] = (val == template_str[i])
     return flag_results
 """

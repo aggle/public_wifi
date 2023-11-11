@@ -64,7 +64,7 @@ def get_stamp_ind(xy_cent, stamp_shape):
       2xN array of (row, col) coordinates
 
     """
-    if isinstance(stamp_shape, np.int):
+    if isinstance(stamp_shape, int):
         stamp_shape = np.tile(stamp_shape, 2)
     xy_cent = np.array(xy_cent)
     center = xy_cent[::-1] # now in row, col order
@@ -72,8 +72,8 @@ def get_stamp_ind(xy_cent, stamp_shape):
     stamp_range = np.outer(np.array(stamp_shape)/2,
                            np.array((-1, 1))).T
     # on the following line np.floor is necessary to index the proper pixels;
-    # astype(np.int) just makes it compatible with an index
-    index_range = np.floor(np.transpose(center + stamp_range)).astype(np.int)
+    # astype(int) just makes it compatible with an index
+    index_range = np.floor(np.transpose(center + stamp_range)).astype(int)
     stamp_ind = np.mgrid[index_range[0,0]:index_range[0,1],
                          index_range[1,0]:index_range[1,1]]
     return stamp_ind
@@ -100,7 +100,7 @@ def get_master_stamp_ind(star_id, stamp_shape, df, extra_row=True):
       2xN array of (row, col) coordinates
 
     """
-    if isinstance(stamp_shape, np.int):
+    if isinstance(stamp_shape, int):
         stamp_shape = np.tile(stamp_shape, 2)
 
     id_col = shared_utils.find_column(df.columns, 'star_id')
@@ -114,8 +114,8 @@ def get_master_stamp_ind(star_id, stamp_shape, df, extra_row=True):
     stamp_range = np.outer(np.array(stamp_shape)/2,
                            np.array((-1, 1))).T
     # on the following line np.floor is necessary to index the proper pixels;
-    # astype(np.int) just makes it compatible with an index
-    index_range = np.floor(np.transpose(center + stamp_range)).astype(np.int)
+    # astype(int) just makes it compatible with an index
+    index_range = np.floor(np.transpose(center + stamp_range)).astype(int)
     shift = 0
     if extra_row == True:
         shift = 1
@@ -151,7 +151,7 @@ def get_stamp(image, xy, stamp_shape, return_img_ind=False):
       if return_img_ind is True, return a matrix of the image indices.
       Can be useful for plotting
     """
-    if isinstance(stamp_shape, np.int):
+    if isinstance(stamp_shape, int):
         stamp_shape = np.tile(stamp_shape, 2)
     xy = np.array(xy)
     center = xy[::-1] # now in row, col order
@@ -159,8 +159,8 @@ def get_stamp(image, xy, stamp_shape, return_img_ind=False):
     stamp_range = np.outer(np.array(stamp_shape)/2.,
                            np.array((-1, 1))).T
     # on the following line np.floor is necessary to index the proper pixels;
-    # astype(np.int) just makes it compatible with an index
-    index_range = np.floor(np.transpose(center + stamp_range)).astype(np.int)
+    # astype(int) just makes it compatible with an index
+    index_range = np.floor(np.transpose(center + stamp_range)).astype(int)
     # crop the range - if index_range goes beyond the image shape, then
     # we only want to index part of the image, and only part of the stamp
     cropped_range = np.clip(index_range, [0, 0], image.shape)
@@ -342,7 +342,7 @@ def make_image_from_flat(flat, indices=None, shape=None, squeeze=True):
     if shape is None:
         # assume that you have been given the full square imae
         Npix = oldshape[-1]
-        Nside = np.int(np.sqrt(Npix))
+        Nside = int(np.sqrt(Npix))
         indices = np.array(range(Npix))
         shape = (Nside, Nside)
         return flat.reshape(oldshape[:-1]+shape)
@@ -387,8 +387,8 @@ def make_stamp_mask(shape, mask_dim, invert=False, return_ind=False, nan=False):
 
     """
     shape = np.array(shape)
-    center = np.floor(shape/2.).astype(np.int)
-    mask_rad = np.floor(mask_dim/2).astype(np.int)
+    center = np.floor(shape/2.).astype(int)
+    mask_rad = np.floor(mask_dim/2).astype(int)
     mask = np.ones(shape)
     mask[center[0]-mask_rad:center[0]+mask_rad+1,
          center[1]-mask_rad:center[0]+mask_rad+1] = 0

@@ -34,11 +34,11 @@ def debug_print(debug_flag=True, *debug_args):
 # PATHS #
 #########
 # the paths are stored in the config file
-pw_config_file = (Path(__file__).parent.absolute() / "../config-public_wifi.cfg").resolve()
+# pw_config_file = (Path(__file__).parent.absolute() / "../config-public_wifi.cfg").resolve()
 """
 This block defines some useful paths, as well as a wrapper function for loading paths from the config file and handling them properly, like turning relative paths into absolute paths
 """
-def load_config_path(sec, key, as_str=False, config_file=pw_config_file):
+def load_config_path(sec, key, config_file, as_str=False):
     """
     Load a path from the config file. Also handles case of key not found.
     Run with empty strings for list of options.
@@ -79,7 +79,7 @@ def load_config_path(sec, key, as_str=False, config_file=pw_config_file):
     except AssertionError:
         print(f"Warning: {path} not found.")
     if as_str == True:
-        path = path.as_posix()
+        path = str(path)
     return path
 
 
