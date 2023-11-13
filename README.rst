@@ -37,10 +37,16 @@ are strictly necessary). You can create the environment from a terminal
 with the command ``conda env create -f conda-public_wifi.yml``. You can
 then activate the environment with ``conda activate public_wifi``.
 
+
 0 Philosophy
 ============
 
-The exposures are sorted into tables (how)?
+The underlying mechanisms depend on a catalog of point source detections being provided along with the dataset. The Database Manager class organizes the metadata for each of those detections, linking each to a unique star (i.e. one star can have multiple detections if it is imaged multiple times in a mosaic). It will keep track of the source file, detector x, y position, and photometry for each detection as well.
+
+
+:describe PSF subtraction algo, cleaning, and analysis:
+
+The user must decide a tile size on which the PSF subtraction will act. PSF subtraction requires there to be only one source per tile, so the database manager will clean out point sources that are within one tile of each other. Then it w
 
 
 1 Usage
@@ -69,7 +75,7 @@ The exposures are sorted into tables (how)?
   An example library for converting a catalog of stars and point sources
   from source detection software into a format for PUBLIC WIFI is provided
   in ``utils.ks2_utils.py`` and ``utils.ks2_tables.py`` -- in this case,
-  KS2 (Anderson et al, 2015?) was used for point source detection.
+  KS2 (Anderson et al, 2015?) was used for point source detection. These tables are designed to parse the output from that software.
 
 1.1 Instantiating the database
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -82,17 +88,17 @@ The exposures are sorted into tables (how)?
   ,----
   | db_master = db_manager.DBManager(data_path=shared_utils.db_clean_file)
   `----
-  `db_master' then reads all the available tables from memory and groups
+  `db_master` then reads all the available tables from memory and groups
   the point source detections into self-contained PSF subtraction units
   (that is, the groups of PSFs that will be used to subtract each
   other). The point sources are currently grouped by, in order,
-  'ps_filt_id' (the filter), 'ps_epoch_id' (the epoch), and 'sector_id'
+  `ps_filt_id` (the filter), `ps_epoch_id` (the epoch), and `sector_id`
   (the gridded location on the detector). These groups are stored in
-  `DBManager.subtr_groups', which is a pandas groupby object. Each group
-  contains three columns -- the star (`star_id'), point source detection
-  (`ps_id'), and stamp (`stamp_id') identifiers that belong to a
-  subtraction group. To create a subset of the database, get the key and
-  call `DBManager.create_subtr_subset_db(key)'
+  `DBManager.subtr_groups`, which is a pandas groupby object. Each group
+  contains three columns -- the star (`star_id`), point source detection
+  (`ps_id`), and stamp (`stamp_id`) identifiers that belong to a
+  subtraction group. To pull out a subset of the database to work on, get the key and
+  call `DBManager.create_subtr_subset_db(key)`
 
 
   TODO: OK, first we obviously need instructions on how to create the database.
@@ -102,8 +108,8 @@ The exposures are sorted into tables (how)?
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   To perform PSF subtraction on a subtraction group, first select one of
-  the `DBManager.subtr_group' keys and pass the key to
-  `DBManager.create_subtr_subset_db(key)'. This function returns a new
+  the `DBManager.subtr_group` keys and pass the key to
+  `DBManager.create_subtr_subset_db(key)`. This function returns a new
   DBManager instance, containing only the subset of the database that
   corresponds to the subtraction group. For example:
   ,----
@@ -115,11 +121,11 @@ The exposures are sorted into tables (how)?
   ,----
   | subtrm = subtr_utils.SubtrManager(dbm_subtr)
   `----
-  There is an optional argument, `calc_corr_flag=[True, False]', that
+  There is an optional argument, `calc_corr_flag=[True, False]`, that
   can switch on or off the calculation of the PSF correlation matrices
   (switch off if you want to use all the PSFs regardless of correlation
   score). More on this later. The DBManager instance can always be
-  accessed by `SubtrManager.db'.
+  accessed by `SubtrManager.db`.
 
   Finally, perform PSF subtraction using
   ,----
@@ -127,14 +133,14 @@ The exposures are sorted into tables (how)?
   `----
   This function assigns three new attributes to the SubtrManager
   instance:
-  - `subtrm.psf_subtr' : the psf subtraction results
-  - `subtrm.psf_model' : the corresponding PSF models
-  - `subtrm.subtr_refs' : the list of references used to subtract each
+  - `subtrm.psf_subtr` : the psf subtraction results
+  - `subtrm.psf_model` : the corresponding PSF models
+  - `subtrm.subtr_refs` : the list of references used to subtract each
     stamp
-  `psf_subtr' and `psf_model' are pandas DataFrames, whose index
+  `psf_subtr` and `psf_model` are pandas DataFrames, whose index
   indicates the stamp that was the target for PSF subtraction. The
-  column indicates the value of Kklip (aka `numbasis'). `subtr_refs' is
-  also a DataFrame, whose column indicates the target stamp. The entries
+  column indicates the value of Kklip (aka `numbasis`). `subtr_refs` is
+  also a DataFrame that stores the reference images, whose column indicates the target stamp. The entries
   of each column are the reference stamps used to build that target's
   model PSF, in no particular order.
 
