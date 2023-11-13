@@ -21,23 +21,26 @@ from .utils import shared_utils
 from .utils import image_utils
 
 # PSF Subtraction Modules
-pw_config = (Path(__file__).parent.absolute() / "./config-public_wifi.cfg").resolve()
-# pyklip
-sys.path.append(shared_utils.load_config_path("extern", "pyklip_path",
-                                              as_str=True,
-                                              config_file=pw_config))
-try:
-    from pyklip import klip
-except ModuleNotFoundError:
-    print("Error loading pyklip: did you forget to run sys.append with the pyklip path?")
+# pw_config = (Path(__file__).parent.absolute() / "./config-public_wifi.cfg").resolve()
+# # pyklip
+# sys.path.append(shared_utils.load_config_path("extern", "pyklip_path",
+#                                               as_str=True,
+#                                               config_file=pw_config))
+# try:
+# from pyklip import klip
+# except ModuleNotFoundError:
+    # print("Error loading pyklip: did you forget to run sys.append with the pyklip path?")
 # NMF
-sys.path.append(shared_utils.load_config_path("extern", "nmf_path",
-                                              as_str=True,
-                                              config_file=pw_config))
-try:
-    from NonnegMFPy import nmf as NMFPy
-except ModuleNotFoundError:
-    print("Error loading NonnegMFPy: did you forget to run sys.append with the NMF path?")
+# sys.path.append(shared_utils.load_config_path("extern", "nmf_path",
+#                                               as_str=True,
+#                                               config_file=pw_config))
+# try:
+# from NonnegMFPy import nmf as NMFPy
+# except ModuleNotFoundError:
+#     print("Error loading NonnegMFPy: did you forget to run sys.append with the NMF path?")
+
+from pyklip import klip
+from NonnegMFPy import nmf as NMFPy
 
 # Results object
 Results = namedtuple('Results', ('residuals', 'models', 'references'))

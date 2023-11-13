@@ -26,15 +26,29 @@ from . import table_utils
 from .. import db_manager
 from .. import subtr_manager
 
-mast_img = fits.getdata(shared_utils.load_config_path("tables", "composite_img_file"))
-mast_img[mast_img<=0] = np.nan
 
-def show_sky_scene(star_id, dbm, zoom=61, alt_dbm={}, stamp_size=11, plot_size=300):
+
+def load_composite_img_from_config(
+        config_file : str ,
+) -> np.array :
+    """
+    Load the composite image for display
+    """
+    img_path = shared_utils.load_config_path("tables",
+                                             "composite_img_file",
+                                             config_file)
+    mast_img = fits.getdata(img_path)
+    mast_img[mast_img<=0] = np.nan
+    return mast_img
+
+
+def show_sky_scene(config_file, star_id, dbm, zoom=61, alt_dbm={}, stamp_size=11, plot_size=300):
     """
     Plot the scene on sky
 
     Parameters
     ----------
+    config_file : config file that has the path to the mast image
     star_id : the target star
     dbm : database manager for the active selection of stars, that includes the target star
     zoom : [61] size of the initial region to zoom in on
@@ -62,6 +76,7 @@ def show_sky_scene(star_id, dbm, zoom=61, alt_dbm={}, stamp_size=11, plot_size=3
                          x_range=x_range, y_range=y_range, title=f"{star_id} context on sky")
 
     # draw the sky scene
+    mast_img = load_composite_img_from_config(config_file)
     mapper = bkmdls.LogColorMapper(palette='Magma256', low=np.nanmin(mast_img), high=np.nanmax(mast_img))
     p_sky.image(image=[mast_img], 
                 x=-0.5, y=-0.5, dw=mast_img.shape[1], dh=mast_img.shape[0], 
@@ -464,7 +479,8 @@ def df_scroller_app(df, title, scroll_title='', cmap_class=bkmdls.LinearColorMap
     return app
 
 
-def generate_inspector(star_id,
+def generate_inspector(config_file,
+                       star_id,
                        dbm, alt_dbm, # for the sky and detector scene plots
                        subtr_results_dict=None, # subtraction results object
                        snr_maps=None, # SNR maps
@@ -474,6 +490,7 @@ def generate_inspector(star_id,
 
     Parameters
     ----------
+    config_file : path to the config file used in this analysis
     star_id : the target star
     dbm : db_manager object for the sector
     alt_dbm: [None] alternate db_manager, for plotting sources not selected
@@ -497,7 +514,7 @@ def generate_inspector(star_id,
     def app(doc):
         # sky scene, detector scene, and the target star's stamps
         plot_size = 5*plot_size_unit
-        p_sky = show_sky_scene(star_id, dbm=dbm, alt_dbm=alt_dbm,
+        p_sky = show_sky_scene(config_file, star_id, dbm=dbm, alt_dbm=alt_dbm,
                                plot_size=plot_size)
         p_det = show_detector_scene(star_id, dbm=dbm, alt_dbm=alt_dbm,
                                     plot_size=plot_size)
@@ -641,7 +658,8 @@ def generate_inspector(star_id,
 
 
 
-def generate_inspector_ana(ana_mgr,
+def generate_inspector_ana(config_file,
+                           ana_mgr,
                            star_id, 
                            alt_dbs={},
                            plot_size_unit=100):
@@ -650,6 +668,7 @@ def generate_inspector_ana(ana_mgr,
 
     Parameters
     ----------
+    config_file : path to the config file used in this analysis
     ana_mgr : an ana_utils.AnaManager instance
       contains the database, subtraction manager, and other analysis products
     star_id : star to show
@@ -670,7 +689,7 @@ def generate_inspector_ana(ana_mgr,
     def app(doc):
         # sky scene, detector scene, and the target star's stamps
         plot_size = 5*plot_size_unit
-        p_sky = show_sky_scene(star_id, dbm=ana_mgr.db, alt_dbm=alt_dbs,
+        p_sky = show_sky_scene(config_file, star_id, dbm=ana_mgr.db, alt_dbm=alt_dbs,
                                plot_size=plot_size)
         p_det = show_detector_scene(star_id, dbm=ana_mgr.db, alt_dbm=alt_dbs,
                                     plot_size=plot_size)
