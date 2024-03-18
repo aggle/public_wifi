@@ -98,8 +98,8 @@ At the end, you have two dataframes:
 - filtermapper_df (filter ID -> filter name)
 """
 def get_file_mapper(ks2_input_file):#=ks2_files[2]):
-    """
-    Given a KS2 INPUT.KS2 file, parse the file to get a dataframe that maps between the file numbers and file names.
+    """Given a KS2 INPUT.KS2 file, parse the file using regular expressions to
+    get a dataframe that maps between the file numbers and file names.
 
     Parameters
     ----------
@@ -111,21 +111,19 @@ def get_file_mapper(ks2_input_file):#=ks2_files[2]):
     filemapper_df : pd.DataFrame
       pandas dataframe with two columns: file_id, and file_name
       file_id is the KS2-assigned file identifier; file_name is the name on disk
-    """
-    filemapper_df = pd.DataFrame(columns=['file_id','file_name'])
 
-    ks2_input_file = Path(ks2_input_file).resolve().as_posix()
+    """
     with open(ks2_input_file, 'r') as f:
-        for line in f:
-            # file ID
-            if line.find("PIX=") >= 0:
-                file_id = 'G'+line.split(' ')[0]
-                file_name = Path(re.search('PIX=".*"',\
-                                           line).group().split('"')[1]).name
-                new_data = {'file_id': file_id,
-                            'file_name': file_name}
-                filemapper_df = filemapper_df.append(new_data, ignore_index=True)
-    return filemapper_df
+        text = f.read()
+    lines = re.findall(r"\d{3}.+PIX.+", text)
+    mapper = []
+    for line in lines:
+        fileid = re.match(r"\d{3}", line).group()
+        filename = re.search(r"(?<=PIX\=\").+?(?=\")", line).group()
+        mapper.append({"file_id": 'G'+fileid,
+                     "file_name": filename}
+                   )
+    return pd.DataFrame(mapper)
 
 
 def get_filter_mapper(ks2_input_file):
