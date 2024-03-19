@@ -83,11 +83,14 @@ def write_table(key, df,
         # write each column of the dataframe
         for c in df.columns:
             col = df[c]
-            orig_dtype = col.dtype
-            col = np.stack(col.values) # trust numpy's automatic type conversion
             # Strings must be treated specially in HDF5
-            if isinstance(col[0], str):
-                col = col.astype(h5py.string_dtype('utf-8'))
+            if col.dtype == object:
+                col = np.stack(col.apply(str), dtype=h5py.string_dtype('utf-8'))
+            else:
+                col = np.stack(col.values, dtype=col.dtype) 
+            # if isinstance(col[0], str):
+            # if orig_dtype == object:
+            #     col = col.astype(h5py.string_dtype('utf-8'))
             g.create_dataset(c, data=col, dtype=col.dtype, chunks=True)
         f.flush()
         f.close()

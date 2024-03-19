@@ -27,34 +27,59 @@ ident_map = {'S': 'star_id', 'P': 'ps_id', 'T': 'stamp_id'}
 table_definition_file = (Path(__file__).parent.absolute() / "../table_definitions.cfg").resolve()
 config = configparser.ConfigParser()
 
-def load_table_definition(table_name, config_file=table_definition_file):
+def load_table_definition(
+        table_name : str = '',
+        config_file : str | Path = table_definition_file
+) -> dict:
     """
-    Load a path from the config file. Also handles case of key not found
+    Load a path from the config file. If no table name (or bad table name)
+    given, prints a list of allowed values. Otherwise, returns a dict of
+    {col_name : col_type}.
 
     Parameters
     ----------
-    table_name : str
+    table_name : str = ''
       the name for the table (see docs)
     config_file : str or Path ("../table_definitions.cfg")
       Path to a config file where the table columns and dtypes are defined
-    
+
     Output
     -------
     col_dict : dict
         a dictionary of column names and dtypes
+
     """
     # reread the file whenever the function is called so you don't have to
     # reload the entire module if the config file gets updated
+    if table_name == '':
+        available_tables = '\n\t'.join(config.sections())
+        print(f"No table name provided.")
+        print(f"Available tables are: \n\t{available_tables}")
+        return {}
+
     config.read(config_file)
     table_name = table_name.upper()
     try:
-        table_cols = list(config[table_name].items())
-    except KeyError:
+        assert(table_name in config)
+        # table_cols = list(config[table_name].items())
+    except AssertionError:
         available_tables = '\n\t'.join(config.sections())
         print(f"Error, no table named {table_name.upper()}")
         print(f"Available tables are: \n\t{available_tables}")
-        return None
-    table_dict = dict([(i[0][1], i[1][1]) for i in zip(table_cols[::2], table_cols[1::2])])
+        return {}
+
+    entries = {}
+    for entry in config[table_name].items():
+        index = int(re.search(r"\d+", entry[0]).group())
+        key = re.search(r"\D+", entry[0]).group()
+        val = entry[1]
+        if index in entries.keys():
+            entries[index].update({key:val})
+        else:
+            entries[index] = {key: val}
+    table = pd.DataFrame.from_dict(entries, orient='index')
+    # table_dict = dict([(i[0][1], i[1][1]) for i in zip(table_cols[::2], table_cols[1::2])])
+    table_dict = table.set_index("col")["dtype"].to_dict()
     return table_dict
 
 def initialize_table(table_name, nrows):
@@ -503,5 +528,3 @@ def set_reference_quality_flag(stamp_ids, flag=True, stamp_table=None):
     ind = stamp_table.query("stamp_id in @stamp_ids").index
     stamp_table.loc[ind, 'stamp_ref_flag'] = flag
     # done
-
-

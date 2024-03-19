@@ -1,6 +1,6 @@
 #+title: PUBLIC WIFI user guide
 
-The final state of the Trumpler 14 analysis package will consist of the following independent components:
+The final state of the Public Wifi analysis package will consist of the following independent components:
 
 1. *Database*
 2. *PSF subtraction*
@@ -11,8 +11,16 @@ Currently, only *Database* and *PSF subtraction* are implemented. See below for 
 
 A conda environment that is compatible with this version of PUBLIC WIFI is provided in ~docs/conda-public_wifi.yml~ (it has more packages than are strictly necessary). You can create the environment from a terminal with the command ~conda env create -f conda-public_wifi.yml~. You can then activate the environment with ~conda activate public_wifi~. 
 
-* Usage
+* Philosophy
 
+The underlying mechanisms depend on a catalog of point source detections being provided along with the dataset. The Database Manager class organizes the metadata for each of those detections, linking each to a unique star (i.e. one star can have multiple detections if it is imaged multiple times in a mosaic). It will keep track of the source file, detector x, y position, and photometry for each detection as well.
+
+
+:describe PSF subtraction algo, cleaning, and analysis:
+
+The user must decide a tile size on which the PSF subtraction will act. PSF subtraction requires there to be only one source per tile, so the database manager will clean out point sources that are within one tile of each other. Then it w
+
+* Usage
 This is going to be pretty bare-bones, reflecting the current state of the software.
 
 The database is managed by the ~db_manager.DBManager~ class, and the psf subtraction is managed by the ~subtr_utils.SubtrManager~ class. ~shared_utils~ holds various useful values like file paths to the database. Import the following modules from wherever the tr14 base folder is located:
@@ -21,6 +29,17 @@ tr14.utils.shared_utils
 tr14.utils.db_manager
 tr14.utils.subtr_utils
 #+end_src
+
+** Creating the initial catalog
+
+To start using PUBLIC WIFI, you first have to create a table of *stars* and *point sources*. The difference is best explained this way: if you create a mosaic from all your exposures, each point source mosaic is a unique *star*. The *point sources* are all the instances where the star appears in the different exposures. PUBLIC WIFI cannot help you with this step. Once you have these catalogs, you need to write a conversion function to put them into a format that PUBLIC WIFI works with.
+The required format for these tables is described in `public_wifi/table_definitions.cfg`. Here are some helper functions in `public_wifi.utils.table_utils`:
+#+begin_src python
+  table_utils.load_table_definition()
+  table_utils.
+#+end_src
+
+An example library for converting a catalog of stars and point sources from source detection software into a format for PUBLIC WIFI is provided in `utils.ks2_utils.py` and `utils.ks2_tables.py`` -- in this case, KS2 (Anderson et al, 2015?) was used for point source detection. These tables are designed to parse the output from that software.
 
 ** Instantiating the database
 First, create an instance of the database manager. It takes one argument, which is a path to the file where the database is stored. You probably want the path stored at ~shared_utils.db_clean_file~, which contains the database after preliminary cleaning for visual binaries, bad pixels, cosmics, etc:
@@ -57,6 +76,7 @@ This function assigns three new attributes to the SubtrManager instance:
 
 ** This is where we're at right now.
 We are still figuring out how to choose references and how to perform the photometry and analysis.
+
 
 * Components
 This section contains a description of the objects and tables in the database

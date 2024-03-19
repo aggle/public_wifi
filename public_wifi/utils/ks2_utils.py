@@ -32,10 +32,16 @@ def frtn2py_ind(ind):
 
 
 """
-You only care about a few of the files:
-INPUT.KS2 contains the instructions used to rnun the photometry, and it shows which flt files correspond to the file numbers in the LOGR files
-LOGR.XYVIQ1 gives the average position for each source on the master frame (cols 1 and 2), the average flux (cols 5 and 11), the flux sigma (cols 6 and 12), and fit quality (cols 7 and 13) in each filter)
-LOGR.FIND_NIMFO gives you the coordinates and fluxes of each star in each exposure. Cols 14 and 15 contain the x and y coordinates in the flt images (i.e. *before* geometric distortion correction). col 36 is the ID number for each star (starts with R). col 39 is the ID for the image (starts with G). col 40 (starts with F) is the ID for the filter.
+You only care about a few of the files: INPUT.KS2 contains the instructions
+used to rnun the photometry, and it shows which flt files correspond to the
+file numbers in the LOGR files LOGR.XYVIQ1 gives the average position for each
+source on the master frame (cols 1 and 2), the average flux (cols 5 and 11),
+the flux sigma (cols 6 and 12), and fit quality (cols 7 and 13) in each filter)
+LOGR.FIND_NIMFO gives you the coordinates and fluxes of each star in each
+exposure. Cols 14 and 15 contain the x and y coordinates in the flt images
+(i.e. *before* geometric distortion correction). col 36 is the ID number for
+each star (starts with R). col 39 is the ID for the image (starts with G). col
+40 (starts with F) is the ID for the filter.
 """
 # Use this function to load paths from the config file
 # for backwards compatibility
@@ -120,6 +126,7 @@ def get_file_mapper(ks2_input_file):#=ks2_files[2]):
     for line in lines:
         fileid = re.match(r"\d{3}", line).group()
         filename = re.search(r"(?<=PIX\=\").+?(?=\")", line).group()
+        filename = Path(filename).name
         mapper.append({"file_id": 'G'+fileid,
                      "file_name": filename}
                    )
@@ -503,7 +510,7 @@ def get_point_source_catalog(ps_file,
       catalog of all point sources detected and associated information.
       For documentation on the column names, see docs/database/ks2_output_definitions.org
     """
-    ps_file = Path(ps_file).resolve().as_posix()
+    ps_file = str(Path(ps_file).resolve())
 
     ps_df = pd.read_csv(ps_file,
                         sep=' ',
@@ -512,6 +519,7 @@ def get_point_source_catalog(ps_file,
                         skiprows=5, 
                         header=None,
                         usecols=nimfo_cols.keys(),
+                        dtype=str,
     )
     ps_df.rename(columns=nimfo_cols, inplace=True)
     # split the file identifier into the file number and extension number

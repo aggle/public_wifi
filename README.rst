@@ -66,16 +66,18 @@ The user must decide a tile size on which the PSF subtraction will act. PSF subt
   | public_wifi.utils.subtr_utils
   `----
 
-  To start using PUBLIC WIFI, you first have to create a table of
-  *stars* and *point sources*. The difference is best explained this
-  way: if you create a mosaic from all your exposures, each point source
-  mosaic is a unique *star*. The *point sources* are all the instances
-  where the star appears in the different exposures. The required format
-  for these tables is given in ``public_wifi/table_definitions.cfg``.
-  An example library for converting a catalog of stars and point sources
-  from source detection software into a format for PUBLIC WIFI is provided
-  in ``utils.ks2_utils.py`` and ``utils.ks2_tables.py`` -- in this case,
-  KS2 (Anderson et al, 2015?) was used for point source detection. These tables are designed to parse the output from that software.
+  To start using PUBLIC WIFI, you first have to create a table of *stars* and
+  *point sources*. The difference is best explained this way: if you create a
+  mosaic from all your exposures, each point source mosaic is a unique *star*.
+  The *point sources* are all the instances where the star appears in the
+  different exposures. The required format for these tables is given in
+  ``public_wifi/table_definitions.cfg``. An example library for converting a
+  catalog of stars and point sources from source detection software into a
+  format for PUBLIC WIFI is provided in ``utils.ks2_utils.py`` and
+  ``utils.ks2_tables.py`` -- in this case, KS2 (Anderson et al, 2015?) was used
+  for point source detection. These tables are designed to parse the output from
+  that software.
+
 
 1.1 Instantiating the database
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
