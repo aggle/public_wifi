@@ -84,7 +84,12 @@ def write_table(key, df,
         for c in df.columns:
             col = df[c]
             # Strings must be treated specially in HDF5
-            if col.dtype == object:
+            if isinstance(col.iloc[0], str):
+                col = np.stack(col.apply(str), dtype=h5py.string_dtype('utf-8'))
+            # arrays must also be treated specially in HDF5:
+            elif isinstance(col.iloc[0], np.ndarray):
+                col = np.stack(col.values, dtype=col.iloc[0].dtype)
+            elif col.iloc[0] == None:
                 col = np.stack(col.apply(str), dtype=h5py.string_dtype('utf-8'))
             else:
                 col = np.stack(col.values, dtype=col.dtype) 
@@ -129,6 +134,16 @@ def load_table(key, db_file, verbose=False):
             return g
         df = pd.DataFrame.from_dict({k: list(g[k][...]) for k in g})
         f.close()
+    # decode string columns from binary encoding to regular python strings
+    # or basic string manipulation will break
+    dtypes = df.dtypes
+    for col in dtypes[dtypes==object].index:
+        try:
+            # this breaks on numpy array columns but I can't think of a better
+            # way to handle that except add this exception
+            df[col] = df[col].apply(lambda el: el.decode('utf-8'))
+        except AttributeError:
+            pass
     if verbose == True:
         print(f"Loaded '{key}' from {db_file}")
     return df

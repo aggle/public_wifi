@@ -169,6 +169,7 @@ def generate_stamp_table(
     stamp_table['stamp_ps_id'] = stamps['ps_id'].copy()
     stamp_table['stamp_id'] = stamps['stamp_id'].copy()
     stamp_table['stamp_exp_id'] = stamps['ps_exp_id'].copy()
+
     # use the ps_id to index the ps table
     ps_table = ps_table.set_index('ps_id')
     # get the star_ids
@@ -191,7 +192,8 @@ def convert_point_source_catalog_to_public_wifi(
         column_mapper : dict,
         data_folder : str | Path,
         stamp_size : int = 15,
-        db_file : str | Path = ''
+        db_file : str | Path = '',
+        extra_columns : dict[str, type] = {},
 ) -> dict[str, pd.DataFrame]:
     """
     Once you have the point source catalog defined, this function converts it
@@ -227,8 +229,10 @@ def convert_point_source_catalog_to_public_wifi(
       dir structure)
     stamp_size : int = 15
       box size of the stamps to cut out
-    db_file : str | Path
+    db_file : str | Path = ''
       if this is a valid path, write the database object to this path. Else, do nothing.
+    extra_columns : dict[str, type] = {}
+      Extra columns from the input catalog that you want to include, along with datatype
 
     Output
     ------
@@ -260,6 +264,8 @@ def convert_point_source_catalog_to_public_wifi(
     cols = list(ps_cols.values())
     sloc = {v: k for k, v in ps_cols.items()} # 'cols', backwards!
     ps_table = input_catalog[cols].rename(columns=sloc)
+    for col, dtype in extra_columns.items():
+        ps_table['ps_'+col] = input_catalog[col].astype(dtype, copy=True)
 
     # make the id cols that create unique identifiers for
     # things like stars, point sources, files, filters
@@ -281,7 +287,8 @@ def convert_point_source_catalog_to_public_wifi(
             ps_table[col] = None
 
     # # reorder columns for prettiness
-    ps_table = ps_table[ps_cols_def.keys()].astype(ps_cols_def)
+    for col, dtype in ps_cols_def.items():
+        ps_table[col] = ps_table[col].astype(dtype)
     tables['point_sources'] = ps_table
 
     # make the Star <-> Point Source lookup table
@@ -315,7 +322,7 @@ def convert_point_source_catalog_to_public_wifi(
     tables['lookup_files'] = tables.pop('exp_id')
     tables['lookup_filters'] = tables.pop('filt_id')
 
-    if db_file != '' and Path(db_file).exists() == True:
+    if db_file != '' and Path(db_file).parent.exists() == True:
         print(f"Writing database to {str(db_file)}.")
         for k, tab in tables.items():
             table_io.write_table(k, tab, pk=k, db_file=Path(db_file), clobber=True)

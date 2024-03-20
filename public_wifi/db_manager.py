@@ -20,14 +20,19 @@ from .utils import table_utils
 
 class DBManager:
 
-    def __init__(self, db_path, config_file):
+    def __init__(self, db_path, config_file,
+                 subtraction_keys=['ps_filt_id']):
         """
         Usage:
         Initialize using the path to the database
+        db_path is the path to the database files
+        config_file is the config file of paths
+        subtraction_keys are the column names to use to group point sources for psf subtraction
 
         Useful attributes
         -----------------
         self.subtr_groupby_keys : keys in self.ps_tab used to group objects for psf subtraction
+
         """
         self.db_path = db_path
         self.config_file = config_file
@@ -43,7 +48,7 @@ class DBManager:
         self.grid_defs_tab = self.load_table('grid_sector_definitions', verbose=True)
         #self.comp_status_tab = self.load_table('companion_status', verbose=True)
         # finally, group the subtraction subsets together with the default keys
-        self.subtr_groupby_keys = ['ps_filt_id', 'ps_epoch_id', 'sector_id']
+        self.subtr_groupby_keys = subtraction_keys
         self.do_subtr_groupby(keys=self.subtr_groupby_keys)
 
     @property
@@ -207,6 +212,12 @@ class DBManager:
         lkp_dict = {key: self.load_table(key) for key in keys}
         return lkp_dict
 
+    def get_filter_name(self, filter_id):
+        "Get the filter name from the filter ID"
+        filters = self.lookup_dict['lookup_filters'].set_index("filt_id")
+        filters = filters['filter'].to_dict()
+        return filters[filter_id]
+
     def load_header_tables(self):
         """
         Load all the tables that start with *hdr_*
@@ -302,12 +313,10 @@ class DBManager:
             #print("find_matching_id: same type of ID requested as provided.")
             return pd.Series(ids)
 
-
         start_id_type = id_dict[id_lead]
 
         # which kind do you want?
         requested_id = id_dict[want_this_id]
-
         lkp_tab = self.find_lookup_table(start_id_type, requested_id)
         try:
             assert isinstance(lkp_tab, pd.DataFrame)
@@ -323,6 +332,7 @@ class DBManager:
             print("This shouldn't occur unless the database was constructed improperly.")
             return pd.Series(ids)
         return matching_ids.squeeze()
+
 
     def join_all_tables(self):
         """
@@ -674,14 +684,14 @@ class DBManager:
         """
         if keys == None:
             keys = self.subtr_groupby_keys
-        ps_tab_sector = pd.merge(self.ps_tab,
-                                 self.lookup_dict['lookup_point_source_sectors'],
-                                 on='ps_id')
-        ps_gb = ps_tab_sector.groupby(keys)['ps_id']
+        grouping_table = pd.merge(self.ps_tab,
+                                  self.lookup_dict['lookup_ps_stamp_id'],
+                                  on='ps_id')
+        ps_gb = grouping_table.groupby(keys)['ps_id']
         # now get the corresponding star and stamp groups
-        subtr_groups = pd.merge(ps_gb.apply(lambda x: self.find_matching_id(x, 'S').reset_index()),
+        subtr_groups = pd.merge(ps_gb.apply(lambda x: self.find_matching_id(x, 'S').reset_index()).reset_index(level=keys),
                                 ps_gb.apply(lambda x: self.find_matching_id(x, 'T').reset_index()),
-                                on='ps_id', left_index=True)
+                                on='ps_id')
         self.subtr_groups = subtr_groups.groupby(keys)
         self.subtr_groupby_keys = keys
 

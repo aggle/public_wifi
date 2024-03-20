@@ -385,7 +385,7 @@ class SubtrManager:
             print("self.psf_subtr does not exist (yet?)")
             raise AttributeError
         filtfunc = lambda x: np.all(np.isnan(x))
-        drop_cols = self.psf_subtr.applymap(filtfunc).all(axis=0)
+        drop_cols = self.psf_subtr.map(filtfunc).all(axis=0)
         drop_cols = drop_cols[drop_cols].index
         self.psf_subtr.drop(drop_cols, axis=1, inplace=True)
 
@@ -890,7 +890,7 @@ class SubtrManager:
                                                                        return_basis = return_basis))
         # subtraction results
         residuals = klip_results.apply(lambda x: pd.Series(dict(zip(numbasis, x[0].T))))
-        residuals = residuals.applymap(image_utils.make_image_from_flat)
+        residuals = residuals.map(image_utils.make_image_from_flat)
         # generate PSF models and store in dataframe
         # klip basis
         klip_basis = klip_results.apply(lambda x: pd.Series(dict(zip(numbasis, x[1]))))
@@ -900,7 +900,7 @@ class SubtrManager:
                                                                        numbasis=numbasis),
                                         axis=1)
         psf_models = psf_models.apply(lambda x: pd.Series(dict(zip(numbasis, x))))
-        psf_models = psf_models.applymap(image_utils.make_image_from_flat)
+        psf_models = psf_models.map(image_utils.make_image_from_flat)
 
         # references
         references = pd.DataFrame.from_dict({targ: ref_stamps.index for targ in targ_stamps.index},
