@@ -45,17 +45,17 @@ def create_std_map(subtr_results, mode='pixel', normalize=False):
     resids = subtr_results.residuals.copy()
     refs = subtr_results.references.copy()
     if normalize == True:
-        resids = resids.applymap(normalize_stamp)
+        resids = resids.map(normalize_stamp)
     if mode == 'pixel':
-        # assemble everything into cubes
-        # i think this would be better done with decorators
+        # compute the SNR map by comparing the target stamp pixel to that same
+        # pixel in the residual stamps of all the other stars' residuals
         def calc_pixelwise_std(row, subtr_results):
             # apply row-wise
             star, stamp = row.name
             # pull out the references used for this stamp
             targ_refs = refs.loc[(star, stamp)].dropna()
             # these are the residuals for the reductions of those references
-            targ_residuals = resids.query("stamp_id in @targ_refs")
+            ref_residuals = resids.query("stamp_id in @targ_refs")
             # now for each array of reference residuals, compute the std
             def _calc_pixelwise_std(col):
                 col = col.dropna()
@@ -66,12 +66,12 @@ def create_std_map(subtr_results, mode='pixel', normalize=False):
                 # compute the std and encapsulate it to make pandas happy
                 std = [np.nanstd(arr, axis=0)]
                 return std
-            stds = targ_residuals.apply(_calc_pixelwise_std)
+            stds = ref_residuals.apply(_calc_pixelwise_std)
             return stds.squeeze()
         std_map = resids.apply(lambda x: calc_pixelwise_std(x, subtr_results), axis=1)
     elif mode == 'stamp':
         # calculate the standard deviation stampwise
-        std_map = subtr_results.residuals.applymap(np.nanstd)
+        std_map = subtr_results.residuals.map(np.nanstd)
     else:
         print("mode not recognized, please choose `pixel` or `stamp`")
         std_map = None
@@ -93,7 +93,7 @@ def create_snr_map(subtr_results, mode='pixel', normalize=True):
     """
     std_map = subtr_results.residuals.apply(lambda x: create_std_map(subtr_results, mode, normalize),
                                             axis=1)
-    snr_map = subtr_results.residuals/snr_map
+    snr_map = subtr_results.residuals/std_map
     return snr_map
 
 
@@ -215,7 +215,7 @@ def count_thresh_pixels(snr_df):
 
     """
     # future: do this as a groupby
-    pixelwise_df = snr_df.applymap(image_utils.flatten_image_axes)
+    pixelwise_df = snr_df.map(image_utils.flatten_image_axes)
 
 ##################
 # Analysis class #

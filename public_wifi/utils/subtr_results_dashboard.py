@@ -8,6 +8,7 @@ import pandas as pd
 
 import yaml
 import bokeh
+import bokeh.transform as bktrans
 import bokeh.layouts as bklyts
 import bokeh.plotting as bkplt
 import bokeh.io as bkio
@@ -42,7 +43,8 @@ def load_composite_img_from_config(
     return mast_img
 
 
-def show_sky_scene(config_file, star_id, dbm, zoom=61, alt_dbm={}, stamp_size=11, plot_size=300):
+def show_sky_scene(config_file, star_id, dbm, zoom=61, alt_dbm={}, stamp_size=11, plot_size=300,
+                   show_sky=False):
     """
     Plot the scene on sky
 
@@ -72,15 +74,18 @@ def show_sky_scene(config_file, star_id, dbm, zoom=61, alt_dbm={}, stamp_size=11
 
     # initialize the sky scene figure
     p_sky = bkplt.figure(tools=TOOLS,
-                         plot_height=plot_size, plot_width=plot_size,
-                         x_range=x_range, y_range=y_range, title=f"{star_id} context on sky")
+                         min_height=plot_size, min_width=plot_size,
+                         sizing_mode='scale_both',
+                         x_range=tuple(x_range), y_range=tuple(y_range),
+                         title=f"{star_id} context on sky")
 
     # draw the sky scene
-    mast_img = load_composite_img_from_config(config_file)
-    mapper = bkmdls.LogColorMapper(palette='Magma256', low=np.nanmin(mast_img), high=np.nanmax(mast_img))
-    p_sky.image(image=[mast_img], 
-                x=-0.5, y=-0.5, dw=mast_img.shape[1], dh=mast_img.shape[0], 
-                color_mapper=mapper)
+    if show_sky == True:
+        mast_img = load_composite_img_from_config(config_file)
+        mapper = bkmdls.LogColorMapper(palette='Magma256', low=np.nanmin(mast_img), high=np.nanmax(mast_img))
+        p_sky.image(image=[mast_img], 
+                    x=-0.5, y=-0.5, dw=mast_img.shape[1], dh=mast_img.shape[0], 
+                    color_mapper=mapper)
 
     # draw the stamp limits
     stamp_width = np.floor(stamp_size/2).astype(int)
@@ -150,7 +155,7 @@ def show_detector_scene(star_id, dbm, alt_dbm={}, plot_size=300):
     """
     TOOLS = "pan,wheel_zoom,box_zoom,reset"
     p = figure(tools=TOOLS,
-               plot_height=plot_size, plot_width=plot_size,
+               min_height=plot_size, min_width=plot_size,
                title=f"{star_id} context on detector")
 
     # plot all the catalog detections in the sector
@@ -158,9 +163,10 @@ def show_detector_scene(star_id, dbm, alt_dbm={}, plot_size=300):
     catalog_plot = p.circle(x='ps_x_exp',
                             y='ps_y_exp',
                             source=dbm.ps_tab,
-                            color=bokeh.transform.factor_cmap('ps_exp_id',
-                                                              f"Category20_{len(exp_ids)}",
-                                                              exp_ids),
+                            color=bktrans.factor_cmap('ps_exp_id',
+                                                      # f"Category20_{len(exp_ids)}",
+                                                      "Turbo256",
+                                                      exp_ids),
                             size=10,
                             legend_label='Catalog detections')
 
@@ -227,7 +233,7 @@ def show_target_stamps(star_id, dbm, plot_size=300):
     nrows = np.ceil(len(target_stamp_ids)/ncols).astype(int)
     stamps = dbm.stamps_tab.set_index("stamp_id").loc[target_stamp_ids, 'stamp_array']
     p_stamps = stamps.reset_index()['stamp_id'].apply(lambda x: figure(tools='', title=f'{x}'))
-    mapper = bkmdls.LogColorMapper(palette='Magma256',
+    mapper = bkmdls.LinearColorMapper(palette='Magma256',
                                    low=np.nanmin(np.stack(stamps)),
                                    high=np.nanmax(np.stack(stamps)))
     for p, target_stamp, stamp_id in zip(p_stamps, stamps, target_stamp_ids): 
@@ -237,10 +243,11 @@ def show_target_stamps(star_id, dbm, plot_size=300):
     #     color_bar = ColorBar(color_mapper=mapper, label_standoff=12)
     #     p.add_layout(color_bar, 'right')
 
+    plot_size = min([int(plot_size/nrows),int(plot_size/ncols)])
     grid = bklyts.gridplot(list(p_stamps), ncols=ncols,
-                           #sizing_mode='scale_both',
-                           plot_height=int(plot_size/nrows),
-                           plot_width=int(plot_size/ncols),
+                           sizing_mode='scale_both',
+                           height=plot_size,#int(plot_size/nrows),
+                           width=plot_size,#int(plot_size/ncols),
                            merge_tools=True, toolbar_location=None)
     return grid
 
@@ -271,23 +278,26 @@ def cube_scroller_plot_slider(cube, title, scroll_title='',
     TOOLS='save'
 
     data = cube.copy()
-    #color_mapper = cmap_class(palette='Magma256',
-    #                          low=np.nanmin(np.stack(data)),
-    #                          high=np.nanmax(np.stack(data)))
+
     # initialize image
     img = data[data.index[0]]
     cds = bkmdls.ColumnDataSource(data={'image':[img],
-                                 'x': [-0.5], 'y': [-0.5],
-                                 'dw': [img.shape[0]], 'dh': [img.shape[1]]})
+                                        'x': [-0.5], 'y': [-0.5],
+                                        'dw': [img.shape[0]], 'dh': [img.shape[1]]
+                                        }
+                                  )
+    low, high = np.nanquantile(img, [0, 1])
     color_mapper = cmap_class(palette='Magma256',
-                              low=np.nanmin(img),
-                              high=np.nanmax(img))
+                              low=low,
+                              high=high)
 
     plot = figure(title=f"{title}",
-                  plot_height=plot_size, plot_width=plot_size,
+                  min_height=plot_size, min_width=plot_size,
+                  # aspect_ratio=1,
                   tools=TOOLS)
     g = plot.image(image='image',
-                   x='x', y='y', dw='dw', dh='dh',
+                   x='x', y='y',
+                   dw='dw', dh='dh',
                    color_mapper=color_mapper,
                    source=cds)
     # Hover tool
@@ -306,13 +316,12 @@ def cube_scroller_plot_slider(cube, title, scroll_title='',
     slider = bkmdls.Slider(start=0, end=data.index.size-1, value=0, step=1,
                            title=slider_title(scroll_title, data.index[0]),
                            show_value = False,
-                           default_size=plot_size,
+                           # default_size=plot_size,
                            orientation='horizontal')
     def callback(attr, old, new):
+        # update the image
         img = data[data.index[new]]
-        cds.data = {'image':[img],
-                    'x': [-0.5], 'y': [-0.5],
-                    'dw': [img.shape[0]], 'dh': [img.shape[1]]}
+        cds.data['image'] = [img]
         color_mapper.update(low=np.nanmin(img), high=np.nanmax(img))
         slider.title = slider_title(scroll_title, data.index[new])
     slider.on_change('value', callback)
@@ -329,6 +338,9 @@ def cube_scroller_plot_slider(cube, title, scroll_title='',
         color_mapper = cmap_class(palette='Magma256',
                                   low=np.nanmin(img),
                                   high=np.nanmax(img))
+        # update the color mapper on image
+        g.glyph.color_mapper=color_mapper
+
     cmap_switcher.on_change('value', cmap_switcher_callback)
 
     widgets = bklyts.column(slider, cmap_switcher, sizing_mode='scale_width')
@@ -361,7 +373,7 @@ def cube_scroller_app(cube, title='', scroll_title='', cmap_class=bkmdls.LinearC
 
         doc.theme = Theme(json=yaml.load("""
             attrs:
-                Figure:
+                figure:
                     background_fill_color: white
                     outline_line_color: white
                     toolbar_location: above
@@ -414,7 +426,7 @@ def df_scroller_app(df, title, scroll_title='', cmap_class=bkmdls.LinearColorMap
         title_string = lambda title, column: f"{title} :: {column}"
 
         plot = figure(title=title_string(title, column),
-                      plot_height=plot_size, plot_width=plot_size,
+                      min_height=plot_size, min_width=plot_size,
                       tools=TOOLS)
         g = plot.image(image='image',
                        x='x', y='y', dw='dw', dh='dh',
@@ -466,7 +478,7 @@ def df_scroller_app(df, title, scroll_title='', cmap_class=bkmdls.LinearColorMap
 
         doc.theme = Theme(json=yaml.load("""
             attrs:
-                Figure:
+                figure:
                     background_fill_color: white
                     outline_line_color: white
                     toolbar_location: above
@@ -508,7 +520,7 @@ def generate_inspector(config_file,
     # do some cleanup for better filtering
     for k in ['snr', 'residuals', 'models']:
         # if an array is all nan, just set the entry to a single NaN value
-        bool_df = subtr_results_dict[k].applymap(lambda x: np.isnan(x).all())
+        bool_df = subtr_results_dict[k].map(lambda x: np.isnan(x).all())
         subtr_results_dict[k].values[bool_df] = np.nan
 
     def app(doc):
@@ -527,7 +539,7 @@ def generate_inspector(config_file,
         reference_stamps = dbm.stamps_tab.set_index('stamp_id').loc[reference_ids, 'stamp_array']
         refs_plot, refs_slider, refs_cds = cube_scroller_plot_slider(reference_stamps,
                                                                      'Reference stamps',
-                                                                     cmap_class=bkmdls.LogColorMapper,
+                                                                     cmap_class=bkmdls.LinearColorMapper,
                                                                      plot_size=5*plot_size_unit)
         refs_col = bklyts.column(refs_plot, refs_slider)
 
@@ -566,7 +578,7 @@ def generate_inspector(config_file,
         # initialize the actual plots
         TOOLS=''
         plot_dict = {k: figure(title=title_string(k.upper(), column),
-                               plot_height=plot_size, plot_width=plot_size,
+                               min_height=plot_size, min_width=plot_size,
                                tools=TOOLS)
                      for k in stamp_dict.keys()}
         for k, plot in plot_dict.items():
@@ -640,7 +652,7 @@ def generate_inspector(config_file,
 
         doc.theme = Theme(json=yaml.load("""
             attrs:
-                Figure:
+                figure:
                     background_fill_color: white
                     outline_line_color: white
                     toolbar_location: above
@@ -683,7 +695,7 @@ def generate_inspector_ana(config_file,
     # do some cleanup for better filtering
     for k in ['snr', 'residuals', 'models']:
         # if an array is all nan, just set the entry to a single NaN value
-        bool_df = ana_mgr.results_stamps[k].applymap(lambda x: np.isnan(x).all())
+        bool_df = ana_mgr.results_stamps[k].map(lambda x: np.isnan(x).all())
         ana_mgr.results_stamps[k].values[bool_df] = np.nan
 
     def app(doc):
@@ -702,7 +714,7 @@ def generate_inspector_ana(config_file,
         reference_stamps = ana_mgr.db.stamps_tab.set_index('stamp_id').loc[reference_ids, 'stamp_array']
         refs_plot, refs_slider, refs_cds = cube_scroller_plot_slider(reference_stamps,
                                                                      'Reference stamps',
-                                                                     cmap_class=bkmdls.LogColorMapper,
+                                                                     cmap_class=bkmdls.LinearColorMapper,
                                                                      plot_size=5*plot_size_unit)
         refs_col = bklyts.column(refs_plot, refs_slider)
 
@@ -729,8 +741,8 @@ def generate_inspector_ana(config_file,
         # initialize the color mappers
         color_mapper_dict = {
             'snr':  bkmdls.LinearColorMapper(palette='Magma256',
-                                             low=-1,#np.nanmin(img_dict['snr']),
-                                             high=6),#np.nanmax(img_dict['snr'])),
+                                             low=np.nanmin(img_dict['snr']),
+                                             high=np.nanmax(img_dict['snr'])),
             'residuals':  bkmdls.LinearColorMapper(palette='Magma256',
                                                    low=np.nanmin(img_dict['residuals']),
                                                    high=np.nanmax(img_dict['residuals'])),
@@ -743,7 +755,7 @@ def generate_inspector_ana(config_file,
         # initialize the actual plots
         TOOLS=''
         plot_dict = {k: figure(title=title_string(k.upper(), column),
-                               plot_height=plot_size, plot_width=plot_size,
+                               min_height=plot_size, min_width=plot_size,
                                tools=TOOLS)
                      for k in stamp_dict.keys()}
         for k, plot in plot_dict.items():
@@ -767,7 +779,7 @@ def generate_inspector_ana(config_file,
         slider_dict = {k: bkmdls.Slider(start=0, end=stamps.index.size-1, value=0, step=1,
                                         title=slider_title('N_components', stamps.index[0]),
                                         show_value=False,
-                                        default_size=plot_size,
+                                        # default_size=plot_size,
                                         orientation='horizontal')
                        for k, stamps in stamp_dict.items()}
         def make_slider_callback(key): # generator for slider callback functions
@@ -821,7 +833,7 @@ def generate_inspector_ana(config_file,
 
         doc.theme = Theme(json=yaml.load("""
             attrs:
-                Figure:
+                figure:
                     background_fill_color: white
                     outline_line_color: white
                     toolbar_location: above

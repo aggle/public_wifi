@@ -182,8 +182,8 @@ def get_file_name_from_exp_id(exp_id, file_mapper, root=False):
     file_name : the HST identifier for the file
     """
     exp_id = exp_id.upper()
-    querystr = f"file_id == '{exp_id}'"
-    file_name = file_mapper.query(querystr)['file_name'].values[0]
+    querystr = f"exp_id == '{exp_id}'"
+    file_name = file_mapper.query(querystr)['file'].values[0]
     if root == True:
         file_name = file_name.split("_flt.fits")[0]
     return file_name
