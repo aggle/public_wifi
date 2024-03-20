@@ -67,14 +67,7 @@ def create_std_map(subtr_results, mode='pixel', normalize=False):
                 std = [np.nanstd(arr, axis=0)]
                 return std
             stds = targ_residuals.apply(_calc_pixelwise_std)
-            def extract(x):
-                try:
-                    x = x[0]
-                except:
-                    pass
-                return x
-            stds = stds.apply(extract)
-            return stds
+            return stds.squeeze()
         std_map = resids.apply(lambda x: calc_pixelwise_std(x, subtr_results), axis=1)
     elif mode == 'stamp':
         # calculate the standard deviation stampwise
