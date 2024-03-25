@@ -658,21 +658,30 @@ class SubtrManager:
 
         return residuals, psf_models
 
-    def get_targets_references_by_star(self, targ_star, dmag=1):
-        """Used for when you want to do the subtraction by star, not by target"""
+    def get_targets_references_by_star(self, targ_star, dmag=None):
+        """
+        Used for when you want to do the subtraction by star, not by target
+
+        targ_star : str
+          star_id of the target
+        dmag : [None] | float
+          dmag range cut on the references. If none, no magnitude cut applied
+        """
+
         full_table = self.db.join_all_tables()
         targ_group = full_table.query('star_id == @targ_star')
         targ_stamps = targ_group.set_index('stamp_id')['stamp_array']
         # select all the *other* stars
         ref_stars = full_table.query('star_id != @targ_star')
 
-        # select by magnitude
-        mag_llim = targ_group['ps_mag'].min() - dmag
-        mag_ulim = targ_group['ps_mag'].max() + dmag
-        ref_stars = ref_stars.query('ps_mag <= @mag_ulim and ps_mag >= @mag_llim')
-
         # drop bad references
         ref_stars = ref_stars.query('stamp_ref_flag == True')
+
+        # select by magnitude
+        if dmag is not None:
+            mag_llim = targ_group['ps_mag'].min() - dmag
+            mag_ulim = targ_group['ps_mag'].max() + dmag
+            ref_stars = ref_stars.query(f"ps_mag <= {mag_ulim} and ps_mag >= {mag_llim}")
 
         ref_stamps = ref_stars.set_index('stamp_id')['stamp_array']
         return targ_stamps, ref_stamps
