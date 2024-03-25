@@ -252,122 +252,138 @@ def show_target_stamps(star_id, dbm, plot_size=300):
     return grid
 
 
-def cube_scroller_plot_slider(cube, title, scroll_title='',
-                              cmap_class=bkmdls.LinearColorMapper,
-                              plot_size=400):
-    """
-    Generate the plot and scroller objects for a cube_scroller application.
-    Separating it out this way makes it easier to add multiple cube scrollers
-    to the same figure.
 
-    Parameters
-    ----------
-    cube : pd.Series
-      pandas.Series object whose entries are arrays
-    title : str
-      title to put on the plot
-    scroll_title : str ['']
-      title for the scroll bar
-    cmap_class : bokeh.models.ColorMapper class [bkmdls.LinearColorMapper]
-      a color mapper for scaling the images
-
-    Output
-    ------
-    bokeh figure, slider widget, and the that stores the data
-    """
-    TOOLS='save'
-
-    data = cube.copy()
-
-    # initialize image
-    img = data[data.index[0]]
-    cds = bkmdls.ColumnDataSource(data={'image':[img],
-                                        'x': [-0.5], 'y': [-0.5],
-                                        'dw': [img.shape[0]], 'dh': [img.shape[1]]
-                                        }
-                                  )
-    low, high = np.nanquantile(img, [0, 1])
-    color_mapper = cmap_class(palette='Magma256',
-                              low=low,
-                              high=high)
-
-    plot = figure(title=f"{title}",
-                  min_height=plot_size, min_width=plot_size,
-                  # aspect_ratio=1,
-                  tools=TOOLS)
-    g = plot.image(image='image',
-                   x='x', y='y',
-                   dw='dw', dh='dh',
-                   color_mapper=color_mapper,
-                   source=cds)
-    # Hover tool
-    hover_tool = bkmdls.HoverTool()
-    hover_tool.tooltips=[("value", "@image"),
-                         ("(x,y)", "($x{0}, $y{0})")]
-    plot.add_tools(hover_tool)
-    plot.toolbar.active_inspect = None
-
-    # color bar
-    color_bar = bkmdls.ColorBar(color_mapper=color_mapper, label_standoff=12)
-    plot.add_layout(color_bar, 'right')
-
-    # slider
-    slider_title = lambda title, index: f"{title} :{index}"
-    slider = bkmdls.Slider(start=0, end=data.index.size-1, value=0, step=1,
-                           title=slider_title(scroll_title, data.index[0]),
-                           show_value = False,
-                           # default_size=plot_size,
-                           orientation='horizontal')
-    def callback(attr, old, new):
-        # update the image
-        img = data[data.index[new]]
-        cds.data['image'] = [img]
-        color_mapper.update(low=np.nanmin(img), high=np.nanmax(img))
-        slider.title = slider_title(scroll_title, data.index[new])
-    slider.on_change('value', callback)
-
-    # Switch color map
-    # doesn't work yet
-    menu = {"Linear": bkmdls.LinearColorMapper, "Log": bkmdls.LogColorMapper}
-    cmap_switcher = bkmdls.Select(title='Switch color map',
-                                  value=sorted(menu.keys())[0],
-                                  width=plot_size,
-                                  options=sorted(menu.keys()))
-    def cmap_switcher_callback(attr, old, new):
-        cmap_class = menu[new]
-        color_mapper = cmap_class(palette='Magma256',
-                                  low=np.nanmin(img),
-                                  high=np.nanmax(img))
-        # update the color mapper on image
-        g.glyph.color_mapper=color_mapper
-
-    cmap_switcher.on_change('value', cmap_switcher_callback)
-
-    widgets = bklyts.column(slider, cmap_switcher, sizing_mode='scale_width')
-    return plot, widgets, cds
-
-def cube_scroller_app(cube, title='', scroll_title='', cmap_class=bkmdls.LinearColorMapper):
+def cube_scroller_app(
+        cube : pd.Series,
+        title : str = '',
+        scroll_title : str = '',
+        cmap_class : bkmdls.mappers.ColorMapper = bkmdls.LinearColorMapper, 
+        info_col : pd.Series | None = None,
+):
     """
     Make an app to scroll through a datacube. Returns the app; display using bokeh.io.show
 
     Parameters
     ----------
     cube : pd.Series
-      pandas.Series object whose entries are arrays
+      pandas.Series object whose entries are stamp arrays
+      The scroll bar will show the index as the label
     title : str
       title to put on the plot
     scroll_title : str ['']
       title for the scroll bar
     cmap_class : bokeh.models.ColorMapper class [bkmdls.LinearColorMapper]
       a color mapper for scaling the images
+    info_col : pd.Series | None:
+      a named series of extra information to display. Must have same index as cube
 
     Output
     ------
     bokeh application
 
     """
+    def cube_scroller_plot_slider(cube, title, scroll_title='',
+                                  cmap_class=bkmdls.LinearColorMapper,
+                                  info_col : pd.Series | None = None,
+                                  plot_size=400):
+        """
+        This is called by cube_scroller_app()
+        Generate the plot and scroller objects for a cube_scroller application.
+        Separating it out this way makes it easier to add multiple cube scrollers
+        to the same figure.
+
+        Parameters
+        ----------
+        cube : pd.Series
+          pandas.Series object whose entries are arrays
+        title : str
+          title to put on the plot
+        scroll_title : str ['']
+          title for the scroll bar
+        cmap_class : bokeh.models.ColorMapper class [bkmdls.LinearColorMapper]
+          a color mapper for scaling the images
+        info_col : pd.Series | None
+          extra info to add to plot. Must have same index as `cube`
+        Output
+        ------
+        bokeh figure, slider widget, and the that stores the data
+        """
+        TOOLS='save'
+
+        data = cube[cube.apply(lambda el: ~np.isnan(el).all())].copy()
+        # initialize image
+        img = data[data.index[0]]
+        cds = bkmdls.ColumnDataSource(data={'image':[img],
+                                            'x': [-0.5], 'y': [-0.5],
+                                            'dw': [img.shape[0]], 'dh': [img.shape[1]]
+                                            }
+                                      )
+        low, high = np.nanmin(img), np.nanmax(img)
+        color_mapper = cmap_class(palette='Magma256',
+                                  low=low,
+                                  high=high)
+
+        plot = figure(title=f"{title}",
+                      min_height=plot_size, min_width=plot_size,
+                      # aspect_ratio=1,
+                      tools=TOOLS)
+        g = plot.image(image='image',
+                       x='x', y='y',
+                       dw='dw', dh='dh',
+                       color_mapper=color_mapper,
+                       source=cds)
+        # Hover tool
+        hover_tool = bkmdls.HoverTool()
+        hover_tool.tooltips=[("value", "@image"),
+                             ("(x,y)", "($x{0}, $y{0})")]
+        plot.add_tools(hover_tool)
+        plot.toolbar.active_inspect = None
+
+        # color bar
+        color_bar = bkmdls.ColorBar(color_mapper=color_mapper, label_standoff=12)
+        plot.add_layout(color_bar, 'right')
+
+        # slider
+        # lambda function to generate the extra information string
+        info_str = lambda index: '' if info_col is None else f"{info_col.name} = {info_col.iloc[index]}"
+        slider_title = lambda title, index, info='': f"{title} :: {index} / {info}"
+        slider = bkmdls.Slider(start=0, end=data.index.size-1, value=0, step=1,
+                               title=slider_title(scroll_title, data.index[0], info_str(0)),
+                               show_value = False,
+                               # default_size=plot_size,
+                               orientation='horizontal')
+        def callback(attr, old, new):
+            # update the image
+            img = data[data.index[new]]
+            cds.data['image'] = [img]
+            color_mapper.update(low=np.nanmin(img), high=np.nanmax(img))
+            slider.title = slider_title(scroll_title, data.iloc[new], info_str(new))
+        slider.on_change('value', callback)
+
+        # Switch color map
+        menu = {"Linear": bkmdls.LinearColorMapper, "Log": bkmdls.LogColorMapper}
+        cmap_switcher = bkmdls.Select(title='Switch color map',
+                                      value=sorted(menu.keys())[0],
+                                      width=plot_size,
+                                      options=sorted(menu.keys()))
+        def cmap_switcher_callback(attr, old, new):
+            cmap_class = menu[new]
+            color_mapper = cmap_class(palette='Magma256',
+                                      low=np.nanmin(img),
+                                      high=np.nanmax(img))
+            # update the color mapper on image
+            g.glyph.color_mapper=color_mapper
+        cmap_switcher.on_change('value', cmap_switcher_callback)
+
+        widgets = bklyts.column(slider, cmap_switcher, sizing_mode='scale_width')
+        return plot, widgets, cds
     def app(doc):
-        plot, widgets, cds = cube_scroller_plot_slider(cube, title, scroll_title, cmap_class)
+        plot, widgets, cds = cube_scroller_plot_slider(
+            cube,
+            title, scroll_title,
+            cmap_class,
+            info_col
+        )
 
         doc.add_root(bklyts.column(plot, widgets))
 
