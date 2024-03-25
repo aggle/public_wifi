@@ -140,6 +140,7 @@ def calc_refcube_ssim(targ, references, kw_args={}):
     references = image_utils.flatten_image_axes(references)
     ssim_vals = np.array([ssim(targ, r,
                                use_sample_covariance=True,
+                               data_range = np.ptp(np.stack([targ, references]))
                                **kw_args)
                           for r in references])
     return ssim_vals
@@ -176,20 +177,27 @@ def calc_corr_mat(stamps, corr_func, corr_func_args={}, rescale=False):
     # rescale the stamps to max value = 1
     if rescale == True:
         stamps = stamps.apply(lambda x: x/np.nanmax(x))
-    # calculate an upper triangular matrix of correlations
-    other_stamps = list(stamps.index)
-    for i, stamp_id in enumerate(corr_mat.index[:-1]):
-        targ = stamps[stamp_id]
-        # remove target stamp from the references
-        #other_stamps = list(corr_mat.index)
-        other_stamps.pop(0)
-        corr = corr_func(targ, np.stack(stamps[other_stamps], axis=0),
-                         kw_args=corr_func_args)
-        corr_mat.loc[stamp_id, other_stamps] = corr
+    # # calculate an upper triangular matrix of correlations
+    # other_stamps = list(stamps.index)
+    # for i, stamp_id in enumerate(corr_mat.index[:-1]):
+    #     targ = stamps[stamp_id]
+    #     # remove target stamp from the references
+    #     #other_stamps = list(corr_mat.index)
+    #     other_stamps.pop(0)
+    #     corr = corr_func(targ, np.stack(stamps[other_stamps], axis=0),
+    #                      kw_args=corr_func_args)
+    #     corr_mat.loc[stamp_id, other_stamps] = corr
 
-    # now fill in the empty half of the matrix - beware of NaN's
-    corr_mat = corr_mat.add(corr_mat.T, fill_value=0)
+    # # now fill in the empty half of the matrix - beware of NaN's
+    # corr_mat = corr_mat.add(corr_mat.T, fill_value=0)
 
+    corr_mat = stamps.apply(
+        lambda targ: stamps.apply(
+            lambda ref: corr_func(targ, ref, **corr_func_args)
+        )
+    )
+    corr_mat.columns.name = 'reference_' + corr_mat.columns.name 
+    corr_mat.index.name = 'target_' + corr_mat.index.name
     return corr_mat
 
 
@@ -365,7 +373,7 @@ class SubtrManager:
         # initialize the contained to hold the correlation matrices
         corr_mats = namedtuple('corr_mats', ('mse','pcc','ssim'))
         # set the stamp ID as the index
-        stamps = self.db.stamps_tab.set_index('stamp_id')['stamp_array']
+        stamps = self.db.stamps_tab.set_index('stamp_id')['stamp_array'].squeeze()
         corr_mats.mse = calc_corr_mat(stamps, calc_refcube_mse,
                                       self.corr_func_args_dict['mse'])
         corr_mats.pcc = calc_corr_mat(stamps, calc_refcube_pcc,
