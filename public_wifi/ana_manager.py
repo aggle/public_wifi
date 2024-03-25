@@ -49,26 +49,18 @@ def create_std_map(subtr_results, mode='pixel', normalize=False):
     if mode == 'pixel':
         # compute the SNR map by comparing the target stamp pixel to that same
         # pixel in the residual stamps of all the other stars' residuals
-        def calc_pixelwise_std(row, subtr_results):
-            # apply row-wise
-            star, stamp = row.name
-            # pull out the references used for this stamp
-            targ_refs = refs.loc[(star, stamp)].dropna()
-            # these are the residuals for the reductions of those references
-            ref_residuals = resids.query("stamp_id in @targ_refs")
-            # now for each array of reference residuals, compute the std
-            def _calc_pixelwise_std(col):
-                col = col.dropna()
-                try:
-                    arr = np.stack(col.values)
-                except ValueError:
-                    return np.nan
-                # compute the std and encapsulate it to make pandas happy
-                std = [np.nanstd(arr, axis=0)]
-                return std
-            stds = ref_residuals.apply(_calc_pixelwise_std)
-            return stds.squeeze()
-        std_map = resids.apply(lambda x: calc_pixelwise_std(x, subtr_results), axis=1)
+        def calc_pixelwise_std(row):
+            # given a target row, make an SNR map for each KL mode if the residuals
+            name = row.name
+            ref_stamp_ids = subtr_results.references.loc[name].dropna()
+            refs_resid = subtr_results.residuals.query("stamp_id in @ref_stamp_ids")
+            # refs_resid = resids.loc[resids.index != name].dropna(axis=1, how='all')
+            refs_resid = refs_resid.dropna(axis=1, how='all')
+            refs_resid_std = refs_resid.apply(lambda col: [np.nanstd(np.stack(col.dropna()), axis=0)]).squeeze()
+            # targ_resid_snr = targ_resid / refs_resid_std
+            # targ_resid_snr = targ_resid_snr[targ_resid_snr.apply(lambda el: ~np.isnan(el).all())]
+            return refs_resid_std
+        std_map = resids.apply(lambda row: calc_pixelwise_std(row), axis=1)
     elif mode == 'stamp':
         # calculate the standard deviation stampwise
         std_map = subtr_results.residuals.map(np.nanstd)
