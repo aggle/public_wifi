@@ -21,6 +21,7 @@ from .utils import table_utils
 class DBManager:
 
     def __init__(self, db_path, config_file,
+                 bad_stamp_file : str | Path = None,
                  subtraction_keys=['ps_filt_id']):
         """
         Usage:
@@ -28,6 +29,7 @@ class DBManager:
         db_path is the path to the database files
         config_file is the config file of paths
         subtraction_keys are the column names to use to group point sources for psf subtraction
+        bad_stamp_file : a list of IDs of bad stamps. If you ever update the database, these IDs may change.
 
         Useful attributes
         -----------------
@@ -45,7 +47,13 @@ class DBManager:
         self.stars_tab = self.load_table('stars', verbose=True)
         self.ps_tab = self.load_table('point_sources', verbose=True)
         self.stamps_tab = self.load_table('stamps', verbose=True)
+        # if a bad stamp file exists, apply it
+        if bad_stamp_file is not None and Path(bad_stamp_file).exists():
+            print("Flagging bad reference stamps")
+            bad_stamp_ids = pd.read_csv(bad_stamp_file).squeeze()
+            self.set_reference_quality_flag(bad_stamp_ids, False)
         self.grid_defs_tab = self.load_table('grid_sector_definitions', verbose=True)
+
         #self.comp_status_tab = self.load_table('companion_status', verbose=True)
         # finally, group the subtraction subsets together with the default keys
         self.subtr_groupby_keys = subtraction_keys
@@ -407,8 +415,9 @@ class DBManager:
         """
         if isinstance(stamp_ids, str):
             stamp_ids = [stamp_ids]
+        stamp_ids = list(stamp_ids)
         if not isinstance(self.stamps_tab, pd.DataFrame):
-            print("`None`` value for self.stamps_tab not yet enabled, quitting")
+            print("self.stamps_tab is not a pandas DataFrame; quitting")
             return
         ind = self.stamps_tab.query("stamp_id in @stamp_ids").index
         self.stamps_tab.loc[ind, 'stamp_ref_flag'] = flag
