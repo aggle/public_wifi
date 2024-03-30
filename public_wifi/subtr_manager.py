@@ -306,14 +306,21 @@ class SubtrManager:
         # calculate all three correlation matrices
         self.db = db_manager
         self.instr = instrument
+
         # table for tracking references used
         cols = pd.Index(self.db.stamps_tab['stamp_id'], name='targ_id')
         indx = pd.Index(self.db.stamps_tab['stamp_id'], name='ref_id')
-        self.reference_table = pd.DataFrame(None, columns=cols, index=indx, dtype=bool)
+
+        # initialize and set table of reference flags
+        self.reference_table = pd.DataFrame(True, columns=cols, index=indx, dtype=bool)
+        ref_flags = self.db.stamps_tab.set_index("stamp_id")['stamp_ref_flag']
+        bad_refs = ref_flags[~ref_flags]
+        self.reference_table.loc[bad_refs.index] = False
+
         # correlation function arguments
         self.corr_func_args_dict = {'mse': {},
                                     'pcc': {},
-                                    'ssim': {'win_size': 5.}}
+                                    'ssim': {'win_size': 5}}
         # klip arguments
         self.klip_args_dict = {'return_numbasis': True,
                                'numbasis': None}
@@ -360,6 +367,7 @@ class SubtrManager:
         """
         # initialize the contained to hold the correlation matrices
         corr_mats = namedtuple('corr_mats', ('mse','pcc','ssim'))
+        # corr_mats = namedtuple('corr_mats', ('ssim'))
         # set the stamp ID as the index
         stamps = self.db.stamps_tab.set_index('stamp_id')['stamp_array'].squeeze()
         corr_mats.mse = calc_corr_mat(stamps, calc_refcube_mse,
@@ -370,6 +378,8 @@ class SubtrManager:
                                        self.corr_func_args_dict['ssim'])
         # finally, assign to the object
         self.corr_mats = corr_mats
+        return None
+
 
 
     def remove_nans_from_psf_subtr(self):
@@ -386,7 +396,7 @@ class SubtrManager:
         self.psf_subtr.drop(drop_cols, axis=1, inplace=True)
 
 
-    def get_reference_stamps(self, targ_stamp_id, ids_only=False, dmag_max=1):
+    def get_reference_stamps(self, targ_stamp_id, ids_only=False, dmag_max=None):
         """
         Given a target stamp, find the list of appropriate reference stamps
         using e.g. the star_id and the stamp_ref_flag value
@@ -399,7 +409,7 @@ class SubtrManager:
         ids_only : bool [False]
           if True, return only the stamp labels, not the arrays
         dmag_max : int [1]
-          absolute delta magnitude limit on references
+          limit on delta absolute magnitude for selecting references
 
         Output
         ------
@@ -419,26 +429,29 @@ class SubtrManager:
         # start with the standard stamps table
         query_table = self.db.stamps_tab.copy()
         # merge it with the ps_table
-        query_table = query_table.merge(self.db.find_matching_id(query_table['stamp_id'], 'ps'),
+        query_table = query_table.merge(self.db.find_matching_id(query_table['stamp_id'], 'P'),
                                         on='stamp_id')
         query_table = query_table.merge(self.db.ps_tab, on='ps_id')
-
-        # apply the dmag cut
-        targ_mag = self.db.find_stamp_mag(targ_stamp_id)
-        dmag_bool = query_table['ps_mag'].apply(lambda x: np.abs(x - targ_mag) <= dmag_max)
-        query_table = query_table.loc[dmag_bool]
-        # reject all stamps with a bad reference flag
-        ref_query = "stamp_ref_flag == True"
-
-        # reject all references that correspond to the target's parent star
         # add the stars table
-        query_table = query_table.merge(self.db.find_matching_id(query_table['stamp_id'], 'star'),
+        query_table = query_table.merge(self.db.find_matching_id(query_table['stamp_id'], 'S'),
                                         on='stamp_id')
         query_table = query_table.merge(self.db.stars_tab, on='star_id')
-        targ_star_id = self.db.find_matching_id(targ_stamp_id, 'star')
-        ref_query += " and stamp_star_id != @targ_star_id"
+
+
+        # start assembling the query - stamps whose star_id doesn't match the target star
+        targ_star_id = self.db.find_matching_id(targ_stamp_id, 'S')
+        query_str = f"stamp_star_id != '{targ_star_id}'"
+
+        # apply the dmag cut, if given
+        if dmag_max is not None:
+            targ_mag = self.db.find_stamp_mag(targ_stamp_id)
+            dmag_bool = query_table['ps_mag'].apply(lambda x: np.abs(x - targ_mag) <= dmag_max)
+            query_table = query_table.loc[dmag_bool]
+            # reject all stamps with a bad reference flag
+            query_str = "stamp_ref_flag == True"
+
         # finally, apply the query!
-        ref_stamps = query_table.query(ref_query)
+        ref_stamps = query_table.query(query_str)
         if ids_only == True:
             return ref_stamps['stamp_id']
         return ref_stamps.set_index('stamp_id')['stamp_array']
@@ -654,18 +667,27 @@ class SubtrManager:
 
         return residuals, psf_models
 
-    def get_targets_references_by_star(self, targ_star, dmag=None):
+    def get_targets_references_by_star(
+            self,
+            targ_star : str,
+            dmag : int | None = None,
+            ssim_cutoff : float | None = None,
+    ) -> tuple[pd.Series, pd.DataFrame]:
         """
         Used for when you want to do the subtraction by star, not by target
+        Returns a dataframe with the references for each stamp
+        The reference stamps have been rescaled and shifted
 
         targ_star : str
           star_id of the target
         dmag : [None] | float
           dmag range cut on the references. If none, no magnitude cut applied
+        ssim_cutoff : [None] | float
+          SSIM metric threshold (-1 - 1) below which to reject references
         """
 
         full_table = self.db.join_all_tables()
-        targ_group = full_table.query('star_id == @targ_star')
+        targ_group = full_table.query(f"star_id == '{targ_star}'")
         targ_stamps = targ_group.set_index('stamp_id')['stamp_array']
         # select all the *other* stars
         ref_stars = full_table.query('star_id != @targ_star')
@@ -680,7 +702,24 @@ class SubtrManager:
             ref_stars = ref_stars.query(f"ps_mag <= {mag_ulim} and ps_mag >= {mag_llim}")
 
         ref_stamps = ref_stars.set_index('stamp_id')['stamp_array']
-        return targ_stamps, ref_stamps
+        # rescale the stamps to be appropriate for each target
+        rescaled_refs = pd.DataFrame(
+            data={
+                t: ref_stamps.apply(lambda r: rescale_reference(targ_stamps[t], r))
+                for t in targ_stamps.index
+            }
+        )
+        if ssim_cutoff is not None:
+
+            ssim_scores = targ_stamps.to_frame().apply(
+                lambda trow: rescaled_refs.apply(
+                    lambda rrow: calc_refcube_ssim(trow['stamp_array'], rrow[trow.name]),
+                    axis=1),
+                axis=1
+            ).T
+            # cut references
+            rescaled_refs = rescaled_refs.loc[ssim_scores.index][ssim_scores >= ssim_cutoff].copy()
+        return targ_stamps, rescaled_refs
 
 
     def subtr_nmf_one_star(self, targ_star, kwargs={}, ref_args={}):
@@ -865,8 +904,16 @@ class SubtrManager:
           of the results
 
         """
-        targ_stamps, ref_stamps = self.get_targets_references_by_star(targ_star)
-
+        targ_stamps, ref_stamps = self.get_targets_references_by_star(targ_star, **ref_args)
+        # targ_stamps is a Series with the target stamp_id as the index
+        # ref_stamps is a DataFrame with the target stamp_id as the column and
+        # the reference stamp_id as the index
+        # pull out the indices of the non-NaN references, which have been filtered
+        targ_ref_indices = ref_stamps.map(
+            lambda el: ~np.isnan(np.asarray(el)).all()
+        ).apply(
+            lambda col: col[col].index
+        )
         # build sequenial NMF model
         try:
             assert(len(ref_stamps) > 0)
@@ -880,37 +927,43 @@ class SubtrManager:
         kwargs.update(self.klip_args_dict)
 
         # flatten
-        targ_stamps_flat = targ_stamps.apply(image_utils.flatten_image_axes)
-        ref_stamps_flat = image_utils.flatten_image_axes(np.stack(ref_stamps))
+        targ_stamps_flat = targ_stamps.map(np.ravel)
+        ref_stamps_flat = ref_stamps.map(np.ravel)
 
         # apply KLIP
         kl_max = np.array([len(ref_stamps_flat)-1])
         #numbasis = klip_args.get('numbasis', kl_max)
-        numbasis = np.arange(1, len(ref_stamps_flat)-1)
+        numbasis = targ_ref_indices.apply(lambda el: np.arange(1, len(el)-1))
         shared_utils.debug_print(False, f"{kl_max}, {numbasis}")
         return_basis = True
-        klip_results = targ_stamps_flat.apply(lambda x: klip.klip_math(x,
-                                                                       ref_stamps_flat,
-                                                                       numbasis = numbasis,
-                                                                       return_basis = return_basis))
-        # subtraction results
-        residuals = klip_results.apply(lambda x: pd.Series(dict(zip(numbasis, x[0].T))))
+        # use some dataframe trickery to get the right stamps for the reference
+        klip_results = targ_stamps_flat.to_frame().apply(
+            lambda row: klip.klip_math(row['stamp_array'],
+                                       # trick for dropping NaN entries, which are references that have been cut
+                                       np.stack(ref_stamps_flat.loc[targ_ref_indices[row.name], row.name]),
+                                       numbasis = numbasis[row.name],
+                                       return_basis = return_basis),
+            axis=1,
+        )
+        # # subtraction results
+        residuals = klip_results.to_frame().apply(lambda x: pd.Series(dict(zip(numbasis[x.name], x[0][0].T))), axis=1)
         residuals = residuals.map(image_utils.make_image_from_flat)
-        # generate PSF models and store in dataframe
-        # klip basis
-        klip_basis = klip_results.apply(lambda x: pd.Series(dict(zip(numbasis, x[1]))))
+        # # generate PSF models and store in dataframe
+        # # klip basis
+        klip_basis = klip_results.to_frame().apply(lambda x: pd.Series(dict(zip(numbasis[x.name], x[0][1]))), axis=1)
         model_gen_df = pd.merge(targ_stamps_flat, klip_basis, left_index=True, right_index=True)
-        psf_models = model_gen_df.apply(lambda x: psf_model_from_basis(x['stamp_array'],
-                                                                       np.stack(x[numbasis]),
-                                                                       numbasis=numbasis),
+        psf_models = model_gen_df.apply(lambda row: psf_model_from_basis(row['stamp_array'],
+                                                                         np.stack(row[numbasis[row.name]]),
+                                                                         numbasis=numbasis[row.name]),
                                         axis=1)
-        psf_models = psf_models.apply(lambda x: pd.Series(dict(zip(numbasis, x))))
+        # psf_models = psf_models.to_frame(name='psf_model').apply(lambda x: pd.Series(dict(zip(numbasis[x.name], x))), axis=1)
+        psf_models = pd.concat(
+            {k: pd.Series(dict(zip(numbasis[k], v))) for k, v in psf_models.to_dict().items()},
+            axis=1,
+        ).T
         psf_models = psf_models.map(image_utils.make_image_from_flat)
-
         # references
-        references = pd.DataFrame.from_dict({targ: ref_stamps.index for targ in targ_stamps.index},
-                                            orient='index')
-
+        references = pd.concat({k: pd.Series(v) for k, v in targ_ref_indices.to_dict().items()}, axis=1).T
         results = Results(residuals=residuals,
                           models=psf_models,
                           references=references)
@@ -975,3 +1028,31 @@ def subtr_nmf_sklearn(targ, refs, kwargs={}):
     return residuals, psf_models
 
 
+def rescale_reference(
+        targ : np.ndarray,
+        ref : np.ndarray
+) -> np.ndarray :
+    """
+    Shift and scale the reference so it have the same min and max as the target
+
+    Parameters
+    ----------
+    targ : the target image; unchanged
+    ref : the reference image, the one that gets scaled and shifted
+
+    Output
+    ------
+    matched_ref : np.ndarray that has been scaled and shifted
+
+    """
+    # shift and scale the ref images to match the pedestal and max of the target
+    targ = np.nan_to_num(targ, nan=np.nanmean(targ))
+    ref = np.nan_to_num(ref, nan=np.nanmean(ref))
+    # peak=to-peak
+    ptp = {'targ': np.ptp(targ), 'ref': np.ptp(ref)}
+    # pedestal
+    ped = {'targ': np.min(targ), 'ref': np.min(ref)}
+    scale = ptp['targ'] / ptp['ref']
+    shift = ped['targ'] - scale*ped['ref']
+    matched_ref = (scale * ref) + shift
+    return matched_ref
