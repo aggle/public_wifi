@@ -731,7 +731,7 @@ def generate_inspector_ana(config_file,
         reference_ids = ana_mgr.results_stamps['references'].loc[star_id].dropna(how='all', axis=1)
         reference_ids = reference_ids.drop_duplicates().values.ravel()
         reference_stamps = ana_mgr.db.stamps_tab.set_index('stamp_id').loc[reference_ids, 'stamp_array']
-        refs_plot, refs_slider, refs_cds = cube_scroller_plot_slider(reference_stamps,
+        refs_plot, refs_slider, refs_cds = cube_scroller_plot_slider(reference_stamps.sort_index(),
                                                                      'Reference stamps',
                                                                      cmap_class=bkmdls.LinearColorMapper,
                                                                      plot_size=5*plot_size_unit)
