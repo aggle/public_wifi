@@ -52,7 +52,7 @@ Results = namedtuple('Results', ('residuals', 'models', 'references'))
 # these metrics are described in Ruane et al., 2019
 
 # Mean squared error (MSE)
-def calc_refcube_mse(targ, references, kw_args={}):
+def calc_refcube_mse(targ, reference, **kw_args):
     """
     Calculate the pixel-wise mean squared error (MSE) for each reference
     compared to the target. Returns -log10(MSE) so that the largest values
@@ -68,15 +68,18 @@ def calc_refcube_mse(targ, references, kw_args={}):
       mse: Nref array of MSE values
     """
     npix = targ.size
-    targ = targ.ravel() # 1-d
     #references = references.reshape(references.shape[0],
     #                                reduce(lambda x,y: x*y, references.shape[1:]))
-    references = image_utils.flatten_image_axes(references)
-
-    mse = np.squeeze(np.nansum((targ - references)**2, axis=-1) / npix)
-    #mse = (np.linalg.norm(targ-references, axis=-1)) / npix
-    mse = -np.log10(mse)
-
+    # if targ and reference are the same image
+    if (targ == reference).all() == True:
+        mse = np.nan
+    else:
+        mse = np.squeeze(np.nansum((targ - reference)**2, axis=-1) / npix)
+        mse = np.linalg.norm(mse)
+        if mse > 0:
+            mse = -np.log10(mse)
+        else:
+            mse = np.nan
     return mse
 
 # sometimes this can be helpful for plotting
@@ -88,8 +91,9 @@ def rescale_mse(mse_scores):
     mse_scores = mse_scores / mse_scores.max()
     return mse_scores
 
+
 # Pearson correlation coefficient (PCC)
-def calc_refcube_pcc(targ, references, kw_args={}):
+def calc_refcube_pcc(targ, reference, kw_args={}):
     """
     Compute the Pearson correlation coefficient (PCC) between the target and the refs
     PCC(a, b) = cov(a, b)/(std(a) std(b))
@@ -103,17 +107,16 @@ def calc_refcube_pcc(targ, references, kw_args={}):
       pcc: Nref array of PCC values
     """
     npix = targ.size
-    targ = targ.ravel() # 1-d
     #references = references.reshape(references.shape[0],
     #                                reduce(lambda x,y: x*y, references.shape[1:]))
-    references = image_utils.flatten_image_axes(references).copy()
 
     # stats.pearsonr can't handle nan's, which are present in edge stamps
-    pcc = np.array([stats.pearsonr(targ, r)[0] for r in references])
+    pcc = stats.pearsonr(targ.flat, reference.flat)[0]
     return pcc
 
+
 # Structural similarity index metric (SSIM), with helper functions
-def calc_refcube_ssim(targ, references, kw_args={}):
+def calc_refcube_ssim(targ, reference, kw_args={}):
     """
     Use the scikit-image library function to calculate the SSIM
 
@@ -121,8 +124,8 @@ def calc_refcube_ssim(targ, references, kw_args={}):
     ----------
     targ : np.array
       2-D target image
-    references : np.array
-      3-D [Nref, Nx, Ny] reference image stack
+    reference : np.array
+      2-D [Nx, Ny] reference image
     win_size : int
       window size for calculating SSM (must be odd)
     kw_args : {}
@@ -135,18 +138,16 @@ def calc_refcube_ssim(targ, references, kw_args={}):
       Nref array of SSIM values between the target and the indicated reference image
 
     """
-    kw_args.setdefault('win_size', 5.)
-    targ = targ.ravel()
-    references = image_utils.flatten_image_axes(references)
-    ssim_vals = np.array([ssim(targ, r,
-                               use_sample_covariance=True,
-                               data_range = np.ptp(np.stack([targ, references]))
-                               **kw_args)
-                          for r in references])
-    return ssim_vals
+    kw_args.setdefault('win_size', 5)
+    kw_args.setdefault('data_range', np.ptp(np.stack([targ, reference])))
+    kw_args.setdefault("gaussian_weights", True)
+    kw_args.setdefault("use_sample_covariance", False)
+    ssim_val = ssim(targ, reference,
+                     **kw_args)
+    return ssim_val
 
 # this function applies the correlation functions to a stamp dataframe
-def calc_corr_mat(stamps, corr_func, corr_func_args={}, rescale=False):
+def calc_corr_mat(stamps, corr_func, corr_func_args={}, rescale=True):
     """
     Calculate a correlation matrix between the stamps.
 
@@ -170,32 +171,19 @@ def calc_corr_mat(stamps, corr_func, corr_func_args={}, rescale=False):
     """
     if not isinstance(stamps, pd.Series):
         stamps = pd.Series(stamps)
-    # initialize the correlation matrix and use it for looping
-    corr_mat = pd.DataFrame(np.nan,
-                            index=stamps.index, columns=stamps.index,
-                            dtype=float)
+    # # initialize the correlation matrix and use it for looping
+    # corr_mat = pd.DataFrame(np.nan,
+    #                         index=stamps.index, columns=stamps.index,
+    #                         dtype=float)
     # rescale the stamps to max value = 1
     if rescale == True:
         stamps = stamps.apply(lambda x: x/np.nanmax(x))
-    # # calculate an upper triangular matrix of correlations
-    # other_stamps = list(stamps.index)
-    # for i, stamp_id in enumerate(corr_mat.index[:-1]):
-    #     targ = stamps[stamp_id]
-    #     # remove target stamp from the references
-    #     #other_stamps = list(corr_mat.index)
-    #     other_stamps.pop(0)
-    #     corr = corr_func(targ, np.stack(stamps[other_stamps], axis=0),
-    #                      kw_args=corr_func_args)
-    #     corr_mat.loc[stamp_id, other_stamps] = corr
-
-    # # now fill in the empty half of the matrix - beware of NaN's
-    # corr_mat = corr_mat.add(corr_mat.T, fill_value=0)
 
     corr_mat = stamps.apply(
         lambda targ: stamps.apply(
-            lambda ref: corr_func(targ, ref, **corr_func_args)
+            lambda ref: corr_func(targ, ref, kw_args=corr_func_args)
         )
-    )
+    ).copy()
     corr_mat.columns.name = 'reference_' + corr_mat.columns.name 
     corr_mat.index.name = 'target_' + corr_mat.index.name
     return corr_mat
