@@ -153,7 +153,11 @@ def subtr2cutout(subtr_results, wcs_series):
     return subtr_cutouts
 
 
-def get_mosaic(cutouts, resolution=None, verbose=False):
+def get_mosaic(
+        cutouts : pd.Series,
+        resolution : units.Quantity | None = None,
+        verbose : bool =False
+) -> pd.Series:
     """
     Create a mosaic from a series of nddata images.
     Run using pd.Series.apply to a series of NDData objects.
@@ -165,12 +169,16 @@ def get_mosaic(cutouts, resolution=None, verbose=False):
     resolution : [None] astropy.units.Quantity (arcsec)
       the desired pixel scale for the final mosaic
     verbose : [False] if True, notifiy when finished (useful when running on groupby)
+
     Output
     ------
     mosaic : pd.Series with the footprint and mosaic
 
     """
     "input: a column of each residual stamp at the same Component"
+    # first, drop NaN elements of the NDData-type cutouts
+    drop = cutouts.apply(lambda el: np.isnan(el.data).all())
+    col = cutouts[~drop]
     data = list(cutouts.apply(lambda x: (x.data, x.wcs)))
     wcs_opt, shape_opt = mosaicking.find_optimal_celestial_wcs(data,
                                                                auto_rotate=False,
@@ -285,16 +293,24 @@ class AnaManager:
 
     def make_star_result_mosaics(self, star_id, key='residuals', res_factor=1):
         """
-        Make a mosaic out of the star.
+        Make a mosaic out of the star residuals.
+
         Parameters
         ----------
         star_id : the star you want a mosaic of
         key : valid key to self.results_cutouts
         res_factor : factor by which to multiply the pixel scale
+
+        Output
+        ------
+        A single mosaicked image from the combined images of the star
+
         """
         if self.instr is not None:
-            resolution = np.mean(instr.pix_scale) * units.pixel * res_factor
+            resolution = np.mean(self.instr.pix_scale) * units.pixel * res_factor
         else:
             resolution = None
         star_resids = self.results_cutouts[key].query("star_id == @star_id")
-        mosaic = star_resids.apply(lambda col: get_mosaic(col, resolution))
+        # return star_resids, resolution
+        mosaic = star_resids.apply(lambda row: get_mosaic(row, resolution), axis=1)
+        return mosaic
