@@ -263,6 +263,55 @@ def parse_dq_array(dq_array):
     return dq_flag_dict
 
 
+
+def organize_files_by_header(files, ext=0, add_filepath=True):
+    """
+    Take a bunch of FITS files and combine their headers into a dataframe for sorting
+
+    Parameters
+    ----------
+    files: list of strings or pathlib.Paths
+      list of paths to fits files from jwst
+    ext : int [0]
+      number of the extension (0=PRI, 1=SCI, 2=ERR, etc)
+    add_filepath: bool [True]
+      if True, add a column called 'filepath' with the full path to the file
+
+    Output
+    ------
+    hdr_df : pd.DataFrame
+      dataframe of all the file headers
+
+    """
+    # make a list of headers and format them
+    hdrs = []
+    for f in files:
+        hdr = fits.getheader(str(f), ext)
+        hdr = pd.Series(hdr)
+        # add the root folder
+        hdr['path'] = str(Path(f).parent)
+        hdr['filestem'] = '_'.join(Path(f).stem.split('_')[:-1])
+        if add_filepath == True:
+            hdr['filepath'] = str(Path(f).absolute())
+        # drop duplicated index entries, usually this is "''"" and "COMMENT"
+        drop_index = hdr.index[hdr.index.duplicated()]
+        # hdr = hdr[~hdr.index.duplicated()]
+        hdr.drop(index=drop_index, inplace=True)
+        # also drop all instances of "''" and 'COMMENT'
+        for label in ['','COMMENT']:
+            try:
+                hdr.drop(labels=label)
+            except KeyError:
+                # probably this means there are no entries with this index label
+                pass
+        hdrs.append(hdr)
+    hdr_df = pd.concat(hdrs, axis=1).T
+    # make a column to preserve the unique file ID in the database
+    hdr_df.reset_index(inplace=True)
+    hdr_df.rename(columns={'index': 'db_id'}, inplace=True)
+
+    return hdr_df
+
 if __name__ == "__main__":
     """
     Run as a stand-alone script to regenerate the header dataframes
