@@ -362,20 +362,20 @@ class SubtrManager:
     ###########
     def calc_psf_corr(self):
         """
-        Compute the correlation matrices. Sets self.corr_mats, a namedtuple
+        Compute the correlation matrices. Sets self.corr_mats, a dict
         with all the matrices as attributes
         """
         # initialize the contained to hold the correlation matrices
-        corr_mats = namedtuple('corr_mats', ('mse','pcc','ssim'))
-        # corr_mats = namedtuple('corr_mats', ('ssim'))
-        # set the stamp ID as the index
+        # corr_mats = namedtuple('corr_mats', ('mse','pcc','ssim'))
+        corr_mats = {}
+        # set the stamp ID as the index to the stamp table
         stamps = self.db.stamps_tab.set_index('stamp_id')['stamp_array'].squeeze()
-        corr_mats.mse = calc_corr_mat(stamps, calc_refcube_mse,
-                                      self.corr_func_args_dict['mse'])
-        corr_mats.pcc = calc_corr_mat(stamps, calc_refcube_pcc,
-                                      self.corr_func_args_dict['pcc'])
-        corr_mats.ssim = calc_corr_mat(stamps, calc_refcube_ssim,
-                                       self.corr_func_args_dict['ssim'])
+        corr_mats['mse'] = calc_corr_mat(stamps, calc_refcube_mse,
+                                         self.corr_func_args_dict['mse'])
+        corr_mats['pcc'] = calc_corr_mat(stamps, calc_refcube_pcc,
+                                         self.corr_func_args_dict['pcc'])
+        corr_mats['ssim'] = calc_corr_mat(stamps, calc_refcube_ssim,
+                                          self.corr_func_args_dict['ssim'])
         # finally, assign to the object
         self.corr_mats = corr_mats
         return None
