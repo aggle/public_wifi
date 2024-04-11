@@ -283,7 +283,7 @@ def cube_scroller_plot_slider(cube, title, scroll_title='',
     if not isinstance(cube, pd.Series):
         cube = pd.Series({i: j for i, j in enumerate(cube)})
 
-    data = cube[cube.apply(lambda el: ~np.isnan(el).all())].copy()
+    data = cube[cube.map(lambda el: ~np.isnan(el).all())].copy()
     # initialize image
     img = data[data.index[0]]
     cds = bkmdls.ColumnDataSource(data={'image':[img],
@@ -510,190 +510,13 @@ def df_scroller_app(df, title, scroll_title='', cmap_class=bkmdls.LinearColorMap
     return app
 
 
-def generate_inspector(config_file,
-                       star_id,
-                       dbm, alt_dbm, # for the sky and detector scene plots
-                       subtr_results_dict=None, # subtraction results object
-                       snr_maps=None, # SNR maps
-                       plot_size_unit=100):
-    """
-    Create a Bokeh server app using the provided information.
-
-    Parameters
-    ----------
-    config_file : path to the config file used in this analysis
-    star_id : the target star
-    dbm : db_manager object for the sector
-    alt_dbm: [None] alternate db_manager, for plotting sources not selected
-    snr_stamps : pd.Series of SNR stamps
-    residual_stamps : pd.Series of PSF subtraction residuals
-    model_stamps : pd.Series of PSF models
-    reference_stamps : pd.Series of the reference stamps used to construct the PSF
-    subtr_results_dict : [None] dict with keys 'references', 'residuals', 'models', and 'snr'
-    plot_size : [100] size of the plot increments
-    Output
-    ------
-    bokeh app for use with show(app)
-
-    """
-    # do some cleanup for better filtering
-    for k in ['snr', 'residuals', 'models']:
-        # if an array is all nan, just set the entry to a single NaN value
-        bool_df = subtr_results_dict[k].map(lambda x: np.isnan(x).all())
-        subtr_results_dict[k].values[bool_df] = np.nan
-
-    def app(doc):
-        # sky scene, detector scene, and the target star's stamps
-        plot_size = 5*plot_size_unit
-        p_sky = show_sky_scene(config_file, star_id, dbm=dbm, alt_dbm=alt_dbm,
-                               plot_size=plot_size)
-        p_det = show_detector_scene(star_id, dbm=dbm, alt_dbm=alt_dbm,
-                                    plot_size=plot_size)
-        p_trg = show_target_stamps(star_id, dbm=dbm,
-                                   plot_size=plot_size)
-
-        # reference stamps used to assemble the model PSF
-        reference_ids = subtr_results_dict['references'].loc[star_id].dropna(how='all', axis=1)
-        reference_ids = reference_ids.drop_duplicates().values.ravel()
-        reference_stamps = dbm.stamps_tab.set_index('stamp_id').loc[reference_ids, 'stamp_array']
-        refs_plot, refs_slider, refs_cds = cube_scroller_plot_slider(reference_stamps,
-                                                                     'Reference stamps',
-                                                                     cmap_class=bkmdls.LinearColorMapper,
-                                                                     plot_size=5*plot_size_unit)
-        refs_col = bklyts.column(refs_plot, refs_slider)
-
-        # load the widgets that depend on the stamp selection
-        target_stamp_ids = list(dbm.find_matching_id(star_id, 'T'))
-        target_stamp_id = column = target_stamp_ids[0]
-        
-        # initialize stamp dataframes, putting the stamp IDs in the columns
-        scroller_keys =  ['snr', 'residuals', 'models']
-        stamp_dict = {k: subtr_results_dict[k].loc[star_id].dropna(how='all', axis=1).T
-                      for k in scroller_keys}
-
-        # initialize the images
-        img_dict = {k: df.loc[df.index[0], column]
-                    for k, df in stamp_dict.items()}
-
-        # put them into ColumnDataSources
-        cds_dict = {k: bkmdls.ColumnDataSource(data={'image':[img],
-                                                     'x': [-0.5], 'y': [-0.5],
-                                                     'dw': [img.shape[0]], 'dh': [img.shape[1]]})
-                    for k, img in img_dict.items()}
-        # initialize the color mappers
-        color_mapper_dict = {
-            'snr':  bkmdls.LinearColorMapper(palette='Magma256',
-                                             low=-1,#np.nanmin(img_dict['snr']),
-                                             high=6),#np.nanmax(img_dict['snr'])),
-            'residuals':  bkmdls.LinearColorMapper(palette='Magma256',
-                                                   low=np.nanmin(img_dict['residuals']),
-                                                   high=np.nanmax(img_dict['residuals'])),
-            'models':  bkmdls.LinearColorMapper(palette='Magma256',
-                                                low=np.nanmin(img_dict['models']),
-                                                high=np.nanmax(img_dict['models'])),
-        }
-
-        title_string = lambda title, column: f"{title} :: {column}"
-        # initialize the actual plots
-        TOOLS=''
-        plot_dict = {k: figure(title=title_string(k.upper(), column),
-                               min_height=plot_size, min_width=plot_size,
-                               tools=TOOLS)
-                     for k in stamp_dict.keys()}
-        for k, plot in plot_dict.items():
-            plot.image(image='image',
-                       x='x', y='y', dw='dw', dh='dh',
-                       color_mapper=color_mapper_dict[k],
-                       source=cds_dict[k])
-            # Hover tool
-            hover_tool = bkmdls.HoverTool()
-            hover_tool.tooltips=[("value", "@image"),
-                                 ("(x,y)", "($x{0}, $y{0})")]
-            plot.add_tools(hover_tool)
-            plot.toolbar.active_inspect = None
-            # color bar
-            color_bar = bkmdls.ColorBar(color_mapper=color_mapper_dict[k],
-                                        label_standoff=12)
-            plot.add_layout(color_bar, 'right')
-
-        # make the sliders
-        slider_title = lambda title, index: f"{title} :{index}"
-        slider_dict = {k: bkmdls.Slider(start=0, end=stamps.index.size-1, value=0, step=1,
-                                        title=slider_title('N_components', stamps.index[0]),
-                                        show_value=False,
-                                        orientation='horizontal')
-                       for k, stamps in stamp_dict.items()}
-        def make_slider_callback(key): # generator for slider callback functions
-            def slider_callback(attr, old, new):
-                stamps = stamp_dict[key]
-                img = stamps.loc[stamps.index[new], column]
-                cds_dict[key].data = {'image':[img],
-                                      'x': [-0.5], 'y': [-0.5],
-                                      'dw': [img.shape[0]], 'dh': [img.shape[1]]}
-                color_mapper_dict[key].update(low=np.nanmin(img), high=np.nanmax(img))
-                slider_dict[key].title = slider_title("N_components", stamps.index[new])
-            return slider_callback
-        slider_callback_dict = {k: make_slider_callback(k) for k in stamp_dict.keys()}
-        for k, slider in slider_dict.items():
-            slider.on_change('value', slider_callback_dict[k])
-
-        # combine them for the layout
-        scroller_columns = {k: bklyts.column(plot_dict[k], slider_dict[k])
-                            for k in scroller_keys}
-
-
-        # make the target stamp selector
-        def select_callback(attr, old, new):
-            column = new
-            for k in scroller_keys:
-                stamp_col = stamp_dict[k]
-                index = stamp_dict[k].index[slider_dict[k].value]
-                img_dict[k] = stamp_dict[k].loc[index, column]
-                img = img_dict[k]
-                cds_dict[k].data = {'image':[img],
-                                    'x': [-0.5], 'y': [-0.5],
-                                    'dw': [img.shape[0]], 'dh': [img.shape[1]]}
-                color_mapper_dict[k].update(low=np.nanmin(img), high=np.nanmax(img))
-                plot_dict[k].title.text = title_string(k.upper(), column)
-        stamp_selector = bkmdls.Select(title='Target stamp',
-                                       value=column,
-                                       options=[str(i) for i in target_stamp_ids])
-        stamp_selector.on_change('value', select_callback)
-
-        # layout
-        lyt = bklyts.column(
-            bklyts.row(p_sky, p_det, p_trg, refs_col),
-            bklyts.row(stamp_selector,
-                       scroller_columns['snr'], scroller_columns['residuals'], scroller_columns['models'])
-        )
-
-        doc.add_root(lyt)
-
-        doc.theme = Theme(json=yaml.load("""
-            attrs:
-                figure:
-                    background_fill_color: white
-                    outline_line_color: white
-                    toolbar_location: above
-                    height: 500
-                    width: 800
-                Grid:
-                    grid_line_dash: [6, 4]
-                    grid_line_color: white
-        """, Loader=yaml.FullLoader))
-        #doc.theme = "night_sky"
-
-
-    return app
-
-
-
-
-def generate_inspector_ana(config_file,
-                           ana_mgr,
-                           star_id, 
-                           alt_dbs={},
-                           plot_size_unit=100):
+def generate_inspector(
+        config_file : str,
+        ana_mgr,
+        star_id : str, 
+        alt_dbs : dict = {},
+        plot_size_unit : int = 100
+):
     """
     Create a Bokeh server app using the provided information.
 
@@ -714,16 +537,20 @@ def generate_inspector_ana(config_file,
     # do some cleanup for better filtering
     for k in ['snr', 'residuals', 'models']:
         # if an array is all nan, just set the entry to a single NaN value
+        # that way you can drop it when assigning it to the cube scroller
         bool_df = ana_mgr.results_stamps[k].map(lambda x: np.isnan(x).all())
         ana_mgr.results_stamps[k].values[bool_df] = np.nan
 
     def app(doc):
         # sky scene, detector scene, and the target star's stamps
         plot_size = 5*plot_size_unit
+        # plot to show the mosaic on-sky of all the sources
         p_sky = show_sky_scene(config_file, star_id, dbm=ana_mgr.db, alt_dbm=alt_dbs,
                                plot_size=plot_size)
+        # plot to show where each star lands on the detector
         p_det = show_detector_scene(star_id, dbm=ana_mgr.db, alt_dbm=alt_dbs,
                                     plot_size=plot_size)
+        # plot to show the different target stamps
         p_trg = show_target_stamps(star_id, dbm=ana_mgr.db,
                                    plot_size=plot_size)
 
@@ -731,10 +558,12 @@ def generate_inspector_ana(config_file,
         reference_ids = ana_mgr.results_stamps['references'].loc[star_id].dropna(how='all', axis=1)
         reference_ids = reference_ids.drop_duplicates().values.ravel()
         reference_stamps = ana_mgr.db.stamps_tab.set_index('stamp_id').loc[reference_ids, 'stamp_array']
-        refs_plot, refs_slider, refs_cds = cube_scroller_plot_slider(reference_stamps.sort_index(),
-                                                                     'Reference stamps',
-                                                                     cmap_class=bkmdls.LinearColorMapper,
-                                                                     plot_size=5*plot_size_unit)
+        refs_plot, refs_slider, refs_cds = cube_scroller_plot_slider(
+            reference_stamps.dropna().sort_index(),
+            'Reference stamps',
+            cmap_class=bkmdls.LinearColorMapper,
+            plot_size=5*plot_size_unit
+        )
         refs_col = bklyts.column(refs_plot, refs_slider)
 
         # load the widgets that depend on the stamp selection
@@ -745,6 +574,7 @@ def generate_inspector_ana(config_file,
         scroller_keys =  ['snr', 'residuals', 'models']
         stamp_dict = {k: ana_mgr.results_stamps[k].loc[star_id].dropna(how='all', axis=1).T
                       for k in scroller_keys}
+
         # shift the model PSFs so the min value is 0, so you can represent them in log scale
         stamp_dict['models'] = stamp_dict['models'] - stamp_dict['models'].apply(lambda col: col.apply(np.nanmin)).min()
 
@@ -868,3 +698,5 @@ def generate_inspector_ana(config_file,
     return app
 
 
+# for backwards compatibility
+generate_inspector_ana = generate_inspector
