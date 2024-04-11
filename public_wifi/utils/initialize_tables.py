@@ -7,6 +7,7 @@ import numpy as np
 
 from astropy.io import fits
 from astropy import nddata
+from astropy import wcs
 
 from . import table_utils
 from . import table_io
@@ -138,31 +139,43 @@ def generate_stamp_table(
             print(f"{fits_file.as_posix()} not found")
             return None
         img = fits.getdata(fits_file, 'sci')
+        w = wcs.WCS(fits.getheader(fits_file, 1))
         # operate on dataframe rows
-        row_func = lambda row: nddata.Cutout2D(img,
-                                               tuple(row[['ps_x_exp','ps_y_exp']].values),
-                                               size=stamp_size,
-                                               mode='partial',
-                                               fill_value=np.nan).data
-        stamps = exp_group.apply(row_func, axis=1)
+        # returns an array of the stamp
+        row_get_stamp = lambda row: nddata.Cutout2D(
+            img,
+            tuple(row[['ps_x_exp','ps_y_exp']].values),
+            size=stamp_size,
+            mode='partial',
+            wcs=w,
+            fill_value=np.nan
+        )
+        stamps = exp_group.apply(row_get_stamp, axis=1)
         if verbose == True:
             print(f"\t{exp_id} end")
         return stamps
     stamps = gb_exp.apply(group_get_stamps, verbose=verbose, include_groups=False)
-    stamps = stamps.reset_index(name='stamp_array')
+    stamps = stamps.reset_index(name='stamp_nddata')
+    stamps['stamp_array'] = stamps['stamp_nddata'].apply(lambda el: el.data.copy())
+    stamps['stamp_wcs'] = stamps['stamp_nddata'].apply(lambda el: el.wcs.copy())
+    stamps.drop(columns='stamp_nddata', inplace=True)
     # one stamp for each point source
     stamps['stamp_id'] = stamps['ps_id'].apply(lambda x: x.replace("P","T"))
 
     print("Stamps finished!")
-    # stamp info table
-    columns = {'stamp_id': str,
-               'stamp_ps_id': str,
-               'stamp_exp_id': str,
-               'stamp_star_id': str,
-               'stamp_x_cent': int,
-               'stamp_y_cent': int,
-               'stamp_ref_flag': bool,
-               'stamp_array': object}
+    # Now, create the final stamps table for the database. Explicitly set each
+    # column from the stamps dataframe you just made.
+    columns = {
+        'stamp_id': str,
+        'stamp_ps_id': str,
+        'stamp_exp_id': str,
+        'stamp_star_id': str,
+        'stamp_x_cent': int,
+        'stamp_y_cent': int,
+        'stamp_ref_flag': bool,
+        'stamp_array': object,
+        'stamp_wcs': object
+    }
     stamp_table = pd.DataFrame(data=None,
                                columns=list(columns.keys()),
                                index=stamps.index)
@@ -182,6 +195,8 @@ def generate_stamp_table(
     stamp_table['stamp_y_cent'] = stamp_y_cent.apply(lambda x: int(np.floor(x))).values[:]
     # store the arrays
     stamp_table['stamp_array'] = stamps['stamp_array'].copy()
+    # store the WCS information for the stamp
+    stamp_table['stamp_wcs'] = stamps['stamp_wcs'].apply(lambda w: w.to_header_string())
     # assert data types and return
     stamp_table = stamp_table.astype(columns)
     return stamp_table
