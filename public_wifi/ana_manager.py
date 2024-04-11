@@ -232,15 +232,24 @@ class AnaManager:
     ----------
     sub_mgr : public_wifi.SubtrManager instance
     instrument : [None] public_wifi.instruments.Instrument class
+    stamp_size : int [0]
+      the size of stamps to cut out of the original images. Not sure why i'm doing this tbh
     compute_snr : [True] if True, compute pixel-wise SNR. If False, don't. Takes time.
     """
 
-    def __init__(self, sub_mgr, instrument=None, compute_snr=True):
+    def __init__(
+            self,
+            sub_mgr,
+            instrument = None,
+            stamp_size : int = 0,
+            compute_snr : bool = True,
+    ) -> None:
         # start with a subtraction manager object
         self.sm = sub_mgr
         self.db = sub_mgr.db
         # the instrument matters for stuff like pixel scale
-        self.instr = instrument
+        # self.instr = instrument
+        self.stamp_size = stamp_size
         # port over the results
         self.results_stamps = {
             "references": sub_mgr.subtr_results.references,
@@ -269,8 +278,11 @@ class AnaManager:
 
 
     def stamps2cutout(self):
-        """get WCS for the original stamps"""
-        cutouts = get_base_cutouts(self.db, self.instr.stamp_size)
+        """
+        Take the initial set of stamps and turn them into NDData.cutout objects
+        that carry WCS information.
+        """
+        cutouts = get_base_cutouts(self.db, self.stamp_size)
         return cutouts
 
     def subtr2cutout(self):
@@ -291,26 +303,33 @@ class AnaManager:
         else:
             return results_dict
 
-    def make_star_result_mosaics(self, star_id, key='residuals', res_factor=1):
-        """
-        Make a mosaic out of the star residuals.
+    # this function needs to be a dummy for nopw
+    def make_star_result_mosaics(
+            self,
+            # star_id,
+            # key='residuals',
+            # res_factor=1
+    ) -> None:
+        return None
+    #     """
+    #     Make a mosaic out of the star residuals.
 
-        Parameters
-        ----------
-        star_id : the star you want a mosaic of
-        key : valid key to self.results_cutouts
-        res_factor : factor by which to multiply the pixel scale
+    #     Parameters
+    #     ----------
+    #     star_id : the star you want a mosaic of
+    #     key : valid key to self.results_cutouts
+    #     res_factor : factor by which to multiply the pixel scale
 
-        Output
-        ------
-        A single mosaicked image from the combined images of the star
+    #     Output
+    #     ------
+    #     A single mosaicked image from the combined images of the star
 
-        """
-        if self.instr is not None:
-            resolution = np.mean(self.instr.pix_scale) * units.pixel * res_factor
-        else:
-            resolution = None
-        star_resids = self.results_cutouts[key].query("star_id == @star_id")
-        # return star_resids, resolution
-        mosaic = star_resids.apply(lambda row: get_mosaic(row, resolution), axis=1)
-        return mosaic
+    #     """
+    #     if self.instr is not None:
+    #         resolution = np.mean(self.instr.pix_scale) * units.pixel * res_factor
+    #     else:
+    #         resolution = None
+    #     star_resids = self.results_cutouts[key].query("star_id == @star_id")
+    #     # return star_resids, resolution
+    #     mosaic = star_resids.apply(lambda row: get_mosaic(row, resolution), axis=1)
+    #     return mosaic
