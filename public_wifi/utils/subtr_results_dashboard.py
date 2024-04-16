@@ -700,3 +700,7 @@ def generate_inspector(
 
 # for backwards compatibility
 generate_inspector_ana = generate_inspector
+
+##### FFP Dashboard - no mosaic! ####
+
+
