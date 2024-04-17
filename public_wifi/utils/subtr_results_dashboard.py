@@ -28,6 +28,33 @@ from .. import db_manager
 from .. import subtr_manager
 
 
+def standalone_app(func):
+    """
+    Take a method that returns a bokeh layout and return it as an app that can be displayed with bkplt.show()
+    """
+    @functools.wraps(func)
+    def appwrap(*args, **kwargs):
+        # wrap the layout-producing func in a bokeh app
+        def app(doc):
+            layout = func(*args, **kwargs)
+
+            doc.add_root(layout)
+
+            doc.theme = Theme(json=yaml.load("""
+                attrs:
+                    figure:
+                        background_fill_color: white
+                        outline_line_color: white
+                        toolbar_location: above
+                        height: 500
+                        width: 800
+                    Grid:
+                        grid_line_dash: [6, 4]
+                        grid_line_color: white
+            """, Loader=yaml.FullLoader))
+        return app
+    return appwrap
+
 
 def load_composite_img_from_config(
         config_file : str ,
@@ -349,165 +376,64 @@ def cube_scroller_plot_slider(cube, title, scroll_title='',
     cmap_switcher.on_change('value', cmap_switcher_callback)
 
     widgets = bklyts.column(slider, cmap_switcher, sizing_mode='scale_width')
-    return plot, widgets, cds
+    return bklyts.column(plot, widgets)
 
-def cube_scroller_app(
-        cube : pd.Series,
-        title : str = '',
-        scroll_title : str = '',
-        cmap_class : bkmdls.mappers.ColorMapper = bkmdls.LinearColorMapper, 
-        info_col : pd.Series | None = None,
-):
-    """
-    Make an app to scroll through a datacube. Returns the app; display using bokeh.io.show
+# standalone version
+cube_scroller_app = standalone_app(cube_scroller_plot_slider)
 
-    Parameters
-    ----------
-    cube : pd.Series
-      pandas.Series object whose entries are stamp arrays
-      The scroll bar will show the index as the label
-    title : str
-      title to put on the plot
-    scroll_title : str ['']
-      title for the scroll bar
-    cmap_class : bokeh.models.ColorMapper class [bkmdls.LinearColorMapper]
-      a color mapper for scaling the images
-    info_col : pd.Series | None:
-      a named series of extra information to display. Must have same index as cube
+# def cube_scroller_app(
+#         cube : pd.Series,
+#         title : str = '',
+#         scroll_title : str = '',
+#         cmap_class : bkmdls.mappers.ColorMapper = bkmdls.LinearColorMapper, 
+#         info_col : pd.Series | None = None,
+# ):
+#     """
+#     Make an app to scroll through a datacube. Returns the app; display using bokeh.io.show
 
-    Output
-    ------
-    bokeh application
+#     Parameters
+#     ----------
+#     cube : pd.Series
+#       pandas.Series object whose entries are stamp arrays
+#       The scroll bar will show the index as the label
+#     title : str
+#       title to put on the plot
+#     scroll_title : str ['']
+#       title for the scroll bar
+#     cmap_class : bokeh.models.ColorMapper class [bkmdls.LinearColorMapper]
+#       a color mapper for scaling the images
+#     info_col : pd.Series | None:
+#       a named series of extra information to display. Must have same index as cube
 
-    """
-    def app(doc):
-        plot, widgets, cds = cube_scroller_plot_slider(
-            cube,
-            title, scroll_title,
-            cmap_class,
-            info_col
-        )
+#     Output
+#     ------
+#     bokeh application
 
-        doc.add_root(bklyts.column(plot, widgets))
+#     """
+#     def app(doc):
+#         plot, widgets, cds = cube_scroller_plot_slider(
+#             cube,
+#             title, scroll_title,
+#             cmap_class,
+#             info_col
+#         )
 
-        doc.theme = Theme(json=yaml.load("""
-            attrs:
-                figure:
-                    background_fill_color: white
-                    outline_line_color: white
-                    toolbar_location: above
-                    height: 500
-                    width: 800
-                Grid:
-                    grid_line_dash: [6, 4]
-                    grid_line_color: white
-        """, Loader=yaml.FullLoader))
-    return app
+#         doc.add_root(bklyts.column(plot, widgets))
 
+#         doc.theme = Theme(json=yaml.load("""
+#             attrs:
+#                 figure:
+#                     background_fill_color: white
+#                     outline_line_color: white
+#                     toolbar_location: above
+#                     height: 500
+#                     width: 800
+#                 Grid:
+#                     grid_line_dash: [6, 4]
+#                     grid_line_color: white
+#         """, Loader=yaml.FullLoader))
+#     return app
 
-def df_scroller_app(df, title, scroll_title='', cmap_class=bkmdls.LinearColorMapper, plot_size=400):
-    """
-    Make an app to scroll through a dataframe. Assume the cubes are stored column-wise. 
-    Select the cube (column) to scroll though using a select widget.
-    Returns the app; display using bokeh.io.show
-
-    Parameters
-    ----------
-    df : pd.DataFrame
-      pandas.DataFrame object whose entries are arrays
-    title : str
-      title to put on the plot
-    scroll_title : str ['']
-      title for the scroll bar
-    cmap_class : bokeh.models.ColorMapper class [bkmdls.LinearColorMapper]
-      a color mapper for scaling the images
-
-    Output
-    ------
-    bokeh application
-
-    """
-    def app(doc):
-        TOOLS='' # no tools, for now
-
-        data = df.copy()
-
-        # initialize image
-        column = data.columns[0]
-        img = data.loc[data.index[0], column]
-        cds = bkmdls.ColumnDataSource(data={'image':[img],
-                                                'x': [-0.5], 'y': [-0.5],
-                                                'dw': [img.shape[0]], 'dh': [img.shape[1]]})
-        color_mapper = cmap_class(palette='Magma256',
-                                  low=np.nanmin(img),
-                                  high=np.nanmax(img))
-
-        title_string = lambda title, column: f"{title} :: {column}"
-
-        plot = figure(title=title_string(title, column),
-                      min_height=plot_size, min_width=plot_size,
-                      tools=TOOLS)
-        g = plot.image(image='image',
-                       x='x', y='y', dw='dw', dh='dh',
-                       color_mapper=color_mapper,
-                       source=cds)
-        # Hover tool
-        hover_tool = bkmdls.HoverTool()
-        hover_tool.tooltips=[("value", "@image"),
-                             ("(x,y)", "($x{0}, $y{0})")]
-        plot.add_tools(hover_tool)
-        plot.toolbar.active_inspect = None
-
-        # color bar
-        color_bar = bkmdls.ColorBar(color_mapper=color_mapper, label_standoff=12)
-        plot.add_layout(color_bar, 'right')
-
-        # Interactions
-        # PSF subtraction component slider
-        slider_title = lambda title, index: f"{title} :{index}"
-        slider = bkmdls.Slider(start=0, end=data.index.size-1, value=0, step=1,
-                               title=slider_title(scroll_title, data.index[0]),
-                               show_value=False,
-                               orientation='horizontal')
-        def slider_callback(attr, old, new):
-            img = data[column][data.index[new]]
-            cds.data = {'image':[img],
-                        'x': [-0.5], 'y': [-0.5],
-                        'dw': [img.shape[0]], 'dh': [img.shape[1]]}
-            color_mapper.update(low=np.nanmin(img), high=np.nanmax(img))
-            slider.title = slider_title(scroll_title, data.index[new])
-        slider.on_change('value', slider_callback)
-
-        # Target stamp selector
-        selector = bkmdls.Select(title='Target stamp', 
-                                     value=data.columns[0],
-                                     options=[str(i) for i in data.columns])
-        def select_callback(attr, old, new):
-            column = new
-            print(old, new, column)
-            img = data.loc[data.index[slider.value], column]
-            cds.data = {'image':[img],
-                        'x': [-0.5], 'y': [-0.5],
-                        'dw': [img.shape[0]], 'dh': [img.shape[1]]}
-            color_mapper.update(low=np.nanmin(img), high=np.nanmax(img))
-            plot.title.text = title_string(title, column)
-        selector.on_change('value', select_callback)
-
-        doc.add_root(bklyts.row(selector, bklyts.column(plot, slider)))
-
-        doc.theme = Theme(json=yaml.load("""
-            attrs:
-                figure:
-                    background_fill_color: white
-                    outline_line_color: white
-                    toolbar_location: above
-                    height: 500
-                    width: 800
-                Grid:
-                    grid_line_dash: [6, 4]
-                    grid_line_color: white
-        """, Loader=yaml.FullLoader))
-    return app
 
 
 def generate_inspector(
@@ -558,13 +484,12 @@ def generate_inspector(
         reference_ids = ana_mgr.results_stamps['references'].loc[star_id].dropna(how='all', axis=1)
         reference_ids = reference_ids.drop_duplicates().values.ravel()
         reference_stamps = ana_mgr.db.stamps_tab.set_index('stamp_id').loc[reference_ids, 'stamp_array']
-        refs_plot, refs_slider, refs_cds = cube_scroller_plot_slider(
+        refs_col = cube_scroller_plot_slider(
             reference_stamps.dropna().sort_index(),
             'Reference stamps',
             cmap_class=bkmdls.LinearColorMapper,
             plot_size=5*plot_size_unit
         )
-        refs_col = bklyts.column(refs_plot, refs_slider)
 
         # load the widgets that depend on the stamp selection
         target_stamp_ids = list(ana_mgr.db.find_matching_id(star_id, 'T'))
