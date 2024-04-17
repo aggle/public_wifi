@@ -6,6 +6,8 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
+import functools
+ 
 import yaml
 import bokeh
 import bokeh.transform as bktrans
@@ -27,13 +29,42 @@ from . import table_utils
 from .. import db_manager
 from .. import subtr_manager
 
+def standalone(func):
+    """
+    Take a method that returns a bokeh layout and return it as an app that can be displayed with bkplt.show()
+    """
+    @functools.wraps(func)
+    def appwrap(*args, **kwargs):
+        # wrap the layout-producing func in a bokeh app
+        def app(doc):
+            layout = func(*args, **kwargs)
+
+            doc.add_root(layout)
+
+            doc.theme = Theme(json=yaml.load("""
+                attrs:
+                    figure:
+                        background_fill_color: white
+                        outline_line_color: white
+                        toolbar_location: above
+                        height: 500
+                        width: 800
+                    Grid:
+                        grid_line_dash: [6, 4]
+                        grid_line_color: white
+            """, Loader=yaml.FullLoader))
+        return app
+    return appwrap
+
 
 def generate_cube_scroller_widgets(
-    cds : bkmdls.ColumnDataSource,
-    cmap_class : bokeh.core.has_props.MetaHasProps = bkmdls.LinearColorMapper,
-    slider_title_prefix : str = '',
-    plot_kwargs={},
-    slider_kwargs={}
+        cds : bkmdls.ColumnDataSource,
+        cmap_class : bokeh.core.has_props.MetaHasProps = bkmdls.LinearColorMapper,
+        slider_title_prefix : str = '',
+        plot_kwargs={},
+        slider_kwargs={},
+        add_log_scale : bool = False,
+        diverging_cmap = False,
 ):
     """
     Generate a plot and a scroller to scroll through the cube stored in a provided ColumnDataSource
@@ -44,17 +75,44 @@ def generate_cube_scroller_widgets(
       kwargs to pass to bkplt.figure
     slider_kwargs : dict
       kwargs to pass to bkmdls.Slider
+    add_log_scale : bool = False
+      Add a switch to change the color mapping between linear and log scaling
+    diverging_cmap : bool = False
+      If True, use a diverging Blue-Red colormap that is white in the middle
     """
+    # use this to store the plot elements
+
     TOOLS='save'
 
     plot = figure(title=cds.data.get('title', [''])[0], tools=TOOLS, **plot_kwargs)
+
+    if diverging_cmap == False:
+        palette = 'Magma256'
+    else:
+        # For PSF subtraction results, you want a diverging colormap centered
+        # on 0. Blue is negative, red is positive
+        palette = bokeh.palettes.diverging_palette(bokeh.palettes.brewer['Blues'][256],
+                                                   bokeh.palettes.brewer['Reds'][256],
+                                                   256)
+
+    # function to conditionally compute the colormap range; used in the
+    # callback function
+    def compute_cmap_lims(img, diverging):
+        if diverging == False:
+            low=np.nanmin(img)
+            high=np.nanmax(img)
+        else:
+            # make the limits symmmetric
+            high = np.max(np.absolute([np.nanmin(img), np.nanmax(img)]))
+            low = -1*high
+        return low, high
+    low, high = compute_cmap_lims(cds.data['curimg'], diverging_cmap)
     color_mapper = cmap_class(
-        palette='Magma256',
-        low=np.nanmin(cds.data['curimg']),
-        high=np.nanmax(cds.data['curimg'])
+        palette=palette,
+        low=low, high=high,
     )
 
-    plot.image(
+    img_plot = plot.image(
         image='curimg',
         source=cds,
         x='x', y='y',
@@ -73,15 +131,16 @@ def generate_cube_scroller_widgets(
     plot.toolbar.active_inspect = None
     
     # add a slider to update the image and color bar when it moves
-
     slider_title = lambda val: f"{slider_title_prefix}: {val}"
     def slider_change(attr, old, new):
         # update the 'image' entry to the desired image
         new_index = cds.data['index'][0][new]
         img = cds.data['cube'][0][new_index]
         cds.data['curimg'] = [img]
-        color_mapper.update(low=np.nanmin(img), high=np.nanmax(img))
-        slider.update(title = slider_title(cds.data['index'][0][new]))
+        # set the color scaling for the new image
+        low, high = compute_cmap_lims(img, diverging_cmap)
+        color_mapper.update(low=low, high=high)
+        slider.update(title = slider_title(new_index))
 
     slider = bkmdls.Slider(
         start=0, end=len(cds.data['index'][0])-1, value=0, step=1,
@@ -90,23 +149,51 @@ def generate_cube_scroller_widgets(
     )
     slider.on_change('value', slider_change)
     
-    return bklyts.column(plot, slider)
+    # if requested, add a switch to change the color scale to log
+    if add_log_scale == True:
+        menu = {"Linear": bkmdls.LinearColorMapper, "Log": bkmdls.LogColorMapper}
+        cmap_switcher = bkmdls.Select(title='Switch color map',
+                                      value=sorted(menu.keys())[0],
+                                      options=sorted(menu.keys()))
+        def cmap_switcher_callback(attr, old, new):
+            cmap_class = menu[new]
+            color_mapper = cmap_class(palette=palette,
+                                      low=np.nanmin(cds.data['curimg']),
+                                      high=np.nanmax(cds.data['curimg']))
+            # update the color mapper on image
+            img_plot.glyph.update(color_mapper=color_mapper)
+        cmap_switcher.on_change('value', cmap_switcher_callback)
+        # define the layout
+        layout = bklyts.column(plot, bklyts.row(slider, cmap_switcher))
+    else:
+        layout = bklyts.column(plot, slider)
+    return layout
+
+# standalone cube scroller
+make_cube_scroller = standalone_app(generate_cube_scroller_widgets)
 
 ##### FFP Dashboard - no mosaic! ####
 
 def series_to_CDS(
-    cds : bkmdls.ColumnDataSource,
-    cube : pd.Series,
-    properties : dict = {},
+        cube : pd.Series,
+        cds : bkmdls.ColumnDataSource = None,
+        properties : dict = {},
 ) -> None:
     """
     When you get a new cube, you should update its corresponding CDS.
     This is a generic helper function to do that.
 
+    cube : pandas Series of the data to plot
+    cds : bkmdls.ColumnDataSource | None
+      a ColumnDataSource in which to store the data. Pass one in if you need it
+      to be persistent, or leave as None to generate a new one.
     properties : dict = {}
       this argument is used to pass any other entries to the data field that you may want to add
     """
     # store the images in the CDS
+    if cds == None:
+        # if none provided, make one.
+        cds = bkmdls.ColumnDataSource()
     # cds.data.update({str(i): [j] for i, j in enumerate(cube)})
     cds.data.update(cube=[cube])
     cds.data.update(index=[list(cube.index)])
@@ -120,7 +207,7 @@ def series_to_CDS(
         'len': [len(cube)],
     })
     cds.data.update(**properties)
-    return None
+    return cds
 
 def load_new_references(
     ana_mgr, 
@@ -131,8 +218,8 @@ def load_new_references(
     reference_ids = reference_ids.drop_duplicates().values.ravel()
     reference_stamps = ana_mgr.db.stamps_tab.set_index('stamp_id').loc[reference_ids, 'stamp_array']
     series_to_CDS(
-        cds,
         reference_stamps.sort_index(), #np.stack(reference_stamps.values),
+        cds,
         properties={'title': ["Reference stamps"]}
     )
 
@@ -148,8 +235,8 @@ def load_target_stamps(
     target_stamp_ids = ana_mgr.db.find_matching_id(star_id, 'T')
     target_stamps = ana_mgr.db.stamps_tab.set_index('stamp_id').loc[target_stamp_ids, 'stamp_array']
     series_to_CDS(
-        cds,
         target_stamps.sort_index(),
+        cds,
         properties={'title': ['Target star stamps']}
     )
 
@@ -165,8 +252,8 @@ def load_result_stamps(
     results = ana_mgr.results_stamps[kind].loc[(star_id, stamp_id)]
     results = results.drop(results.index[results.apply(lambda arr: np.isnan(arr).all())])
     series_to_CDS(
-        cds,
         results,
+        cds,
         properties={'title': [title]}
     )
 
@@ -306,12 +393,27 @@ def dashboard(
         update_target_stamp_plot(selector_stamp.value, target_stamp_plot, ana_mgr.db)
 
         # make the cube scroller for the references
-        refstamp_scroller = generate_cube_scroller_widgets(reference_stamps_cds)
+        refstamp_scroller = generate_cube_scroller_widgets(reference_stamps_cds, add_log_scale=True)
 
-        # # PSF subtraction results
-        snr_scroller = generate_cube_scroller_widgets(snrmap_cds, slider_title_prefix='Nmodes', slider_kwargs={'show_value': False})
-        resid_scroller = generate_cube_scroller_widgets(residuals_cds, slider_title_prefix='Nmodes', slider_kwargs={'show_value': False})
-        psfmodel_scroller = generate_cube_scroller_widgets(psfmodel_cds, slider_title_prefix='Nmodes', slider_kwargs={'show_value': False})
+        # PSF subtraction results - SNR map, residuals, PSF model
+        snr_scroller = generate_cube_scroller_widgets(
+            snrmap_cds,
+            slider_title_prefix='Nmodes',
+            slider_kwargs={'show_value': False},
+            diverging_cmap=True,
+        )
+        resid_scroller = generate_cube_scroller_widgets(
+            residuals_cds,
+            slider_title_prefix='Nmodes',
+            slider_kwargs={'show_value': False},
+            diverging_cmap=True,
+        )
+        psfmodel_scroller = generate_cube_scroller_widgets(
+            psfmodel_cds,
+            slider_title_prefix='Nmodes',
+            slider_kwargs={'show_value': False},
+            add_log_scale=True,
+        )
 
 
         # define the dashboard layout
