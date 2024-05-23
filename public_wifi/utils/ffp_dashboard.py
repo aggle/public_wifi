@@ -170,7 +170,7 @@ def generate_cube_scroller_widgets(
     return layout
 
 # standalone cube scroller
-make_cube_scroller = standalone_app(generate_cube_scroller_widgets)
+make_cube_scroller = standalone(generate_cube_scroller_widgets)
 
 ##### FFP Dashboard - no mosaic! ####
 
