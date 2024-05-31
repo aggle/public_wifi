@@ -23,6 +23,7 @@ from bokeh.themes import built_in_themes
 from bokeh.io import show, output_notebook, output_file
 
 from astropy.io import fits
+from public_wifi.utils.detection_utils import load_snr_maps
 
 from . import shared_utils
 from . import table_utils
@@ -134,7 +135,11 @@ def generate_cube_scroller_widgets(
     slider_title = lambda val: f"{slider_title_prefix}: {val}"
     def slider_change(attr, old, new):
         # update the 'image' entry to the desired image
-        new_index = cds.data['index'][0][new]
+        try:
+            new_index = cds.data['index'][0][new]
+        except IndexError:
+            # if the index is out of range, do nothing
+            return
         img = cds.data['cube'][0][new_index]
         cds.data['curimg'] = [img]
         # set the color scaling for the new image
@@ -222,6 +227,7 @@ def load_new_references(
         cds,
         properties={'title': ["Reference stamps"]}
     )
+    return
 
 
 def load_target_stamps(
@@ -239,6 +245,7 @@ def load_target_stamps(
         cds,
         properties={'title': ['Target star stamps']}
     )
+    return
 
 def load_result_stamps(
     ana_mgr,
@@ -256,6 +263,37 @@ def load_result_stamps(
         cds,
         properties={'title': [title]}
     )
+    return
+
+
+def get_star_name_from_id(star_id, ana_mgr):
+    """
+    Get the catalog name of a star from the star_id
+    """
+    ps_table = ana_mgr.db.ps_tab.set_index("ps_star_id")
+    star_name = str(ps_table.loc[star_id, 'ps_target'].unique().squeeze())
+    return star_name
+
+def get_star_id_from_name(star_name, ana_mgr):
+    """
+    Get the star_id of a star from the catalog name
+    """
+    ps_table = ana_mgr.db.ps_tab.set_index('ps_target')
+    star_id = str(ps_table.loc[star_name, "ps_star_id"].unique().squeeze())
+    return star_id
+
+def load_ps_rows(star_id, ana_mgr, table=None):
+    """
+    Return a table of the point source rows for a star
+    """
+    rows = ana_mgr.db.ps_tab.query("ps_star_id == @star_id").copy()
+    cds = bkmdls.ColumnDataSource(rows)
+    if table is None:
+        columns = [bkmdls.TableColumn(field=i, title=i) for i in rows.columns]
+        table = bkmdls.DataTable(source=cds, columns=columns)
+    else:
+        table.update(source=cds)
+    return table
 
 def dashboard(
         ana_mgr,
@@ -265,13 +303,29 @@ def dashboard(
     def app(doc):
 
         ### INITIALIZE DATA STRUCTURES ###
-        star_ids = star_ids = sorted(ana_mgr.db.stars_tab['star_id'])
-        star_init = star_ids[0]
+
+        # start with the most likely detection
+        candidate_df = ana_mgr.results_stamps['detections']
+
+        candidate_star_order = candidate_df['num_modes'].groupby("star_id").mean().sort_values(ascending=False).index
+        candidate_ids = [' / '.join(i) for i in candidate_df.loc[candidate_star_order].index]
+        candidate_init = candidate_ids[0]
+        star_init, target_stamp_init = candidate_init.split(" / ")
+
+        # the list of star IDs
+        star_ids = sorted(ana_mgr.db.stars_tab['star_id'])
+        star_catalog_names = [
+            get_star_name_from_id(star_id, ana_mgr) for star_id in star_ids
+        ]
+        star_name_init = get_star_name_from_id(star_init, ana_mgr)
+
+        # load the catalog rows for this star
+        star_info_table = load_ps_rows(star_init, ana_mgr)
 
         # load this star's target stamps
         target_stamps_cds = bkmdls.ColumnDataSource()
         load_target_stamps(ana_mgr, star_init, target_stamps_cds)
-        target_stamp_init = target_stamps_cds.data['index'][0][0]
+        # target_stamp_init = target_stamps_cds.data['index'][0][0]
 
         # load the references stamps
         reference_stamps_cds = bkmdls.ColumnDataSource()
@@ -292,7 +346,7 @@ def dashboard(
         load_result_stamps(ana_mgr, kind='models', 
                            star_id=star_init, stamp_id=target_stamp_init,
                            cds=psfmodel_cds, title='PSF Model')        
-        
+
         ### CALLBACK FUNCTIONS ###
         # When you change the star, also update the stamps choices, and run the
         # change function for the stamp selector
@@ -304,6 +358,8 @@ def dashboard(
             2a. Load the subtraction products for the default target stamp.
             3. Update the reference stamps and reference stamp cube scroller
             """
+            # load new table rows
+            load_ps_rows(new_id, ana_mgr, star_info_table)
             # load a new set of stamps
             target_stamp_ids = sorted(ana_mgr.db.find_matching_id(new_id, 'T'))
             target_stamp_init = target_stamp_ids[0]
@@ -315,6 +371,10 @@ def dashboard(
             # load a new set of reference stamps
             load_new_references(ana_mgr, new_id, reference_stamps_cds)
             # get_new_reference_stamps(new_id, reference_stamp_cds, refstamp_scroller)
+            # get the catalog name of this star
+            star_name = get_star_name_from_id(new_id, ana_mgr)
+            display_star_name.update(value=star_name)
+
 
         # define what happens when you change the target stamp
         # All PSF subtraction products should update - references, residuals,
@@ -332,6 +392,18 @@ def dashboard(
             load_result_stamps(ana_mgr, kind='models', 
                                star_id=selector_star.value, stamp_id=selector_stamp.value,
                                cds=psfmodel_cds, title='PSF Model')
+            # print out the catalog name for this star
+
+
+        # define what happens when you change the detection candidate
+        def change_detection(attrname, old_id, new_id):
+            """
+            When you change the detection candidate, you are just setting the
+            star and target stamps
+            """
+            new_star, new_stamp = new_id.split(" / ")
+            selector_star.update(value=new_star)
+            selector_stamp.update(value=new_stamp)
 
         def update_target_stamp_plot(
                 stamp_id : str,
@@ -368,14 +440,27 @@ def dashboard(
 
 
         ### GUI ELEMENTS ###
-        # make the selector for the stars.
-        
+        # make the selector for the detection candidates
+        selector_detections = bkmdls.Select(
+            title = 'Detection Candidates',
+            value = candidate_init,
+            options = candidate_ids,
+        )
+        selector_detections.on_change("value", change_detection)
+
+        # make the selector for the stars based on ID
         selector_star = bkmdls.Select(
             title = 'Star ID',
             value = star_init,
             options = star_ids,
         )
         selector_star.on_change("value", change_star)
+
+        # make the selector for the stars based on the catalog name
+        display_star_name = bkmdls.TextInput(
+            title = 'Star Name',
+            value = star_name_init
+        )
 
         # make the selector for the star's stamps
         target_stamp_ids = sorted(ana_mgr.db.find_matching_id(star_init, 'T'))
@@ -386,6 +471,7 @@ def dashboard(
             options = target_stamp_ids
         )
         selector_stamp.on_change("value", change_target_stamp)
+
 
         # make a plot for the corresponding stamp
         target_stamp_plot = figure()
@@ -417,19 +503,26 @@ def dashboard(
 
 
         # define the dashboard layout
-        lyt = bklyts.column(
-            bklyts.row(
-                selector_star,
-                selector_stamp,
-            ),
-            bklyts.row(
-                target_stamp_plot,
-                refstamp_scroller,
-            ),
-            bklyts.row(
-                snr_scroller, 
-                resid_scroller, 
-                psfmodel_scroller
+        lyt = bklyts.layout(
+            bklyts.column(
+                bklyts.row(
+                    selector_detections,
+                    selector_star,
+                    selector_stamp,
+                    display_star_name,
+                ),
+                bklyts.row(
+                    target_stamp_plot,
+                    refstamp_scroller,
+                ),
+                bklyts.row(
+                    snr_scroller,
+                    resid_scroller,
+                    psfmodel_scroller
+                ),
+                bklyts.row(
+                    star_info_table,
+                ),
             ),
         )
 
