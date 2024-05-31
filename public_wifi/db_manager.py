@@ -20,16 +20,21 @@ from .utils import table_utils
 
 class DBManager:
 
-    def __init__(self, db_path, config_file,
-                 bad_stamp_file : str | Path = None,
-                 subtraction_keys=['ps_filt_id']):
+    def __init__(
+            self, db_path, config_file,
+            bad_stars_file : str | Path = '',
+            subtraction_keys=['ps_filt_id'],
+    ):
         """
-        Usage:
         Initialize using the path to the database
-        db_path is the path to the database files
+        db_path is the path to the parent folder of the database files
         config_file is the config file of paths
-        subtraction_keys are the column names to use to group point sources for psf subtraction
-        bad_stamp_file : a list of IDs of bad stamps. If you ever update the database, these IDs may change.
+        bad_stars_file : str | Path = ''
+          a list of catalog names of bad stars. Use these to find the bad stamp ids
+        candidate_stamps_file : str | Path = ''
+          a file with a list of IDs of stamps that have candidate detections in them
+        subtraction_keys : list = ['ps_filt_id']
+          the column names to use to group point sources for psf subtraction
 
         Useful attributes
         -----------------
@@ -47,11 +52,15 @@ class DBManager:
         self.stars_tab = self.load_table('stars', verbose=True)
         self.ps_tab = self.load_table('point_sources', verbose=True)
         self.stamps_tab = self.load_table('stamps', verbose=True)
-        # if a bad stamp file exists, apply it
-        if bad_stamp_file is not None and Path(bad_stamp_file).exists():
+
+        # Flag the bad references
+        if bad_stars_file != '':
             print("Flagging bad reference stamps")
-            bad_stamp_ids = pd.read_csv(bad_stamp_file).squeeze()
-            self.set_reference_quality_flag(bad_stamp_ids, False)
+            bad_star_names = pd.read_csv(bad_stars_file).squeeze()
+            bad_ps_ids = self.ps_tab.set_index("ps_target").loc[bad_star_names, 'ps_id']
+            bad_stamp_ids = self.stamps_tab.set_index("stamp_ps_id").loc[bad_ps_ids, 'stamp_id']
+            self.set_reference_quality_flag(list(bad_stamp_ids), False)
+
         self.grid_defs_tab = self.load_table('grid_sector_definitions', verbose=True)
 
         #self.comp_status_tab = self.load_table('companion_status', verbose=True)
