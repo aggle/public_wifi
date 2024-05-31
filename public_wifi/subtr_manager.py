@@ -302,7 +302,12 @@ class SubtrManager:
     Initializes with a DBManager instance as argument. Optionally, calculate the PSF correlations
     """
 
-    def __init__(self, db_manager, calc_corr_flag=False, instrument=None):
+    def __init__(
+            self,
+            db_manager,
+            calc_corr_flag=False,
+            instrument=None,
+    ):
         # calculate all three correlation matrices
         self.db = db_manager
         self.instr = instrument
@@ -314,7 +319,7 @@ class SubtrManager:
         # initialize and set table of reference flags
         self.reference_table = pd.DataFrame(True, columns=cols, index=indx, dtype=bool)
         ref_flags = self.db.stamps_tab.set_index("stamp_id")['stamp_ref_flag']
-        bad_refs = ref_flags[~ref_flags]
+        bad_refs = ref_flags[ref_flags == False]
         self.reference_table.loc[bad_refs.index] = False
 
         # correlation function arguments
