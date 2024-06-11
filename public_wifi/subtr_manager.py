@@ -5,6 +5,7 @@ Utilities for PSF subtraction:
 - KLIP PSF model reconstruction
 """
 
+import sys
 import numpy as np
 import pandas as pd
 from collections import namedtuple
@@ -14,7 +15,7 @@ from pathlib import Path
 # RDI imports
 from scipy import stats
 from skimage.metrics import structural_similarity as ssim
-import sys
+from sklearn.decomposition import NMF
 
 # local imports
 from .utils import shared_utils
@@ -43,7 +44,7 @@ from pyklip import klip
 from NonnegMFPy import nmf as NMFPy
 
 # Results object
-Results = namedtuple('Results', ('residuals', 'models', 'references'))
+Results = namedtuple('Results', ('residuals', 'models', 'references', 'modes'))
 
 
 ###################
@@ -520,8 +521,10 @@ class SubtrManager:
             numbasis = np.unique(numbasis.astype(int))
             self.klip_args_dict['numbasis'] = numbasis
             #numbasis = np.arange(1, self.db.stamps_tab.shape[0]-1, 20)
-        subtr_mapper = lambda x: self.subtr_klip(x,
-                                                 kwargs=self.klip_args_dict)
+        subtr_mapper = lambda x: self.subtr_klip(
+            x,
+            kwargs=self.klip_args_dict
+        )
         results = self.db.stamps_tab.set_index('stamp_id', drop=False).apply(subtr_mapper, axis=1)
         self.psf_subtr = results.apply(lambda x: x.residuals)
         self.psf_model = results.apply(lambda x: x.models)
@@ -587,7 +590,7 @@ class SubtrManager:
         #ref_stamps = self.get_reference_stamps(targ_row['stamp_id'], dmag_max=1)
         
         # excellent use of namedtuple here, pat yourself on the back!
-        results = namedtuple('klip_results', ('residuals', 'models'))
+        # results = namedtuple('klip_results', ('residuals', 'models'))
         if kwargs == {}:
             kwargs = self.klip_args_dict
         residuals, models =  klip_subtr_wrapper(targ, refs,
@@ -818,7 +821,8 @@ class SubtrManager:
                                             orient='index')
         results = Results(residuals=residuals,
                           models=psf_models,
-                          references=references)
+                          references=references,
+                          modes=None)
         return results
 
     def subtr_nmf_by_star(self, nmf_args={}, return_results=False):
@@ -838,7 +842,8 @@ class SubtrManager:
 
         all_results = Results(residuals=pd.concat(residuals, names=['star_id', 'stamp_id']),
                               models=pd.concat(models, names=['star_id', 'stamp_id']),
-                              references=pd.concat(references, names=['star_id', 'stamp_id']))
+                              references=pd.concat(references, names=['star_id', 'stamp_id']),
+                              modes=None)
         self.subtr_results = all_results
         if return_results == True:
             return all_results
@@ -862,7 +867,7 @@ class SubtrManager:
         # list of stars
         stars = self.db.stars_tab['star_id'].unique()
         #print(stars)
-        residuals, models, references = {}, {}, {}
+        residuals, models, references, modes = {}, {}, {}, {}
         for i, star in enumerate(stars):
             try:
                 result = subtr_func(star, kwargs=arg_dict)
@@ -871,18 +876,23 @@ class SubtrManager:
                 # for this star
                 stamp_ids = self.db.stamps_tab.query("stamp_star_id == @star")['stamp_id']
                 empty_df = pd.DataFrame(index=stamp_ids)
-                result = Results(residuals=empty_df,
-                                 models=empty_df,
-                                 references=empty_df)
+                result = Results(residuals = empty_df,
+                                 models = empty_df,
+                                 references = empty_df,
+                                 modes = empty_df)
             residuals[star] = result.residuals
             models[star] = result.models
             references[star] = result.references 
+            modes[star] = result.modes 
             if verbose == True:
                 print(f"{i+1}/{len(stars)} stars complete")
 
-        all_results = Results(residuals=pd.concat(residuals, names=['star_id', 'stamp_id']),
-                              models=pd.concat(models, names=['star_id', 'stamp_id']),
-                              references=pd.concat(references, names=['star_id', 'stamp_id']))
+        all_results = Results(
+            residuals = pd.concat(residuals, names=['star_id', 'stamp_id']),
+            models = pd.concat(models, names=['star_id', 'stamp_id']),
+            references = pd.concat(references, names=['star_id', 'stamp_id']),
+            modes = pd.concat(modes, names=['star_id', 'stamp_id'])
+        )
         self.subtr_results = all_results
         if return_results == True:
             return all_results
@@ -969,9 +979,12 @@ class SubtrManager:
         psf_models = psf_models.map(image_utils.make_image_from_flat)
         # references
         references = pd.concat({k: pd.Series(v) for k, v in targ_ref_indices.to_dict().items()}, axis=1).T
-        results = Results(residuals=residuals,
-                          models=psf_models,
-                          references=references)
+        results = Results(
+            residuals=residuals,
+            models=psf_models,
+            references=references,
+            modes=klip_basis,
+        )
         return results
 
 
@@ -983,17 +996,22 @@ class SubtrManager:
         # list of stars
         stars = self.db.stars_tab['star_id'].unique()
         #print(stars)
-        residuals, models, references = {}, {}, {}
+        residuals, models, references, modes = {}, {}, {}, {}
         for star in stars:
             result = self.subtr_klip_one_star(star, kwargs=klip_args)
             residuals[star] = result.residuals
             models[star] = result.models
-            references[star] = result.references 
+            references[star] = result.references
+            modes[star] = result.modes
+
 
         
-        all_results = Results(residuals=pd.concat(residuals, names=['star_id', 'stamp_id']),
-                              models=pd.concat(models, names=['star_id', 'stamp_id']),
-                              references=pd.concat(references, names=['star_id', 'stamp_id']))
+        all_results = Results(
+            residuals = pd.concat(residuals, names=['star_id', 'stamp_id']),
+            models = pd.concat(models, names=['star_id', 'stamp_id']),
+            references = pd.concat(references, names=['star_id', 'stamp_id']),
+            modes = pd.concat(modes, names=['star_id', 'stamp_id']),
+        )
         self.subtr_results = all_results
         if return_results == True:
             return all_results
