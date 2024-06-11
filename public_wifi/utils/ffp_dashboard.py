@@ -327,7 +327,8 @@ def dashboard(
         star_name_init = get_star_name_from_id(star_init, ana_mgr)
 
         # load the catalog rows for this star
-        star_info_table = load_ps_rows(star_init, ana_mgr)
+        star_info_table = bkmdls.DataTable(width=1500, height=100)
+        update_star_table(star_info_table, star_init, ana_mgr)
 
         # load this star's target stamps
         target_stamps_cds = bkmdls.ColumnDataSource()
@@ -354,6 +355,27 @@ def dashboard(
                            star_id=star_init, stamp_id=target_stamp_init,
                            cds=psfmodel_cds, title='PSF Model')        
 
+        # Color-magnitude diagram
+        cmd_cds = bkmdls.ColumnDataSource(
+            data={'x': ana_mgr.db.stars_tab['star_mag_F1'] - ana_mgr.db.stars_tab['star_mag_F2'],
+                  'y': ana_mgr.db.stars_tab['star_mag_F1'],
+                  'star_id': ana_mgr.db.stars_tab['star_id']}
+        )
+        cmd_plot = figure()
+        def update_cmd_plot(star_id):
+            # this like empties the plot of previous data points
+            cmd_plot.renderers = []
+            # plot the CMD
+            cmd_plot.scatter(x='x', y='y', source=cmd_cds)
+            cmd_plot.y_range.flipped = True
+            # filter the CDS for the star you want to highlight
+            idx = cmd_cds.data['star_id'].index[cmd_cds.data['star_id'] == star_id]
+            view = bkmdls.CDSView(filter=bkmdls.IndexFilter(idx))
+            cmd_plot.scatter(x='x', y='y', source=cmd_cds,
+                             view = view,
+                             size=20, color='gold', marker='star')
+        update_cmd_plot(star_init)
+
         ### CALLBACK FUNCTIONS ###
         # When you change the star, also update the stamps choices, and run the
         # change function for the stamp selector
@@ -366,7 +388,7 @@ def dashboard(
             3. Update the reference stamps and reference stamp cube scroller
             """
             # load new table rows
-            load_ps_rows(new_id, ana_mgr, star_info_table)
+            update_star_table(star_info_table, new_id, ana_mgr)
             # load a new set of stamps
             target_stamp_ids = sorted(ana_mgr.db.find_matching_id(new_id, 'T'))
             target_stamp_init = target_stamp_ids[0]
@@ -381,6 +403,8 @@ def dashboard(
             # get the catalog name of this star
             star_name = get_star_name_from_id(new_id, ana_mgr)
             display_star_name.update(value=star_name)
+            # update the CMD plot
+            update_cmd_plot(new_id)
 
 
         # define what happens when you change the target stamp
@@ -510,28 +534,39 @@ def dashboard(
 
 
         # define the dashboard layout
-        lyt = bklyts.layout(
-            bklyts.column(
-                bklyts.row(
-                    selector_detections,
-                    selector_star,
-                    selector_stamp,
-                    display_star_name,
-                ),
-                bklyts.row(
-                    target_stamp_plot,
-                    refstamp_scroller,
-                ),
-                bklyts.row(
-                    snr_scroller,
-                    resid_scroller,
-                    psfmodel_scroller
-                ),
-                bklyts.row(
-                    star_info_table,
-                ),
+        tab_overview = bkmdls.TabPanel(
+            child = bklyts.row(
+                bklyts.column(target_stamp_plot, refstamp_scroller),
+                cmd_plot,
             ),
+            title = 'System Overview'
         )
+        tab_snr = bkmdls.TabPanel(
+            child = bklyts.column(
+                bklyts.row(snr_scroller, resid_scroller),
+                psfmodel_scroller
+            ),
+            title = 'SNR'
+        )
+        tabs = bkmdls.Tabs(tabs=[
+            tab_overview,
+            tab_snr
+        ])
+        lyt = bklyts.layout([
+            # the target selectors
+            bklyts.row(
+                selector_detections,
+                selector_star,
+                selector_stamp,
+                display_star_name,
+            ),
+            # the information table
+            bklyts.row(
+                star_info_table,
+            ),
+            # the tabs with the plots
+            bklyts.row(tabs),
+        ])
 
         doc.add_root(lyt)
 
