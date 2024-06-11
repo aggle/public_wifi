@@ -311,6 +311,11 @@ def convert_point_source_catalog_to_public_wifi(
     star_ps_table = star_ps_table.rename(columns={'ps_star_id': 'star_id'}).sort_values(by='star_id')
     tables['lookup_star_ps_id'] = star_ps_table
 
+    # make the Star ID <-> Star Name lookup table
+    star_id_name_table = ps_table[['ps_star_id', 'ps_target']].drop_duplicates().copy()
+    star_id_name_table = star_id_name_table.rename(columns={'ps_star_id':'star_id', 'ps_target': 'star_name'}).sort_values(by='star_id')
+    tables['lookup_star_id_name'] = star_id_name_table
+
     # make the star table
     tables['stars'] = generate_public_wifi_star_catalog(ps_table)
 
