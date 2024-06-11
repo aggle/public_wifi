@@ -9,6 +9,7 @@ import numpy as np
 import itertools
 
 from scipy import stats
+from scipy.signal import convolve2d
 
 from astropy.io import fits
 from astropy.stats import sigma_clipped_stats
@@ -21,6 +22,7 @@ import public_wifi as pw
 from public_wifi.utils import table_utils
 from public_wifi.utils import shared_utils
 from public_wifi.utils import initialize_tables
+from public_wifi.utils import matrixDFT
 
 import matplotlib as mpl
 from matplotlib import pyplot as plt
@@ -322,3 +324,195 @@ def normality_test(
     order_statistics[-1] = 0.5**(1./n)
     order_statistics[0] = 1 - order_statistics[-1]
     return order_statistics
+
+### Photometric conversion
+def get_photflam(
+        stamp_id,
+        db
+) -> float:
+    """
+    Get the photometric conversion factor to scale from e/s to flux units
+    """
+    return 0.0
+
+
+def cut_psf(
+        psf_stamp : np.ndarray,
+        width : int = 4,
+        normalize_flux : bool = True
+) -> np.ndarray:
+    """
+    Given a stamp of the PSF model, cut out the central region and (optional)
+    normalize it to norm=1
+    """
+    row, col = np.unravel_index(np.argmax(psf_stamp), psf_stamp.shape)
+    psf = psf_stamp[row-width:row+width+1, col-width:col+width+1].copy()
+    psf = psf - psf.min()
+    if normalize_flux:
+        psf = psf/np.linalg.norm(psf)
+    return psf
+
+def inject_psf(
+        stamp : np.ndarray,
+        psf : np.ndarray,
+        position : tuple[int, int],
+        flux : float | None = 1.,
+) -> np.ndarray:
+    """
+    Inject the PSF to the stamp at the given position and scale such that the
+    psf.sum = flux Assumes PSF is odd.
+
+    Returns a stamp with the PSF added, unless there's an error in which case
+    no PSF is added
+
+    Parameters
+    ----------
+    stamp : np.ndarray
+      The image in which you would like to add the PSF
+    psf : np.ndarray
+      An image of dimensions smaller than stamp containing a point spread
+      function. It will be adjusted such that the sum is equal to the flux
+      argument, in its native units.
+    position : tuple[int, int]
+      The (row, col) position in the stamp where the center of the PSF will go.
+      For now, must be an integer.
+    flux : float [1.]
+      Scale the PSF image such that psf.sum() = flux
+      If None, no normalization or scaling is performed
+
+    Output
+    ------
+    injected_stamp : np.ndarray
+      
+    """
+
+    injected_stamp = stamp.copy()
+    psf_scaled = psf - psf.min()
+    if flux is not None:
+        psf_scaled = psf_scaled * (flux/psf_scaled.sum())
+    psf_shape = np.asarray(psf.shape)
+    psf_halfwidth = np.floor(psf_shape/2).astype(int)
+    
+    psf_corner = np.asarray(position)[::-1] - psf_halfwidth
+    
+    # compute the x and y injection regions
+    xlim = [psf_corner[0], psf_corner[0]+psf.shape[0]]
+    ylim = [psf_corner[1], psf_corner[1]+psf.shape[1]]
+
+    # handle corner cases
+    # the x-axis goes negative
+    if xlim[0] < 0:
+        # keep the right part of the psf
+        overlap = -1*xlim[0]
+        psf_scaled = psf_scaled[:, overlap:]
+        xlim[0] = np.max([0, xlim[0]])
+    # the x-axis goes out of range
+    if xlim[1] > stamp.shape[1]:
+        # keep the left part of the psf
+        overlap = stamp.shape[1] - xlim[1]
+        psf_scaled = psf_scaled[:, :overlap]
+        xlim[1] = np.min([xlim[1], stamp.shape[1]])
+    # the y-axis goes negative
+    if ylim[0] < 0:
+        # keep the top part of the psf
+        overlap = -1*ylim[0]
+        psf_scaled = psf_scaled[overlap:, :]
+        ylim[0] = np.max([0, ylim[0]])
+    # the y-axis goes out of range
+    if ylim[1] > stamp.shape[0]:
+        # keep the bottom part of the psf
+        overlap = stamp.shape[0] - ylim[1]
+        psf_scaled = psf_scaled[:overlap, :]
+        ylim[1] = np.min([ylim[1], stamp.shape[0]])    
+    try:
+        injected_stamp[ylim[0]:ylim[1], xlim[0]:xlim[1]] += psf_scaled
+    except ValueError:
+        print("Error: No PSF added. Position is out of bounds for PSF and stamp sizes.")
+    return injected_stamp
+
+
+def apply_matched_filter(data, psf, klmodes=None, method='convolve'):
+    """
+    apply matched filter detection using PSF models `psf` to the data `data`
+    """
+    method = method.lower()
+    # normalize the PSF flux
+    matched_filter = psf/psf.sum()
+
+    if method == 'mft':
+    # this works except for normalization
+        nlamD = np.asarray(data.shape)*(2**0)
+        det_map = matrixDFT.matrix_dft(
+            np.fft.fft2(data) * np.fft.ifft2(psf),
+            nlamD=nlamD,
+            npix=data.shape,
+            inverse=False,
+            centering=matrixDFT.SYMMETRIC
+        )**2
+    elif method == 'fft':
+        # this works well for some locations but not for others
+        # conserves flux the best
+        det_map = np.abs(
+            np.fft.ifft2(
+                np.fft.fft2(psf) * np.conj(np.fft.fft2(matched_filter))
+            )
+        )
+        # need to reverse axes, i think?
+        det_map = det_map[::-1, ::-1]
+    elif method == 'convolve':
+        # convolution also works except for normalization
+        det_map = convolve2d(data.T,
+                             matched_filter,
+                             mode='same').T
+        # 1-this is the fraction of flux lost
+        conv_flux_frac = 0.9656474335066184
+        det_map /= conv_flux_frac
+    else:
+        method = 'convolve'
+        # convolution also works except for normalization
+        det_map = convolve2d(data.T,
+                             matched_filter,
+                             mode='same').T
+        # 1-this is the fraction of flux lost
+        conv_flux_frac = 0.9656474335066184
+        det_map /= conv_flux_frac
+
+    if klmodes is None:
+        throughput = np.linalg.norm(matched_filter)**2
+    else:
+        throughput = compute_throughput(psf, klmodes)
+    det_map = det_map/throughput
+    return det_map
+
+
+def compute_throughput(psf, modes=None) -> float | np.ndarray[float]:
+    """
+    Make a throughput map for flux calibration
+
+    Parameters
+    ----------
+    psf : np.ndarray
+      a PSF with the same shape as the modes. We will run them through the
+      matrixDFT transform. Advise using a PSF cutout injected into the middle
+      of a zeros array.
+    modes : pd.Series
+      a pandas Series of the KL modes, reshaped into 2-D images
+
+    Output
+    ------
+    throughput_map : np.ndarray
+      A 2-D array, the same shape as the image, containing the throughput
+      correction to correct the detection map into PSF fluxes
+    """
+    if modes is None:
+        return np.linalg.norm(psf)**2
+    if not isinstance(modes, pd.Series):
+        modes = pd.Series({i+1: mode for i, mode in enumerate(modes)})
+    psf_norm = np.linalg.norm(psf)**2
+    psf_thpt = modes.apply(
+        # lambda mode: convolve2d(mode, psf.T, mode='same')**2,
+        lambda mode: np.abs(apply_matched_filter(psf, mode))**2
+    )
+    return psf_norm - np.sum(np.stack(psf_thpt), axis=0)
+
+
