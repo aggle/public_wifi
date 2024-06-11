@@ -282,17 +282,24 @@ def get_star_id_from_name(star_name, ana_mgr):
     star_id = str(ps_table.loc[star_name, "ps_star_id"].unique().squeeze())
     return star_id
 
-def load_ps_rows(star_id, ana_mgr, table=None):
+def update_star_table(table, star_id, ana_mgr):
     """
     Return a table of the point source rows for a star
+    star_id : star identifier
+    ana_mgr : analysis manager
+    table : bkmdls.DataTable object
     """
-    rows = ana_mgr.db.ps_tab.query("ps_star_id == @star_id").copy()
+    columns = [
+        'ps_target', 'ps_star_id', 'ps_id', 'ps_exp_id', 'ps_filt_id',
+        'ps_mag', 'ps_mag_e', 'ps_snr', 'ps_u_mast', 'ps_v_mast',
+        'ps_x_exp', 'ps_y_exp'
+    ]
+    rows = ana_mgr.db.ps_tab[columns].query(f"ps_star_id == '{star_id}'").copy()
     cds = bkmdls.ColumnDataSource(rows)
-    if table is None:
-        columns = [bkmdls.TableColumn(field=i, title=i) for i in rows.columns]
-        table = bkmdls.DataTable(source=cds, columns=columns)
-    else:
-        table.update(source=cds)
+    table.update(
+        source=cds,
+        columns=[bkmdls.TableColumn(field=i, title=i) for i in rows.columns]
+    )
     return table
 
 def dashboard(
