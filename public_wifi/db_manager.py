@@ -328,26 +328,29 @@ class DBManager:
         # return the ids
         if str(id_lead).upper() == str(want_this_id).upper():
             #print("find_matching_id: same type of ID requested as provided.")
-            return pd.Series(ids)
+            # return pd.Series(ids).squeeze()
+            matching_ids = pd.Series(ids)
+        else:
 
-        start_id_type = id_dict[id_lead]
+            start_id_type = id_dict[id_lead]
 
-        # which kind do you want?
-        requested_id = id_dict[want_this_id]
-        lkp_tab = self.find_lookup_table(start_id_type, requested_id)
-        try:
-            assert isinstance(lkp_tab, pd.DataFrame)
-        except AssertionError:
-            print("No lookup table found, exiting...")
-            return None
-        try:
-            # honestly this implementation could be much better
-            # use .query instead of .set_index to handle missing identifiers
-            matching_ids = lkp_tab.set_index(start_id_type+"_id").loc[ids, requested_id+"_id"]
-        except KeyError:
-            print("One or more of the provided identifiers were not found.")
-            print("This shouldn't occur unless the database was constructed improperly.")
-            return pd.Series(ids)
+            # which kind do you want?
+            requested_id = id_dict[want_this_id]
+            lkp_tab = self.find_lookup_table(start_id_type, requested_id)
+
+            try:
+                assert isinstance(lkp_tab, pd.DataFrame)
+            except AssertionError:
+                print("No lookup table found, exiting...")
+                return None
+            try:
+                # honestly this implementation could be much better
+                # use .query instead of .set_index to handle missing identifiers
+                matching_ids = lkp_tab.set_index(start_id_type+"_id").loc[ids, requested_id+"_id"]
+            except KeyError:
+                print("One or more of the provided identifiers were not found.")
+                print("This shouldn't occur unless the database was constructed improperly.")
+                matching_ids = pd.Series(ids)
         return matching_ids.squeeze()
 
 
@@ -586,7 +589,7 @@ class DBManager:
         # get the exposures, ensure exp_ids is a pandas-like object
         exp_ids = self.ps_tab.query("ps_id in @ps_ids").set_index('ps_id')['ps_exp_id']
         # images
-        hdrs = exp_ids.apply(lambda x: table_utils.get_hdr_from_exp_id(x, hdr))
+        hdrs = exp_ids.apply(lambda exp_id: table_utils.get_hdr_from_exp_id(exp_id, hdr))
         hdrs.index = obj_id
         hdrs.index.name = 'exposure'
         return hdrs.squeeze()
