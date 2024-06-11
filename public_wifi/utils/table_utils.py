@@ -132,7 +132,7 @@ def list_available_tables(db_file, return_list=False):
 
 
 
-def get_file_name_from_file_id(file_id, path):
+def get_file_name_from_file_id(file_id, path, ext='flt'):
     """
     The header files don't store the whole filename, so this function fills in
     the rest of the name as well as the path.
@@ -143,13 +143,15 @@ def get_file_name_from_file_id(file_id, path):
       the file identifier (everything except _flt.fits)
     path : str or Path
       path to the folder where the FITS files are kept
+    ext : str = 'flt'
+      data
 
     Returns
     -------
     filename : pathlib.Path
       the full absolute path to the fits file
     """
-    suffix = "_flt.fits"
+    suffix = f"_{ext}.fits"
     filename = Path(path).absolute() / (file_id + suffix)
     try:
         assert filename.exists()
