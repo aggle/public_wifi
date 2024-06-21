@@ -59,7 +59,7 @@ def standalone(func):
 
 
 def generate_cube_scroller_widgets(
-        cds : bkmdls.ColumnDataSource,
+        cds : bkmdls.ColumnDataSource | pd.Series,
         cmap_class : bokeh.core.has_props.MetaHasProps = bkmdls.LinearColorMapper,
         slider_title_prefix : str = '',
         plot_kwargs={},
@@ -81,11 +81,18 @@ def generate_cube_scroller_widgets(
     diverging_cmap : bool = False
       If True, use a diverging Blue-Red colormap that is white in the middle
     """
+    if isinstance(cds, pd.Series):
+        cds = series_to_CDS(cds)
     # use this to store the plot elements
 
     TOOLS='save'
 
-    plot = figure(title=cds.data.get('title', [''])[0], tools=TOOLS, **plot_kwargs)
+    plot_kwargs['match_aspect'] = plot_kwargs.get('match_aspect', True)
+    plot = figure(
+        title=cds.data.get('title', [''])[0],
+        tools=TOOLS,
+        **plot_kwargs
+    )
 
     if diverging_cmap == False:
         palette = 'Magma256'
@@ -103,7 +110,7 @@ def generate_cube_scroller_widgets(
             low=np.nanmin(img)
             high=np.nanmax(img)
         else:
-            # make the limits symmmetric
+            # make the limits symmetric
             high = np.max(np.absolute([np.nanmin(img), np.nanmax(img)]))
             low = -1*high
         return low, high
@@ -188,7 +195,7 @@ def series_to_CDS(
     When you get a new cube, you should update its corresponding CDS.
     This is a generic helper function to do that.
 
-    cube : pandas Series of the data to plot
+    cube : pandas Series of the data to plot. Data are images.
     cds : bkmdls.ColumnDataSource | None
       a ColumnDataSource in which to store the data. Pass one in if you need it
       to be persistent, or leave as None to generate a new one.
@@ -208,7 +215,7 @@ def series_to_CDS(
     properties.update({
         'curimg': [cube.iloc[0]],
         'x': [-0.5], 'y': [-0.5],
-        'dw': [cube_shape[-2]], 'dh': [cube_shape[-1]],
+        'dw': [cube_shape[-1]], 'dh': [cube_shape[-2]],
         'len': [len(cube)],
     })
     cds.data.update(**properties)
