@@ -92,7 +92,8 @@ def generate_stamp_table(
         fits_folder : str | Path,
         file_mapper : pd.DataFrame,
         stamp_size : int = 15,
-        verbose : bool = False
+        ext : str = 'sci',
+        verbose : bool = False,
 ) -> pd.DataFrame :
     """
     Generate a stamp table to hold the stamp metadata and data arrays
@@ -138,7 +139,7 @@ def generate_stamp_table(
         except AssertionError:
             print(f"{fits_file.as_posix()} not found")
             return None
-        img = fits.getdata(fits_file, 'sci')
+        img = fits.getdata(fits_file, ext)
         w = wcs.WCS(fits.getheader(fits_file, 1))
         # operate on dataframe rows
         # returns an array of the stamp
