@@ -279,8 +279,8 @@ def get_hdr_from_exp_id(exp_id, hdr, db_file):
     Returns:
     hdr : fits header object
     """
-    flt_name = get_file_name_from_exp_id(exp_id)
-    flt_path = shared_utils.get_data_file(flt_name)
+    file_name = get_file_name_from_exp_id(exp_id)
+    flt_path = shared_utils.get_data_file(file_name)
     hdr = fits.getheader(flt_path, hdr)
     return hdr
 
