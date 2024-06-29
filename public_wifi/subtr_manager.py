@@ -312,7 +312,7 @@ class SubtrManager:
         # calculate all three correlation matrices
         self.db = db_manager
         self.instr = instrument
-
+        self.stamp_shape = self.db.stamps_tab['stamp_array'].dropna().iloc[0].shape
         # table for tracking references used
         cols = pd.Index(self.db.stamps_tab['stamp_id'], name='targ_id')
         indx = pd.Index(self.db.stamps_tab['stamp_id'], name='ref_id')
@@ -983,7 +983,7 @@ class SubtrManager:
             residuals=residuals,
             models=psf_models,
             references=references,
-            modes=klip_basis,
+            modes=klip_basis.map(np.reshape, newshape=self.stamp_shape, na_action='ignore'),
         )
         return results
 
