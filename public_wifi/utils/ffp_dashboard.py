@@ -512,7 +512,7 @@ def dashboard(
 
 
         # make a plot for the corresponding stamp
-        target_stamp_plot = figure()
+        target_stamp_plot = figure(match_aspect=True)
         # initialize it
         update_target_stamp_plot(selector_stamp.value, target_stamp_plot, ana_mgr.db)
 
