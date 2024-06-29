@@ -3,6 +3,8 @@ This module contains code used to define what is and isn't a detection
 """
 
 from pathlib import Path
+from typing import Literal
+
 import pandas as pd
 import numpy as np
 
@@ -10,6 +12,7 @@ import itertools
 
 from scipy import stats
 from scipy.signal import convolve2d
+from scipy.signal import correlate
 
 from astropy.io import fits
 from astropy.stats import sigma_clipped_stats
@@ -349,8 +352,39 @@ def cut_psf(
     psf = psf_stamp[row-width:row+width+1, col-width:col+width+1].copy()
     psf = psf - psf.min()
     if normalize_flux:
-        psf = psf/np.linalg.norm(psf)
+        # psf = psf/np.linalg.norm(psf)
+        psf = psf/np.nansum(psf)
     return psf
+
+def make_matched_filter_from_stamp(
+        stamp : np.ndarray,
+        width : int = 4
+) -> np.ndarray :
+    """
+    Generate a matched filter for use with scipy.signal.correlate by
+    cutting out a PSF at the desired width and setting the scale factor
+    appropriately.
+
+    Parameters
+    ----------
+    stamp : np.ndarray
+      a PSF instance
+      width : the final matched filter will have shape 2*width+1
+
+    Output
+    ------
+    mf : np.ndarray
+      a matched filter scaled appropriately to give back calibrated flux
+
+    """
+    # row, col = np.unravel_index(np.argmax(stamp), stamp.shape)
+    # mf = stamp[row-width:row+width+1, col-width:col+width+1].copy()
+    # # mf = mf - mf.min()
+    mf = cut_psf(stamp, width, normalize_flux=True)
+    thpt = np.dot(mf.flat, mf.flat)
+    mf = mf/thpt
+    return mf
+ 
 
 def inject_psf(
         stamp : np.ndarray,
@@ -383,7 +417,6 @@ def inject_psf(
     Output
     ------
     injected_stamp : np.ndarray
-      
     """
 
     injected_stamp = stamp.copy()
@@ -392,9 +425,8 @@ def inject_psf(
         psf_scaled = psf_scaled * (flux/psf_scaled.sum())
     psf_shape = np.asarray(psf.shape)
     psf_halfwidth = np.floor(psf_shape/2).astype(int)
-    
     psf_corner = np.asarray(position)[::-1] - psf_halfwidth
-    
+
     # compute the x and y injection regions
     xlim = [psf_corner[0], psf_corner[0]+psf.shape[0]]
     ylim = [psf_corner[1], psf_corner[1]+psf.shape[1]]
@@ -431,13 +463,18 @@ def inject_psf(
     return injected_stamp
 
 
-def apply_matched_filter(data, psf, klmodes=None, method='convolve'):
+_MF_METHODS = Literal["mft", "fft", "correlate", "convolve"]
+def apply_matched_filter(data, psf, klmodes=None, method : _MF_METHODS = 'correlate'):
     """
     apply matched filter detection using PSF models `psf` to the data `data`
+    method : "convolve", "correlate" (default), "fft"
     """
-    method = method.lower()
+    method = str(method).lower()
+    print(method)
     # normalize the PSF flux
     matched_filter = psf/psf.sum()
+    thpt = np.dot(matched_filter.flat, matched_filter.flat)
+    matched_filter = matched_filter / thpt
 
     if method == 'mft':
     # this works except for normalization
@@ -467,6 +504,8 @@ def apply_matched_filter(data, psf, klmodes=None, method='convolve'):
         # 1-this is the fraction of flux lost
         conv_flux_frac = 0.9656474335066184
         det_map /= conv_flux_frac
+    elif method == 'correlate':
+        det_map = correlate(data, matched_filter, method='auto', mode='same')
     else:
         method = 'convolve'
         # convolution also works except for normalization
