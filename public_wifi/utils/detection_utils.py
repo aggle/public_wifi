@@ -377,12 +377,17 @@ def make_matched_filter_from_stamp(
       a matched filter scaled appropriately to give back calibrated flux
 
     """
-    # row, col = np.unravel_index(np.argmax(stamp), stamp.shape)
-    # mf = stamp[row-width:row+width+1, col-width:col+width+1].copy()
-    # # mf = mf - mf.min()
-    mf = cut_psf(stamp, width, normalize_flux=True)
-    thpt = np.dot(mf.flat, mf.flat)
-    mf = mf/thpt
+    if isinstance(width, int):
+        mf = cut_psf(stamp, width, normalize_flux=True)
+    else:
+        mf = stamp.copy()
+    mf = mf - mf.min()
+    # # scale so the sum is 1
+    mf = mf/mf.sum()
+    # scale it so that it has norm 1
+    mf = mf - mf.mean()
+    # mf = mf/np.linalg.norm(mf)
+    # mf = mf / np.dot(mf.flat, mf.flat)
     return mf
  
 
