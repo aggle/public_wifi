@@ -470,78 +470,58 @@ def inject_psf(
     return injected_stamp
 
 
-_MF_METHODS = Literal["mft", "fft", "correlate", "convolve"]
-def apply_matched_filter(data, psf, klmodes=None, method : _MF_METHODS = 'correlate'):
+def apply_matched_filter(
+        data : np.ndarray,
+        psf : np.ndarray,
+        correct_throughput : bool = True,
+        klmodes : pd.Series | None = None
+) -> np.ndarray:
     """
     apply matched filter detection using PSF models `psf` to the data `data`
     method : "convolve", "correlate" (default), "fft"
+    returns an array of shape `data` that has had the matched filter applied.
+    if KL modes are also supplied, it gives the flux map
+
+    Parameters
+    ----------
+    data : np.ndarray,
+      data possibly containing a signal
+    psf : np.ndarray,
+      the signal to look for
+    method : _MF_METHODS = 'correlate',
+      deprecated - which matched filtering method to use
+    correct_throughput : bool = True
+      whether or not to correct for throughput
+      Normally this should be True. Set it to false when you are correlating
+      with the KL modes to compute the throughput itself.
+    klmodes : pd.Series | None = None
+      any KLIP modes 
     """
-    method = str(method).lower()
-    print(method)
-    # normalize the PSF flux
-    matched_filter = psf/psf.sum()
-    thpt = np.dot(matched_filter.flat, matched_filter.flat)
-    matched_filter = matched_filter / thpt
+    # prepare the matched filter
+    matched_filter = make_matched_filter_from_stamp(psf - psf.min(), width=None)
 
-    if method == 'mft':
-    # this works except for normalization
-        nlamD = np.asarray(data.shape)*(2**0)
-        det_map = matrixDFT.matrix_dft(
-            np.fft.fft2(data) * np.fft.ifft2(psf),
-            nlamD=nlamD,
-            npix=data.shape,
-            inverse=False,
-            centering=matrixDFT.SYMMETRIC
-        )**2
-    elif method == 'fft':
-        # this works well for some locations but not for others
-        # conserves flux the best
-        det_map = np.abs(
-            np.fft.ifft2(
-                np.fft.fft2(psf) * np.conj(np.fft.fft2(matched_filter))
-            )
-        )
-        # need to reverse axes, i think?
-        det_map = det_map[::-1, ::-1]
-    elif method == 'convolve':
-        # convolution also works except for normalization
-        det_map = convolve2d(data.T,
-                             matched_filter,
-                             mode='same').T
-        # 1-this is the fraction of flux lost
-        conv_flux_frac = 0.9656474335066184
-        det_map /= conv_flux_frac
-    elif method == 'correlate':
-        det_map = correlate(data, matched_filter, method='auto', mode='same')
+    # convolve the matched filter with the data to get the signal response map
+    det_map = correlate(data, matched_filter, method='auto', mode='same')
+    # scale the counts to match the flux contained in the matched filter
+    # klmodes can be none
+    if correct_throughput:
+        throughput = compute_throughput(matched_filter, klmodes)
     else:
-        method = 'convolve'
-        # convolution also works except for normalization
-        det_map = convolve2d(data.T,
-                             matched_filter,
-                             mode='same').T
-        # 1-this is the fraction of flux lost
-        conv_flux_frac = 0.9656474335066184
-        det_map /= conv_flux_frac
-
-    if klmodes is None:
-        throughput = np.linalg.norm(matched_filter)**2
-    else:
-        throughput = compute_throughput(psf, klmodes)
+        throughput = 1.
     det_map = det_map/throughput
     return det_map
 
 
-def compute_throughput(psf, modes=None) -> float | np.ndarray[float]:
+def compute_throughput(mf, klmodes=None) -> float | np.ndarray[float]:
     """
     Make a throughput map for flux calibration
 
     Parameters
     ----------
-    psf : np.ndarray
-      a PSF with the same shape as the modes. We will run them through the
-      matrixDFT transform. Advise using a PSF cutout injected into the middle
-      of a zeros array.
-    modes : pd.Series
+    mf : np.ndarray
+      The matched filter. We will compute the correlation with the KL modes to
+      get the throughput.
+    klmodes : pd.Series
       a pandas Series of the KL modes, reshaped into 2-D images
 
     Output
