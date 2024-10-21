@@ -358,7 +358,7 @@ def cut_psf(
 
 def make_matched_filter_from_stamp(
         stamp : np.ndarray,
-        width : int = 4
+        width : int | None = None,
 ) -> np.ndarray :
     """
     Generate a matched filter for use with scipy.signal.correlate by
@@ -369,7 +369,9 @@ def make_matched_filter_from_stamp(
     ----------
     stamp : np.ndarray
       a PSF instance
-      width : the final matched filter will have shape 2*width+1
+    width : int | None = None
+      the final matched filter will have shape 2*width+1
+      if None, use the whole stamp (for example, if you have already cut out the PSF)
 
     Output
     ------
