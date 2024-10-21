@@ -543,15 +543,20 @@ def compute_throughput(psf, modes=None) -> float | np.ndarray[float]:
       A 2-D array, the same shape as the image, containing the throughput
       correction to correct the detection map into PSF fluxes
     """
-    if modes is None:
-        return np.linalg.norm(psf)**2
-    if not isinstance(modes, pd.Series):
-        modes = pd.Series({i+1: mode for i, mode in enumerate(modes)})
-    psf_norm = np.linalg.norm(psf)**2
-    psf_thpt = modes.apply(
+    mf_norm = np.dot(mf.ravel(), mf.ravel())
+    if klmodes is None:
+        # this does not take into account when part of the flux is out of the stamp
+        # this should not have a big effect in the middle
+        # the effect is still small (~1%) out to one pixel in from the stamp edge
+        return mf_norm
+    # format kl modes as a series
+    if not isinstance(klmodes, pd.Series):
+        klmodes = pd.Series({i+1: mode for i, mode in enumerate(klmodes)})
+    mf_adjust = klmodes.apply(
         # lambda mode: convolve2d(mode, psf.T, mode='same')**2,
-        lambda mode: np.abs(apply_matched_filter(psf, mode))**2
+        lambda mode: apply_matched_filter(mf, mode, correct_throughput=False)**2
     )
-    return psf_norm - np.sum(np.stack(psf_thpt), axis=0)
+    mf_adjust = np.sum(np.stack(mf_adjust), axis=0)
+    return mf_norm - mf_adjust
 
 
