@@ -359,6 +359,7 @@ def cut_psf(
 def make_matched_filter_from_stamp(
         stamp : np.ndarray,
         width : int | None = None,
+        subtract_mean : bool = True,
 ) -> np.ndarray :
     """
     Generate a matched filter for use with scipy.signal.correlate by
@@ -383,13 +384,13 @@ def make_matched_filter_from_stamp(
         mf = cut_psf(stamp, width, normalize_flux=True)
     else:
         mf = stamp.copy()
+    # set it to all be positive
     mf = mf - mf.min()
-    # # scale so the sum is 1
+    # scale so the sum is 1
     mf = mf/mf.sum()
-    # scale it so that it has norm 1
-    mf = mf - mf.mean()
-    # mf = mf/np.linalg.norm(mf)
-    # mf = mf / np.dot(mf.flat, mf.flat)
+    # a proper matched filter should be mean-subtracted
+    if subtract_mean:
+        mf = mf - mf.mean()
     return mf
  
 
@@ -397,7 +398,7 @@ def inject_psf(
         stamp : np.ndarray,
         psf : np.ndarray,
         position : tuple[int, int],
-        flux : float | None = 1.,
+        flux : float = 1.,
 ) -> np.ndarray:
     """
     Inject the PSF to the stamp at the given position and scale such that the
@@ -411,9 +412,8 @@ def inject_psf(
     stamp : np.ndarray
       The image in which you would like to add the PSF
     psf : np.ndarray
-      An image of dimensions smaller than stamp containing a point spread
-      function. It will be adjusted such that the sum is equal to the flux
-      argument, in its native units.
+      A model of the psf. It will be adjusted such that the sum is equal to the
+      flux argument, in its native units.
     position : tuple[int, int]
       The (row, col) position in the stamp where the center of the PSF will go.
       For now, must be an integer.
@@ -427,11 +427,10 @@ def inject_psf(
     """
 
     injected_stamp = stamp.copy()
-    psf_scaled = psf - psf.min()
-    if flux is not None:
-        psf_scaled = psf_scaled * (flux/psf_scaled.sum())
+    psf = make_matched_filter_from_stamp(psf, width=None, subtract_mean=False)
+    psf_scaled = psf * flux
     psf_shape = np.asarray(psf.shape)
-    psf_halfwidth = np.floor(psf_shape/2).astype(int)
+    psf_halfwidth = np.floor(psf_shape/2).astype(int) 
     psf_corner = np.asarray(position)[::-1] - psf_halfwidth
 
     # compute the x and y injection regions
