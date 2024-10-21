@@ -8,6 +8,7 @@ import numpy as np
 from astropy.io import fits
 from astropy import nddata
 from astropy import wcs
+from public_wifi.utils.detection_utils import compute_throughput
 
 from . import table_utils
 from . import table_io
@@ -87,6 +88,63 @@ def generate_public_wifi_star_catalog(
     return star_cat.reset_index(drop=True)
 
 
+def cut_out_stamp(
+        img : np.array,
+        xyinit : tuple[float, float],
+        stamp_size : int,
+        wcs : wcs.wcs.WCS,
+) -> nddata.utils.Cutout2D :
+    """
+    Cut out a stamp from an image starting at the xy (col, row) xyinit. This
+    uses astropy.nddata.Cutout2D to select the stamp from the larger exposure.
+    This takes the xyinit value, cuts out a stamp, then recomputes the center
+    as the brightest pixel in the stamp. We'd better be careful, as it may lead
+    to some catalog mismatches!
+
+    Parameters
+    ----------
+    img : np.array
+      The large exposure
+    xyinit : tuple[float, float]
+      input XY parameters
+    stamp_size : int
+      dimension of the square to cut out
+    wcs : astropy.wcs.wcs.WCS
+      carries WCS information to provide to the cutout
+
+    Output
+    ------
+    cutout : astropy.nddata.utils.Cutout2D
+      A stamp centered on the provided source
+
+    """
+    # make the initial cutout and check the alignment - assume the target is
+    # located at the position of maximum flux.
+    # well, assume that the thing you want to subtract is located at the
+    # position of maximum flux.
+    initial_ct = nddata.Cutout2D(
+            img,
+            xyinit,
+            size=stamp_size,
+            mode='partial',
+            wcs=wcs,
+            fill_value=np.nan
+        )
+    # get the max and compute the new xy input
+    ctmax = np.unravel_index(np.argmax(initial_ct.data), initial_ct.shape)
+    xynew = np.array(initial_ct.origin_original) + np.array(ctmax)[::-1]
+    cutout = nddata.Cutout2D(
+            img,
+            xynew,
+            size=stamp_size,
+            mode='partial',
+            wcs=wcs,
+            fill_value=np.nan
+        )
+    return cutout
+
+
+
 def generate_stamp_table(
         ps_table : pd.DataFrame,
         fits_folder : str | Path,
@@ -143,13 +201,11 @@ def generate_stamp_table(
         w = wcs.WCS(fits.getheader(fits_file, 1))
         # operate on dataframe rows
         # returns an array of the stamp
-        row_get_stamp = lambda row: nddata.Cutout2D(
+        row_get_stamp = lambda row: cut_out_stamp(
             img,
             tuple(row[['ps_x_exp','ps_y_exp']].values),
-            size=stamp_size,
-            mode='partial',
+            stamp_size=stamp_size,
             wcs=w,
-            fill_value=np.nan
         )
         stamps = exp_group.apply(row_get_stamp, axis=1)
         if verbose == True:
