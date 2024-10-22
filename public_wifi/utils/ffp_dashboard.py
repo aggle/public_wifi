@@ -266,11 +266,20 @@ def load_result_stamps(
     results = ana_mgr.results_stamps[kind].loc[(star_id, stamp_id)]
     results = results.drop(results.index[results.apply(lambda arr: np.isnan(arr).all())])
     series_to_CDS(
-        results,
+        results.sort_index(),
         cds,
         properties={'title': [title]}
     )
     return
+
+def load_reference_stamps(
+        ana_mgr,
+        star_id : str,
+        stamp_id : str,
+        cds,
+) -> None:
+    """When you change the selected stamp, update the PSF reference stars"""
+     pass
 
 
 def get_star_name_from_id(star_id, ana_mgr):
@@ -357,10 +366,16 @@ def dashboard(
         load_result_stamps(ana_mgr, kind='residuals', 
                            star_id=star_init, stamp_id=target_stamp_init,
                            cds=residuals_cds, title='Residuals')        # PSF models
+        # PSF Models
         psfmodel_cds = bkmdls.ColumnDataSource()
         load_result_stamps(ana_mgr, kind='models', 
                            star_id=star_init, stamp_id=target_stamp_init,
                            cds=psfmodel_cds, title='PSF Model')        
+        # Matched Filter detection maps
+        mf_cds = bkmdls.ColumnDataSource()
+        load_result_stamps(ana_mgr, kind='mf', 
+                           star_id=star_init, stamp_id=target_stamp_init,
+                           cds=mf_cds, title='Matched filter')
 
         # Color-magnitude diagram
         cmd_cds = bkmdls.ColumnDataSource(
@@ -420,6 +435,7 @@ def dashboard(
         def change_target_stamp(attrname, old_id, new_id):
             # first, update the target stamp plot
             update_target_stamp_plot(new_id, target_stamp_plot, ana_mgr.db)
+            # update the references plot
             # update the snr, residual, and psf models
             load_result_stamps(ana_mgr, kind='snr', 
                                star_id=selector_star.value, stamp_id=selector_stamp.value,
@@ -430,6 +446,9 @@ def dashboard(
             load_result_stamps(ana_mgr, kind='models', 
                                star_id=selector_star.value, stamp_id=selector_stamp.value,
                                cds=psfmodel_cds, title='PSF Model')
+            load_result_stamps(ana_mgr, kind='mf', 
+                               star_id=selector_star.value, stamp_id=selector_stamp.value,
+                               cds=mf_cds, title='Matched filter')
             # print out the catalog name for this star
 
 
@@ -468,13 +487,13 @@ def dashboard(
                          color_mapper=mapper)
             return None
 
-        def update_scroller_plot_on_new_cube(
-                cds : bkmdls.ColumnDataSource,
-                scroller = bklyts.column,
-        ):
-            """Update a cube scroller when you update the data"""
-            figure, slider = scroller.children
-            slider.update(end=cds.data['len'][0]-1)
+        # def update_scroller_plot_on_new_cube(
+        #         cds : bkmdls.ColumnDataSource,
+        #         scroller = bklyts.column,
+        # ):
+        #     """Update a cube scroller when you update the data"""
+        #     figure, slider = scroller.children
+        #     slider.update(end=cds.data['len'][0]-1)
 
 
         ### GUI ELEMENTS ###
@@ -538,6 +557,12 @@ def dashboard(
             slider_kwargs={'show_value': False},
             add_log_scale=True,
         )
+        mf_scroller = generate_cube_scroller_widgets(
+            mf_cds,
+            slider_title_prefix='Nmodes',
+            slider_kwargs={'show_value': False},
+            add_log_scale=True,
+        )
 
 
         # define the dashboard layout
@@ -550,8 +575,8 @@ def dashboard(
         )
         tab_snr = bkmdls.TabPanel(
             child = bklyts.column(
-                bklyts.row(snr_scroller, resid_scroller),
-                psfmodel_scroller
+                bklyts.row(resid_scroller, snr_scroller),
+                bklyts.row(psfmodel_scroller, mf_scroller)
             ),
             title = 'SNR'
         )
