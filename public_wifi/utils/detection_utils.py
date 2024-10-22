@@ -16,6 +16,7 @@ from scipy.signal import correlate
 
 from astropy.io import fits
 from astropy.stats import sigma_clipped_stats
+from astropy import nddata
 
 from importlib import reload
 
@@ -107,16 +108,6 @@ def compute_noise_map(
     if mode == 'pixel':
         # # compute the SNR map by comparing the target stamp pixel to that same
         # # pixel in the residual stamps of all the other stars' residuals
-        # def calc_pixelwise_std(row):
-        #     # given a target row, make an SNR map for each KL mode if the residuals
-        #     name = row.name
-        #     ref_stamp_ids = subtr_results.references.loc[name].dropna()
-        #     refs_resid = subtr_results.residuals.query("stamp_id in @ref_stamp_ids")
-        #     # refs_resid = resids.loc[resids.index != name].dropna(axis=1, how='all')
-        #     refs_resid = refs_resid.dropna(axis=1, how='all')
-        #     refs_resid_std = refs_resid.apply(lambda col: [sigma_clipped_stats(np.stack(col.dropna()), axis=0)[-1]]).squeeze()
-        #     return refs_resid_std
-        # std_map = resids.apply(lambda row: calc_pixelwise_std(row), axis=1)
         noise_maps = resids.apply(
             lambda col: [sigma_clipped_stats(np.stack(col.dropna()), sigma=clip_thresh, axis=0)[-1]]
         ).squeeze()
@@ -415,8 +406,8 @@ def inject_psf(
       A model of the psf. It will be adjusted such that the sum is equal to the
       flux argument, in its native units.
     position : tuple[int, int]
-      The (row, col) position in the stamp where the center of the PSF will go.
-      For now, must be an integer.
+      The (row, col) aka (y, x) position in the stamp where the center of the
+      PSF will go. For now, must be an integer.
     flux : float [1.]
       Scale the PSF image such that psf.sum() = flux
       If None, no normalization or scaling is performed
@@ -500,7 +491,12 @@ def apply_matched_filter(
     matched_filter = make_matched_filter_from_stamp(psf - psf.min(), width=None)
 
     # convolve the matched filter with the data to get the signal response map
-    det_map = correlate(data, matched_filter, method='auto', mode='same')
+    det_map = correlate(data, matched_filter, method='direct', mode='same')
+    # # use astropy.nddata.utils.Cutout2D to get back the cutout
+    # uncomment this, but it takes extra time
+    # det_map = correlate(data, matched_filter, method='direct', mode='full')
+    # center = np.floor(np.array(det_map.shape)/2)
+    # det_map = nddata.Cutout2D(det_map, center[::-1], data.shape[0]).data 
     # scale the counts to match the flux contained in the matched filter
     # klmodes can be none
     if correct_throughput:
@@ -529,20 +525,31 @@ def compute_throughput(mf, klmodes=None) -> float | np.ndarray[float]:
       A 2-D array, the same shape as the image, containing the throughput
       correction to correct the detection map into PSF fluxes
     """
-    mf_norm = np.dot(mf.ravel(), mf.ravel())
-    if klmodes is None:
-        # this does not take into account when part of the flux is out of the stamp
-        # this should not have a big effect in the middle
-        # the effect is still small (~1%) out to one pixel in from the stamp edge
-        return mf_norm
-    # format kl modes as a series
-    if not isinstance(klmodes, pd.Series):
-        klmodes = pd.Series({i+1: mode for i, mode in enumerate(klmodes)})
-    mf_adjust = klmodes.apply(
-        # lambda mode: convolve2d(mode, psf.T, mode='same')**2,
-        lambda mode: apply_matched_filter(mf, mode, correct_throughput=False)**2
-    )
-    mf_adjust = np.sum(np.stack(mf_adjust), axis=0)
-    return mf_norm - mf_adjust
+    # mf_norm = np.dot(mf.ravel(), mf.ravel())
+    # if klmodes is None:
+    #     # this does not take into account when part of the flux is out of the stamp
+    #     # this should not have a big effect in the middle
+    #     # the effect is still small (~1%) out to one pixel in from the stamp edge
+    #     throughput = mf_norm
+    # else:
+    #     # format kl modes as a series
+    #     if not isinstance(klmodes, pd.Series):
+    #         klmodes = pd.Series({i+1: mode for i, mode in enumerate(klmodes)})
+    #     mf_adjust = klmodes.apply(
+    #         lambda mode: apply_matched_filter(mf, mode, correct_throughput=False)**2
+    #     )
+    #     mf_adjust = np.sum(np.stack(mf_adjust), axis=0)
+    #     throughput = mf_norm - mf_adjust
+    throughput = np.dot(mf.ravel(), mf.ravel())
+    if klmodes is not None:
+        # format kl modes as a series
+        if not isinstance(klmodes, pd.Series):
+            klmodes = pd.Series({i+1: mode for i, mode in enumerate(klmodes)})
+        mf_adjust = klmodes.apply(
+            lambda mode: apply_matched_filter(mf, mode, correct_throughput=False)**2
+        )
+        mf_adjust = np.sum(np.stack(mf_adjust), axis=0)
+        throughput = throughput - mf_adjust
+    return throughput
 
 
