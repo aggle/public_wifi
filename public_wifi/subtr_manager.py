@@ -389,8 +389,8 @@ class SubtrManager:
                 self.db.stamps_tab[['stamp_ps_id', 'stamp_id']],
                 left_on='ps_id', right_on='stamp_ps_id'
         )
-        f1_stamps = df.query("ps_filt_id == 'F1")['stamp_id']
-        f2_stamps = df.query("ps_filt_id == 'F2")['stamp_id']
+        f1_stamps = df.query("ps_filt_id == 'F1'")['stamp_id']
+        f2_stamps = df.query("ps_filt_id == 'F2'")['stamp_id']
         for s1 in f1_stamps:
             for s2 in f2_stamps:
                 reference_table.loc[(s1, s2)] = False
@@ -466,10 +466,16 @@ class SubtrManager:
             print(f"Error: passed value of targ_stamp_id is not a valid "\
                   f"stamp ID ({targ_stamp_id})")
 
+        good_refs = self.reference_table.index[self.reference_table[targ_stamp_id]]
         # construct a table with all the necessary query information
         # start with the standard stamps table
         query_table = self.db.stamps_tab.copy()
-        # merge it with the ps_table
+
+        # filter for only the good refs
+        # this selects for the same filter, for the Good Ref flag, and for a difference star
+        query_table = query_table.set_index("stamp_id").loc[good_refs].reset_index()
+
+        # merge it with the ps_table so you can filter on magnitude
         query_table = query_table.merge(self.db.find_matching_id(query_table['stamp_id'], 'P'),
                                         on='stamp_id')
         query_table = query_table.merge(self.db.ps_tab, on='ps_id')
@@ -479,23 +485,17 @@ class SubtrManager:
         query_table = query_table.merge(self.db.stars_tab, on='star_id')
 
 
-        # start assembling the query - stamps whose star_id doesn't match the target star
-        targ_star_id = self.db.find_matching_id(targ_stamp_id, 'S')
-        query_str = f"stamp_star_id != '{targ_star_id}'"
-
         # apply the dmag cut, if given
         if dmag_max is not None:
             targ_mag = self.db.find_stamp_mag(targ_stamp_id)
             dmag_bool = query_table['ps_mag'].apply(lambda x: np.abs(x - targ_mag) <= dmag_max)
             query_table = query_table.loc[dmag_bool]
-            # reject all stamps with a bad reference flag
-            query_str = "stamp_ref_flag == True"
 
         # finally, apply the query!
-        ref_stamps = query_table.query(query_str)
+        ref_stamps = query_table.set_index("stamp_id")['stamp_array']
         if ids_only == True:
-            return ref_stamps['stamp_id']
-        return ref_stamps.set_index('stamp_id')['stamp_array']
+            return ref_stamps.index
+        return ref_stamps
 
 
     def perform_table_subtraction(self, func, func_args={}):
