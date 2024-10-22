@@ -318,10 +318,11 @@ class SubtrManager:
         indx = pd.Index(self.db.stamps_tab['stamp_id'], name='ref_id')
 
         # initialize and set table of reference flags
-        self.reference_table = pd.DataFrame(True, columns=cols, index=indx, dtype=bool)
-        ref_flags = self.db.stamps_tab.set_index("stamp_id")['stamp_ref_flag']
-        bad_refs = ref_flags[ref_flags == False]
-        self.reference_table.loc[bad_refs.index] = False
+        # self.reference_table = pd.DataFrame(True, columns=cols, index=indx, dtype=bool)
+        # ref_flags = self.db.stamps_tab.set_index("stamp_id")['stamp_ref_flag']
+        # bad_refs = ref_flags[ref_flags == False]
+        # self.reference_table.loc[bad_refs.index] = False
+        self.reference_table = self.set_reference_table()
 
         # correlation function arguments
         self.corr_func_args_dict = {'mse': {},
@@ -366,6 +367,40 @@ class SubtrManager:
     ###########
     # methods #
     ###########
+    def set_reference_table(self):
+        """
+        Set the mutual reference table:
+        1. Stars cannot be used as reference for themselves
+        2. References must have the same filter
+        3. Stars with 'bad reference flags' cannot be used as references
+        """
+        stamp_ids = self.db.stamps_tab['stamp_id']
+        reference_table = pd.DataFrame(True, index=stamp_ids, columns=stamp_ids)
+        # a stamp cannot be a reference for itself
+        for i in reference_table.columns:
+            reference_table.loc[i, i] = False
+        # reference stamps must have the same filter
+        for i in reference_table.columns:
+            reference_table.loc[i, i] = False
+        # reference stamps must have the same filter
+        # match the filter ID with the stamp_id, using the PS table
+        df = pd.merge(
+                self.db.ps_tab[['ps_id', 'ps_filt_id']],
+                self.db.stamps_tab[['stamp_ps_id', 'stamp_id']],
+                left_on='ps_id', right_on='stamp_ps_id'
+        )
+        f1_stamps = df.query("ps_filt_id == 'F1")['stamp_id']
+        f2_stamps = df.query("ps_filt_id == 'F2")['stamp_id']
+        for s1 in f1_stamps:
+            for s2 in f2_stamps:
+                reference_table.loc[(s1, s2)] = False
+                reference_table.loc[(s2, s1)] = False
+        # bad reference flags
+        ref_flags = self.db.stamps_tab.set_index("stamp_id")['stamp_ref_flag']
+        bad_refs = ref_flags[ref_flags == False]
+        reference_table.loc[bad_refs.index] = False
+        return reference_table
+
     def calc_psf_corr(self):
         """
         Compute the correlation matrices. Sets self.corr_mats, a dict
