@@ -189,21 +189,22 @@ class AnaManager:
             "models": sub_mgr.subtr_results.models,
         }
         # compute SNR maps
-        if compute_snr != '':
-            # compute the noise
-            self.results_stamps["std"] = detection_utils.compute_noise_map(
-                sub_mgr.subtr_results,
-                mode=compute_snr,
-                clip_thresh = 3.0,
-                normalize=True,
-            )
-            # now normalize the residuals and divide them by the noise
-            snr_maps = detection_utils.normalize_stamps(
-                sub_mgr.subtr_results.residuals
-            ) / self.results_stamps["std"]
-            self.results_stamps["snr"] = snr_maps
-            # now, find candidate detections
-            self.results_stamps['detections'] = detection_utils.get_candidates(self.results_stamps['snr'])
+        # compute the noise
+        self.results_stamps["std"] = detection_utils.compute_noise_map(
+            sub_mgr.subtr_results,
+            mode=compute_snr,
+            clip_thresh = 3.0,
+            normalize=True,
+        )
+        # now normalize the residuals and divide them by the noise
+        snr_maps = detection_utils.normalize_stamps(
+            sub_mgr.subtr_results.residuals
+        ) / self.results_stamps["std"]
+        self.results_stamps["snr"] = snr_maps
+        # now, find candidate detections
+        self.results_stamps['detections'] = detection_utils.get_candidates(self.results_stamps['snr'])
+        self.results_stamps['mf'] = self.make_mf_maps()
+
         # make the target stamp cutouts
         self.stamp_cutouts = self.stamps2cutout()
         # this holds the wcs data
@@ -245,25 +246,39 @@ class AnaManager:
             # res_factor=1
     ) -> None:
         return None
-    #     """
-    #     Make a mosaic out of the star residuals.
 
-    #     Parameters
-    #     ----------
-    #     star_id : the star you want a mosaic of
-    #     key : valid key to self.results_cutouts
-    #     res_factor : factor by which to multiply the pixel scale
 
-    #     Output
-    #     ------
-    #     A single mosaicked image from the combined images of the star
+    def make_mf_maps(
+            self,
+    ) -> pd.DataFrame :
+       """
+       Apply a matched filter to each residual and return a throughput-corrected matched filter result
 
-    #     """
-    #     if self.instr is not None:
-    #         resolution = np.mean(self.instr.pix_scale) * units.pixel * res_factor
-    #     else:
-    #         resolution = None
-    #     star_resids = self.results_cutouts[key].query("star_id == @star_id")
-    #     # return star_resids, resolution
-    #     mosaic = star_resids.apply(lambda row: get_mosaic(row, resolution), axis=1)
-    #     return mosaic
+       Parameters
+       ----------
+       calibrate_flux : bool = False
+         if True, return the calibrated flux from the matched filter
+
+       Output
+       ------
+       A dataframe the same shape as the 'residuals' dataframe, with the matched filter result
+
+       """
+       residuals = self.results_stamps['residuals']
+       models = self.results_stamps['models']
+       def row_apply_mf(row):
+           index = row.name
+           model = models.loc[index].dropna().iloc[-1].copy()
+           mf = detection_utils.make_matched_filter_from_stamp(model, width=None, subtract_mean=True)
+           mf_result = row.apply(
+               lambda stamp: detection_utils.apply_matched_filter(
+                   stamp,
+                   mf,
+                   correct_throughput=True,
+                   klmodes=None
+               )
+           )
+           return mf_result
+       mf_maps = residuals.apply(row_apply_mf, axis=1)
+       return mf_maps
+
