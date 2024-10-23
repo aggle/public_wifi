@@ -351,7 +351,8 @@ class DBManager:
                 print("One or more of the provided identifiers were not found.")
                 print("This shouldn't occur unless the database was constructed improperly.")
                 matching_ids = pd.Series(ids)
-        return matching_ids.squeeze()
+        # return matching_ids.squeeze()
+        return matching_ids
 
 
     def join_all_tables(self):
