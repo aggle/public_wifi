@@ -223,12 +223,14 @@ def series_to_CDS(
 
 def load_new_references(
     ana_mgr, 
-    star_id : str, 
+    star_id : str,
+    stamp_id : str,
     cds : bkmdls.ColumnDataSource,
 ):
-    reference_ids = ana_mgr.results_stamps['references'].loc[star_id].dropna(how='all', axis=1)
-    reference_ids = reference_ids.drop_duplicates().values.ravel()
-    reference_stamps = ana_mgr.db.stamps_tab.set_index('stamp_id').loc[reference_ids, 'stamp_array']
+    # reference_ids = ana_mgr.results_stamps['references'].loc[star_id, stamp_id].dropna(how='all', axis=1)
+    # reference_ids = reference_ids.drop_duplicates().values.ravel()
+    # reference_stamps = ana_mgr.db.stamps_tab.set_index('stamp_id').loc[reference_ids, 'stamp_array']
+    reference_stamps = ana_mgr.results_stamps['references'].loc[star_id, stamp_id].dropna()
     series_to_CDS(
         reference_stamps.sort_index(), #np.stack(reference_stamps.values),
         cds,
@@ -353,7 +355,7 @@ def dashboard(
 
         # load the references stamps
         reference_stamps_cds = bkmdls.ColumnDataSource()
-        load_new_references(ana_mgr, star_init, reference_stamps_cds)
+        load_new_references(ana_mgr, star_init, target_stamp_init, reference_stamps_cds)
 
         # load the PSF subtraction products
         # SNR map
@@ -419,9 +421,6 @@ def dashboard(
                 value=target_stamp_init,
                 options=target_stamp_ids,
             )
-            # load a new set of reference stamps
-            load_new_references(ana_mgr, new_id, reference_stamps_cds)
-            # get_new_reference_stamps(new_id, reference_stamp_cds, refstamp_scroller)
             # get the catalog name of this star
             star_name = get_star_name_from_id(new_id, ana_mgr)
             display_star_name.update(value=star_name)
@@ -436,6 +435,8 @@ def dashboard(
             # first, update the target stamp plot
             update_target_stamp_plot(new_id, target_stamp_plot, ana_mgr.db)
             # update the references plot
+            # load a new set of reference stamps
+            load_new_references(ana_mgr, selector_star.value, new_id, reference_stamps_cds)
             # update the snr, residual, and psf models
             load_result_stamps(ana_mgr, kind='snr', 
                                star_id=selector_star.value, stamp_id=selector_stamp.value,
