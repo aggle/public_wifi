@@ -773,6 +773,7 @@ class SubtrManager:
                 for targ_id, refs in rescaled_refs.items()
             }
         # return targ_stamps, rescaled_refs
+        rescaled_refs = pd.DataFrame(rescaled_refs)
         return targ_stamps, rescaled_refs
 
 
@@ -943,6 +944,73 @@ class SubtrManager:
         if return_results == True:
             return all_results
 
+    def subtr_klip_one_stamp(
+            self,
+            target_stamp : pd.DataFrame,
+            ref_stamps : pd.DataFrame,
+            kwargs={}
+    ):
+        """
+        Perform klip subtraction on a target stamp
+        the targ_stamp and ref_stamps must be passed in as *dataframes*
+        """
+        try:
+            assert(len(ref_stamps) > 0)
+        except AssertionError:
+            raise ZeroRefsError("Error: No references given!")
+        # shared_utils.debug_print(False, f'Nrefs = {len(ref_stamps)}, continuing...')
+
+        # synchronize the global argument dictionary and the passed one
+        # self.klip_args_dict serves as a record; kwargs is used here
+        self.klip_args_dict.update(kwargs)
+        kwargs.update(self.klip_args_dict)
+
+        # flatten
+        targ_stamp_flat = target_stamp.map(np.ravel)
+        ref_stamps_flat = ref_stamps.dropna().map(np.ravel)
+
+        # apply KLIP
+        kl_max = np.array([len(ref_stamps_flat)-1])
+        #numbasis = klip_args.get('numbasis', kl_max)
+        # numbasis = targ_ref_indices.apply(lambda el: np.arange(1, len(el)-1))
+        numbasis = ref_stamps_flat.apply(lambda col: np.arange(1, len(col.dropna())-1))
+        shared_utils.debug_print(False, f"{kl_max}, {numbasis}")
+        return_basis = True
+        # use some dataframe trickery to get the right stamps for the reference
+        klip_results = targ_stamp_flat.to_frame().apply(
+            lambda row: klip.klip_math(row['stamp_array'],
+                                       # trick for dropping NaN entries, which are references that have been cut
+                                       np.stack(ref_stamps_flat[row.name].dropna()),
+                                       numbasis = numbasis[row.name],
+                                       return_basis = return_basis),
+            axis=1,
+        )
+        # # subtraction results
+        residuals = klip_results.to_frame().apply(lambda x: pd.Series(dict(zip(numbasis[x.name], x[0][0].T))), axis=1)
+        residuals = residuals.map(image_utils.make_image_from_flat)
+        # # generate PSF models and store in dataframe
+        # # klip basis
+        klip_basis = klip_results.to_frame().apply(lambda x: pd.Series(dict(zip(numbasis[x.name], x[0][1]))), axis=1)
+        model_gen_df = pd.merge(targ_stamp_flat, klip_basis, left_index=True, right_index=True)
+        psf_models = model_gen_df.apply(lambda row: psf_model_from_basis(row['stamp_array'],
+                                                                         np.stack(row[numbasis[row.name]]),
+                                                                         numbasis=numbasis[row.name]),
+                                        axis=1)
+        # psf_models = psf_models.to_frame(name='psf_model').apply(lambda x: pd.Series(dict(zip(numbasis[x.name], x))), axis=1)
+        psf_models = pd.concat(
+            {k: pd.Series(dict(zip(numbasis[k], v))) for k, v in psf_models.to_dict().items()},
+            axis=1,
+        ).T
+        psf_models = psf_models.map(image_utils.make_image_from_flat)
+        # references
+        # references = pd.concat({k: pd.Series(v) for k, v in targ_ref_indices.to_dict().items()}, axis=1).T
+        results = Results(
+            residuals=residuals,
+            models=psf_models,
+            references=ref_stamps,
+            modes=klip_basis.map(np.reshape, newshape=self.stamp_shape, na_action='ignore'),
+        )
+        return results
 
     def subtr_klip_one_star(self, targ_star, kwargs={}, ref_args={}):
         """
@@ -966,72 +1034,89 @@ class SubtrManager:
 
         """
         targ_stamps, ref_stamps = self.get_targets_references_by_star(targ_star, **ref_args)
-        # targ_stamps is a Series with the target stamp_id as the index
-        # ref_stamps is a DataFrame with the target stamp_id as the column and
-        # the reference stamp_id as the index
-        # pull out the indices of the non-NaN references, which have been filtered
-        # targ_ref_indices = ref_stamps.map(
-        #     lambda el: ~np.isnan(np.asarray(el)).all()
-        # ).apply(
-        #     lambda col: col[col].index
-        # )
-        # build sequenial NMF model
-        try:
-            assert(len(ref_stamps) > 0)
-        except AssertionError:
-            raise ZeroRefsError("Error: No references given!")
-        shared_utils.debug_print(False, f'Nrefs = {len(ref_stamps)}, continuing...')
-
-        # synchronize the global argument dictionary and the passed one
-        # self.klip_args_dict serves as a record; kwargs is used here
-        self.klip_args_dict.update(kwargs)
-        kwargs.update(self.klip_args_dict)
-
-        # flatten
-        targ_stamps_flat = targ_stamps.map(np.ravel)
-        ref_stamps_flat = {t: r.map(np.ravel) for t, r in ref_stamps.items()}
-
-        # apply KLIP
-        kl_max = np.array([len(ref_stamps_flat)-1])
-        #numbasis = klip_args.get('numbasis', kl_max)
-        # numbasis = targ_ref_indices.apply(lambda el: np.arange(1, len(el)-1))
-        numbasis = {t: np.arange(1, len(r)) for t, r in ref_stamps_flat.items()}
-        shared_utils.debug_print(False, f"{kl_max}, {numbasis}")
-        return_basis = True
-        # use some dataframe trickery to get the right stamps for the reference
-        klip_results = targ_stamps_flat.to_frame().apply(
-            lambda row: klip.klip_math(row['stamp_array'],
-                                       # trick for dropping NaN entries, which are references that have been cut
-                                       np.stack(ref_stamps_flat[row.name]),
-                                       numbasis = numbasis[row.name],
-                                       return_basis = return_basis),
-            axis=1,
-        )
-        # # subtraction results
-        residuals = klip_results.to_frame().apply(lambda x: pd.Series(dict(zip(numbasis[x.name], x[0][0].T))), axis=1)
-        residuals = residuals.map(image_utils.make_image_from_flat)
-        # # generate PSF models and store in dataframe
-        # # klip basis
-        klip_basis = klip_results.to_frame().apply(lambda x: pd.Series(dict(zip(numbasis[x.name], x[0][1]))), axis=1)
-        model_gen_df = pd.merge(targ_stamps_flat, klip_basis, left_index=True, right_index=True)
-        psf_models = model_gen_df.apply(lambda row: psf_model_from_basis(row['stamp_array'],
-                                                                         np.stack(row[numbasis[row.name]]),
-                                                                         numbasis=numbasis[row.name]),
-                                        axis=1)
-        # psf_models = psf_models.to_frame(name='psf_model').apply(lambda x: pd.Series(dict(zip(numbasis[x.name], x))), axis=1)
-        psf_models = pd.concat(
-            {k: pd.Series(dict(zip(numbasis[k], v))) for k, v in psf_models.to_dict().items()},
-            axis=1,
-        ).T
-        psf_models = psf_models.map(image_utils.make_image_from_flat)
-        # reference stamps
-        # references = pd.concat({k: pd.Series(v) for k, v in targ_ref_indices.to_dict().items()}, axis=1).T
+        stamp_results = []
+        for targ_id in targ_stamps.index:
+            stamp_result = self.subtr_klip_one_stamp(
+                # targ_stamps should be a series
+                target_stamp = targ_stamps[[targ_id]],
+                # ref_stamps should be a dataframe
+                ref_stamps = ref_stamps[[targ_id]],
+                kwargs = kwargs,
+            )
+            stamp_results.append(stamp_result)
+        # combine the results
+        
         results = Results(
-            residuals=residuals,
-            models=psf_models,
-            references=ref_stamps,
-            modes=klip_basis.map(np.reshape, newshape=self.stamp_shape, na_action='ignore'),
+            residuals=pd.concat([r.residuals for r in stamp_results], axis=0),
+            models=pd.concat([r.models for r in stamp_results], axis=0),
+            references=pd.concat([r.references for r in stamp_results], axis=0),
+            modes=pd.concat([r.modes for r in stamp_results], axis=0),
         )
+        # # targ_stamps is a Series with the target stamp_id as the index
+        # # ref_stamps is a DataFrame with the target stamp_id as the column and
+        # # the reference stamp_id as the index
+        # # pull out the indices of the non-NaN references, which have been filtered
+        # # targ_ref_indices = ref_stamps.map(
+        # #     lambda el: ~np.isnan(np.asarray(el)).all()
+        # # ).apply(
+        # #     lambda col: col[col].index
+        # # )
+        # try:
+        #     assert(len(ref_stamps) > 0)
+        # except AssertionError:
+        #     raise ZeroRefsError("Error: No references given!")
+        # # shared_utils.debug_print(False, f'Nrefs = {len(ref_stamps)}, continuing...')
+
+        # # synchronize the global argument dictionary and the passed one
+        # # self.klip_args_dict serves as a record; kwargs is used here
+        # self.klip_args_dict.update(kwargs)
+        # kwargs.update(self.klip_args_dict)
+
+        # # flatten
+        # targ_stamps_flat = targ_stamps.map(np.ravel)
+        # ref_stamps_flat = ref_stamps.map(np.ravel)
+
+        # # apply KLIP
+        # kl_max = np.array([len(ref_stamps_flat)-1])
+        # #numbasis = klip_args.get('numbasis', kl_max)
+        # # numbasis = targ_ref_indices.apply(lambda el: np.arange(1, len(el)-1))
+        # numbasis = ref_stamps_flat.apply(lambda col: np.arange(1, len(col.dropna())-1))
+        # shared_utils.debug_print(False, f"{kl_max}, {numbasis}")
+        # return_basis = True
+        # # use some dataframe trickery to get the right stamps for the reference
+        # klip_results = targ_stamps_flat.to_frame().apply(
+        #     lambda row: klip.klip_math(row['stamp_array'],
+        #                                # trick for dropping NaN entries, which are references that have been cut
+        #                                np.stack(ref_stamps_flat[row.name].dropna()),
+        #                                numbasis = numbasis[row.name],
+        #                                return_basis = return_basis),
+        #     axis=1,
+        # )
+        # # # subtraction results
+        # residuals = klip_results.to_frame().apply(lambda x: pd.Series(dict(zip(numbasis[x.name], x[0][0].T))), axis=1)
+        # residuals = residuals.map(image_utils.make_image_from_flat)
+        # # # generate PSF models and store in dataframe
+        # # # klip basis
+        # klip_basis = klip_results.to_frame().apply(lambda x: pd.Series(dict(zip(numbasis[x.name], x[0][1]))), axis=1)
+        # model_gen_df = pd.merge(targ_stamps_flat, klip_basis, left_index=True, right_index=True)
+        # psf_models = model_gen_df.apply(lambda row: psf_model_from_basis(row['stamp_array'],
+        #                                                                  np.stack(row[numbasis[row.name]]),
+        #                                                                  numbasis=numbasis[row.name]),
+        #                                 axis=1)
+        # # psf_models = psf_models.to_frame(name='psf_model').apply(lambda x: pd.Series(dict(zip(numbasis[x.name], x))), axis=1)
+        # psf_models = pd.concat(
+        #     {k: pd.Series(dict(zip(numbasis[k], v))) for k, v in psf_models.to_dict().items()},
+        #     axis=1,
+        # ).T
+        # psf_models = psf_models.map(image_utils.make_image_from_flat)
+        # # references
+        # # references = pd.concat({k: pd.Series(v) for k, v in targ_ref_indices.to_dict().items()}, axis=1).T
+        # results = Results(
+        #     residuals=residuals,
+        #     models=psf_models,
+        #     references=ref_stamps,
+        #     modes=klip_basis.map(np.reshape, newshape=self.stamp_shape, na_action='ignore'),
+        # )
         return results
 
 
