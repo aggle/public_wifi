@@ -279,7 +279,7 @@ def load_reference_stamps(
         cds,
 ) -> None:
     """When you change the selected stamp, update the PSF reference stars"""
-     pass
+    pass
 
 
 def get_star_name_from_id(star_id, ana_mgr):
