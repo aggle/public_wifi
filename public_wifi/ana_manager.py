@@ -203,7 +203,7 @@ class AnaManager:
         self.results_stamps["snr"] = snr_maps
         # now, find candidate detections
         self.results_stamps['detections'] = detection_utils.get_candidates(self.results_stamps['snr'])
-        self.results_stamps['mf'] = self.make_mf_maps()
+        self.results_stamps['mf'] = self.make_mf_maps(None)
 
         # make the target stamp cutouts
         self.stamp_cutouts = self.stamps2cutout()
@@ -250,6 +250,7 @@ class AnaManager:
 
     def make_mf_maps(
             self,
+            mf_size : int | None = None,
     ) -> pd.DataFrame :
        """
        Apply a matched filter to each residual and return a throughput-corrected matched filter result
@@ -269,7 +270,7 @@ class AnaManager:
        def row_apply_mf(row):
            index = row.name
            model = models.loc[index].dropna().iloc[-1].copy()
-           mf = detection_utils.make_matched_filter_from_stamp(model, width=None, subtract_mean=True)
+           mf = detection_utils.make_matched_filter_from_stamp(model, width=mf_size, subtract_mean=True)
            mf_result = row.apply(
                lambda stamp: detection_utils.apply_matched_filter(
                    stamp,
