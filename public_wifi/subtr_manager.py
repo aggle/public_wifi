@@ -437,7 +437,12 @@ class SubtrManager:
         self.psf_subtr.drop(drop_cols, axis=1, inplace=True)
 
 
-    def get_reference_stamps(self, targ_stamp_id, ids_only=False, dmag_max=None):
+    def get_reference_stamps(
+            self,
+            targ_stamp_id,
+            ids_only=False,
+            dmag_max=None,
+    ) -> pd.DataFrame:
         """
         Given a target stamp, find the list of appropriate reference stamps
         using e.g. the star_id and the stamp_ref_flag value
@@ -713,7 +718,7 @@ class SubtrManager:
     def get_targets_references_by_star(
             self,
             targ_star : str,
-            dmag : int | None = None,
+            dmag : float | None = None,
             ssim_cutoff : float | None = None,
     ) -> tuple[pd.Series, pd.DataFrame]:
         """
@@ -726,42 +731,48 @@ class SubtrManager:
         dmag : [None] | float
           dmag range cut on the references. If none, no magnitude cut applied
         ssim_cutoff : [None] | float
-          SSIM metric threshold (-1 - 1) below which to reject references
+          SSIM metric threshold (-1 - 1) below which to reject references. 1 is
+          completely correlated and -1 is anti-correlated.
         """
 
         full_table = self.db.join_all_tables()
         targ_group = full_table.query(f"star_id == '{targ_star}'")
         targ_stamps = targ_group.set_index('stamp_id')['stamp_array']
-        # select all the *other* stars
-        ref_stars = full_table.query('star_id != @targ_star')
+        # # select all the *other* stars
+        # ref_stars = full_table.query('star_id != @targ_star')
 
-        # drop bad references
-        ref_stars = ref_stars.query('stamp_ref_flag == True')
+        # select the good references
+        ref_stamps = {
+            targ_id: self.get_reference_stamps(targ_id, dmag_max=dmag)
+            for targ_id in targ_stamps.index
+        }
 
-        # select by magnitude
-        if dmag is not None:
-            mag_llim = targ_group['ps_mag'].min() - dmag
-            mag_ulim = targ_group['ps_mag'].max() + dmag
-            ref_stars = ref_stars.query(f"ps_mag <= {mag_ulim} and ps_mag >= {mag_llim}")
-
-        ref_stamps = ref_stars.set_index('stamp_id')['stamp_array']
         # rescale the stamps to be appropriate for each target
-        rescaled_refs = pd.DataFrame(
-            data={
-                t: ref_stamps.apply(lambda r: rescale_reference(targ_stamps[t], r))
-                for t in targ_stamps.index
-            }
-        )
+        rescaled_refs = {
+            targ_id: stamps.apply(
+                lambda ref: rescale_reference(targ_stamps[targ_id], ref)
+            )
+            for targ_id, stamps in ref_stamps.items()
+        }
+        # compute the SSIM score if requested
         if ssim_cutoff is not None:
-
             ssim_scores = targ_stamps.to_frame().apply(
-                lambda trow: rescaled_refs.apply(
-                    lambda rrow: calc_refcube_ssim(trow['stamp_array'], rrow[trow.name]),
-                    axis=1),
-                axis=1
+                lambda trow: rescaled_refs[trow.name].apply(
+                    lambda ref: calc_refcube_ssim(trow['stamp_array'], ref),
+                ), axis=1
             ).T
+            ssim_scores = {
+                targ_id : refs.apply(
+                    lambda ref: calc_refcube_ssim(targ_stamps[targ_id], ref)
+                )
+                for targ_id, refs in rescaled_refs.items()
+            }
             # cut references
-            rescaled_refs = rescaled_refs.loc[ssim_scores.index][ssim_scores >= ssim_cutoff].copy()
+            rescaled_refs = {
+                targ_id: refs.loc[ssim_scores[targ_id].index][ssim_scores[targ_id] >= ssim_cutoff].copy()
+                for targ_id, refs in rescaled_refs.items()
+            }
+        # return targ_stamps, rescaled_refs
         return targ_stamps, rescaled_refs
 
 
