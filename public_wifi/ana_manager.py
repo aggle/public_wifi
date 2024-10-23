@@ -173,15 +173,16 @@ class AnaManager:
             self,
             sub_mgr,
             instrument = None,
-            stamp_size : int = 0,
+            # stamp_size : int = 0,
             compute_snr : str = 'pixel',
+            mf_size : int | None = None,
     ) -> None:
         # start with a subtraction manager object
         self.sm = sub_mgr
         self.db = sub_mgr.db
         # the instrument matters for stuff like pixel scale
         # self.instr = instrument
-        self.stamp_size = stamp_size
+        self.stamp_size = self.sm.stamp_shape[0]
         # port over the results
         self.results_stamps = {
             "references": sub_mgr.subtr_results.references,
@@ -203,7 +204,7 @@ class AnaManager:
         self.results_stamps["snr"] = snr_maps
         # now, find candidate detections
         self.results_stamps['detections'] = detection_utils.get_candidates(self.results_stamps['snr'])
-        self.results_stamps['mf'] = self.make_mf_maps(None)
+        self.results_stamps['mf'] = self.make_mf_maps(mf_size)
 
         # make the target stamp cutouts
         self.stamp_cutouts = self.stamps2cutout()
@@ -271,7 +272,7 @@ class AnaManager:
            index = row.name
            model = models.loc[index].dropna().iloc[-1].copy()
            mf = detection_utils.make_matched_filter_from_stamp(model, width=mf_size, subtract_mean=True)
-           mf_result = row.apply(
+           mf_result = row.dropna().apply(
                lambda stamp: detection_utils.apply_matched_filter(
                    stamp,
                    mf,
