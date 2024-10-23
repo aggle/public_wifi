@@ -970,11 +970,11 @@ class SubtrManager:
         # ref_stamps is a DataFrame with the target stamp_id as the column and
         # the reference stamp_id as the index
         # pull out the indices of the non-NaN references, which have been filtered
-        targ_ref_indices = ref_stamps.map(
-            lambda el: ~np.isnan(np.asarray(el)).all()
-        ).apply(
-            lambda col: col[col].index
-        )
+        # targ_ref_indices = ref_stamps.map(
+        #     lambda el: ~np.isnan(np.asarray(el)).all()
+        # ).apply(
+        #     lambda col: col[col].index
+        # )
         # build sequenial NMF model
         try:
             assert(len(ref_stamps) > 0)
@@ -989,19 +989,20 @@ class SubtrManager:
 
         # flatten
         targ_stamps_flat = targ_stamps.map(np.ravel)
-        ref_stamps_flat = ref_stamps.map(np.ravel)
+        ref_stamps_flat = {t: r.map(np.ravel) for t, r in ref_stamps.items()}
 
         # apply KLIP
         kl_max = np.array([len(ref_stamps_flat)-1])
         #numbasis = klip_args.get('numbasis', kl_max)
-        numbasis = targ_ref_indices.apply(lambda el: np.arange(1, len(el)-1))
+        # numbasis = targ_ref_indices.apply(lambda el: np.arange(1, len(el)-1))
+        numbasis = {t: np.arange(1, len(r)) for t, r in ref_stamps_flat.items()}
         shared_utils.debug_print(False, f"{kl_max}, {numbasis}")
         return_basis = True
         # use some dataframe trickery to get the right stamps for the reference
         klip_results = targ_stamps_flat.to_frame().apply(
             lambda row: klip.klip_math(row['stamp_array'],
                                        # trick for dropping NaN entries, which are references that have been cut
-                                       np.stack(ref_stamps_flat.loc[targ_ref_indices[row.name], row.name]),
+                                       np.stack(ref_stamps_flat[row.name]),
                                        numbasis = numbasis[row.name],
                                        return_basis = return_basis),
             axis=1,
@@ -1023,12 +1024,12 @@ class SubtrManager:
             axis=1,
         ).T
         psf_models = psf_models.map(image_utils.make_image_from_flat)
-        # references
-        references = pd.concat({k: pd.Series(v) for k, v in targ_ref_indices.to_dict().items()}, axis=1).T
+        # reference stamps
+        # references = pd.concat({k: pd.Series(v) for k, v in targ_ref_indices.to_dict().items()}, axis=1).T
         results = Results(
             residuals=residuals,
             models=psf_models,
-            references=references,
+            references=ref_stamps,
             modes=klip_basis.map(np.reshape, newshape=self.stamp_shape, na_action='ignore'),
         )
         return results
