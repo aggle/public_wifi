@@ -491,7 +491,11 @@ def apply_matched_filter(
     matched_filter = make_matched_filter_from_stamp(psf - psf.min(), width=None)
 
     # convolve the matched filter with the data to get the signal response map
-    det_map = correlate(data, matched_filter, method='direct', mode='same')
+    det_map = correlate(
+        matched_filter,
+        data, 
+        method='direct', mode='same'
+    )
     # # use astropy.nddata.utils.Cutout2D to get back the cutout
     # uncomment this, but it takes extra time
     # det_map = correlate(data, matched_filter, method='direct', mode='full')
@@ -525,21 +529,6 @@ def compute_throughput(mf, klmodes=None) -> float | np.ndarray[float]:
       A 2-D array, the same shape as the image, containing the throughput
       correction to correct the detection map into PSF fluxes
     """
-    # mf_norm = np.dot(mf.ravel(), mf.ravel())
-    # if klmodes is None:
-    #     # this does not take into account when part of the flux is out of the stamp
-    #     # this should not have a big effect in the middle
-    #     # the effect is still small (~1%) out to one pixel in from the stamp edge
-    #     throughput = mf_norm
-    # else:
-    #     # format kl modes as a series
-    #     if not isinstance(klmodes, pd.Series):
-    #         klmodes = pd.Series({i+1: mode for i, mode in enumerate(klmodes)})
-    #     mf_adjust = klmodes.apply(
-    #         lambda mode: apply_matched_filter(mf, mode, correct_throughput=False)**2
-    #     )
-    #     mf_adjust = np.sum(np.stack(mf_adjust), axis=0)
-    #     throughput = mf_norm - mf_adjust
     throughput = np.dot(mf.ravel(), mf.ravel())
     if klmodes is not None:
         # format kl modes as a series
