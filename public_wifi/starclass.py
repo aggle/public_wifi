@@ -138,7 +138,11 @@ class Star:
         """Wrapper for KLIP that can be applied on each row of star.meta"""
         filt = row['filter']
         target_stamp = row['stamp'].data
+        target_stamp = target_stamp - target_stamp.min()
         reference_stamps = self.references.query(f"filter == '{filt}'")['stamp'].apply(lambda ref: ref.data)
+        reference_stamps = reference_stamps.apply(lambda ref: ref - ref.min())
+        scale = target_stamp.max() / reference_stamps.apply(np.max)
+        reference_stamps = reference_stamps * scale#.apply(lambda ref: ref / ref.max())
         kl_sub_img, kl_basis_img, psf_model_img = klip_subtract(
             target_stamp,
             reference_stamps,

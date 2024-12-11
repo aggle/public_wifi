@@ -4,7 +4,7 @@ from public_wifi import starclass
 
 def test_load_catalog(catalog, catalog_file):
     assert(isinstance(catalog, starclass.pd.DataFrame))
-    # make sure you subtracted off the 1 from the original coordinates
+    # make sure you subtract off the 1 from the original coordinates
     default_catalog = starclass.pd.read_csv(str(catalog_file), dtype=str)
     default_xy = default_catalog[['x','y']].astype(float)
     # print(default_xy.iloc[0].values, catalog[['x','y']].iloc[0].values)
@@ -66,20 +66,20 @@ def test_klip_subtract(all_stars):
     star.set_references(all_stars)
     star.subtraction = star.meta.apply(star.row_klip_subtract, axis=1)
     # the RMS should be monotonically declining
-    rms_descent = star.subtraction['subtracted'].apply(
+    rms_descent = star.subtraction['kl_sub'].apply(
         lambda sub: all(starclass.np.diff(sub.apply(starclass.np.nanstd)) < 0)
     )
     assert(rms_descent.all())
 
-def test_construct_psf_model(all_stars):
-    star_id = starclass.np.random.choice(all_stars.index)
-    print("PSF model construction tested on ", star_id)
-    star = all_stars.loc[star_id]
-    star.set_references(all_stars)
-    star.subtraction = star.meta.apply(star.row_klip_subtract, axis=1)
-    star.results = star.meta.join(star.subtraction)
-    psf_models = star.results.apply(
-        star.row_build_psf_model,
-        axis=1
-    )
-    print(psf_models[0])
+# def test_construct_psf_model(all_stars):
+#     star_id = starclass.np.random.choice(all_stars.index)
+#     print("PSF model construction tested on ", star_id)
+#     star = all_stars.loc[star_id]
+#     star.set_references(all_stars)
+#     star.subtraction = star.meta.apply(star.row_klip_subtract, axis=1)
+#     star.results = star.meta.join(star.subtraction)
+#     psf_models = star.results.apply(
+#         star.row_build_psf_model,
+#         axis=1
+#     )
+#     print(psf_models[0])

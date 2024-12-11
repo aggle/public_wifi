@@ -17,7 +17,7 @@ Table of Contents
 ..... 1. SubtrManager
 .. 3. Photometry and detection
 .. 4. Completeness
-
+3. TODO
 
 The final state of the Trumpler 14 analysis package will consist of the
 following independent components:
@@ -247,3 +247,15 @@ The user must decide a tile size on which the PSF subtraction will act. PSF subt
 
 2.4 Completeness
 ~~~~~~~~~~~~~~~~
+
+3. TODO list
+   1. Make a dashboard that displays the attributes of a star object:
+      - stamps for each filter
+      - reference stamps
+      - PSF subtraction results:
+        - KL basis modes
+        - PSF models
+        - PSF subtraction residuals
+      - Post-processing
+        - Detection maps
+        - Flux-calibrated detection maps
