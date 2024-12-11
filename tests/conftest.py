@@ -1,38 +1,56 @@
+"""
+This test uses data from HST-17167 for testing
+"""
 import pytest
-from tr14.utils import shared_utils
-from tr14.utils import db_manager
-from tr14.utils import subtr_utils
+import pandas as pd
+import numpy as np
+from pathlib import Path
 
-
-#############################
-# DBManager and Subtraction #
-#############################
-# this is probably not the best way of doing things
-#_dbm_mast = db_manager.DBManager(db_manager.shared_utils.db_clean_file)
-_subset_key = ('F2', # filter ID
-              'D1', # epoch ID
-              15    # sector ID
-              )
-#_dbm_sec = _dbm_mast.create_subtr_subset_db(_subset_key)
-#_subtr_mgr = subtr_utils.SubtrManager(_dbm_sec, calc_corr_flag=False)
+# from public_wifi import db_manager
+from public_wifi import starclass
 
 @pytest.fixture()
-def dbm_mast():
-    """Database Manager with the master catalog"""
-    _dbm_mast = db_manager.DBManager(db_manager.shared_utils.db_clean_file)
-    return _dbm_mast
+def catalog_file():
+    catalog_file = Path("~/Projects/Research/hst17167-ffp/catalogs/targets_drc.csv")
+    return catalog_file
 
 @pytest.fixture()
-def dbm_sec():
-    """Database Manager for Epoch 1, Filter 2, Sector 15"""
-    _dbm_mast = db_manager.DBManager(db_manager.shared_utils.db_clean_file)
-    _dbm_sec = _dbm_mast.create_subtr_subset_db(_subset_key)
-    return _dbm_sec
+def data_folder():
+    return Path("/Users/jaguilar/Projects/Research/hst17167-ffp/data/HST/")
 
 @pytest.fixture()
-def subtr_mgr():
-    """Subtraction Manager for the test sector"""
-    _dbm_mast = db_manager.DBManager(db_manager.shared_utils.db_clean_file)
-    _dbm_sec = _dbm_mast.create_subtr_subset_db(_subset_key)
-    _subtr_mgr = subtr_utils.SubtrManager(_dbm_sec, calc_corr_flag=False)
-    return _subtr_mgr
+def catalog(catalog_file):
+    dtypes = {
+        'target': str,
+        'file': str,
+        'filter': str,
+        'ra': float,
+        'dec': float,
+        'x': float,
+        'y': float,
+        'mag_aper': float,
+        'e_mag_aper': float,
+        'dist': float,
+        'snr': float,
+    }
+    catalog = pd.read_csv(str(catalog_file), dtype=dtypes)
+    catalog['x'] = catalog['x'] - 1
+    catalog['y'] = catalog['y'] - 1
+    return catalog
+
+@pytest.fixture()
+def star(catalog, data_folder):
+    star_id = np.random.choice(catalog['target'].unique())
+    star = starclass.Star(star_id, catalog.query(f"target == '{star_id}'"), data_folder=data_folder)
+    return star
+
+@pytest.fixture()
+def all_stars(catalog, data_folder):
+    # all the stars, ready for PSF subtraction
+    stars = catalog.groupby("target").apply(
+        lambda group: starclass.Star(group.name, group, data_folder=data_folder),
+        include_groups=False
+    )
+    return stars
+
+
