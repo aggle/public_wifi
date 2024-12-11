@@ -25,7 +25,6 @@ import public_wifi as pw
 
 from public_wifi.utils import table_utils
 from public_wifi.utils import shared_utils
-from public_wifi.utils import initialize_tables
 from public_wifi.utils import matrixDFT
 
 import matplotlib as mpl
