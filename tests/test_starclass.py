@@ -19,10 +19,10 @@ def test_load_catalog(catalog, catalog_file):
 def test_starclass_init(star):
     assert(isinstance(star, sc.Star))
     assert(hasattr(star, 'star_id'))
-    assert(hasattr(star, 'meta'))
-    assert(isinstance(star.meta, sc.pd.DataFrame))
-    assert(isinstance(star.meta.iloc[0]['x'], float))
-    assert('stamp_id' in star.meta.columns)
+    assert(hasattr(star, 'cat'))
+    assert(isinstance(star.cat, sc.pd.DataFrame))
+    assert(isinstance(star.cat.iloc[0]['x'], float))
+    assert('cat_id' in star.cat.columns)
 
 def test_starclass_check_reference(star):
     assert(star.has_companions == False)
@@ -37,13 +37,13 @@ def test_starclass_get_stamp(star, data_folder):
     print(star.star_id)
     assert(data_folder.exists())
     stamp_size = 15
-    stamps = star.meta.apply(lambda row: star.get_stamp(row, stamp_size, data_folder), axis=1)
+    stamps = star.cat.apply(lambda row: star.get_stamp(row, stamp_size, data_folder), axis=1)
     assert(all(stamps.apply(lambda el: el.shape == (stamp_size, stamp_size))))
     assert(all(stamps.apply(lambda el: isinstance(el, sc.Cutout2D))))
     maxes = stamps.apply(lambda s: sc.np.unravel_index(s.data.argmax(), s.data.shape))
     centers = stamps.apply(lambda s: tuple(int(i) for i in s.center_cutout)[::-1])
-    print('maxes', maxes.values)
-    print('centers', centers.values)
+    # print('maxes', maxes.values)
+    # print('centers', centers.values)
     assert(all([m == c for m, c in zip(maxes, centers)]))
 
 def test_set_references(catalog, data_folder):
@@ -67,12 +67,12 @@ def test_query_references(all_stars):
     star = all_stars.loc[star_id]
     star.set_references(all_stars)
     # split the references up for each stamp
-    ref_subsets = star.meta.apply(
+    ref_subsets = star.cat.apply(
         lambda row: star.references.query(star.generate_match_query(row)),
         axis=1
     )
     # test that the references all match on the queried values
-    assert(all(star.meta.apply(
+    assert(all(star.cat.apply(
         lambda row: all(
             [row[m] == ref_subsets.loc[row.name][m].unique().squeeze()
              for m in star.match_by]
@@ -92,7 +92,7 @@ def test_klip_subtract(all_stars):
     print("KLIP subtraction tested on ", star_id)
     star = all_stars.loc[star_id]
     star.set_references(all_stars)
-    star.subtraction = star.meta.apply(star.row_klip_subtract, axis=1)
+    star.subtraction = star.cat.apply(star.row_klip_subtract, axis=1)
     # the RMS should be monotonically declining
     rms_descent = star.subtraction['kl_sub'].apply(
         lambda sub: all(sc.np.diff(sub.apply(sc.np.nanstd)) < 0)
@@ -126,4 +126,4 @@ def test_process_stars(catalog, data_folder):
     assert(star_ids == cat_stars)
     # assert(len(stars) == len(catalog['target'].unique()))
     # check that attributes have been assigned
-    assert(all(stars.apply(lambda s: hasattr(s, 'meta'))))
+    assert(all(stars.apply(lambda s: hasattr(s, 'cat'))))

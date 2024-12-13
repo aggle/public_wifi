@@ -48,11 +48,11 @@ class Star:
         """
         self.star_id = star_id
         self.is_good_reference = True # assumed True
-        self.meta = group#.reset_index(drop=True)
+        self.cat = group#.reset_index(drop=True)
         # values that that need setter and getter methods
         self.has_companions = False
         # values that are initialized by methods
-        self.meta['stamp'] = self.meta.apply(
+        self.cat['stamp'] = self.cat.apply(
             lambda row: self.get_stamp(row, stamp_size, data_folder),
             axis=1,
         )
@@ -66,16 +66,17 @@ class Star:
     @has_companions.setter
     def has_companions(self, new_val : bool):
         self._has_companions = new_val
-        # After the change in state, check the reference status
+        # After the change in state, check and set, if necessary, the reference status
         self.check_reference()
 
     @property
-    def meta(self):
-        return self._meta
-    @meta.setter
-    def meta(self, new_val : pd.DataFrame):
-        new_val = new_val.reset_index(names='stamp_id')
-        self._meta = new_val.copy()
+    def cat(self):
+        """The catalog entries corresponding to this star"""
+        return self._cat
+    @cat.setter
+    def cat(self, new_val : pd.DataFrame):
+        new_val = new_val.reset_index(names='cat_id')
+        self._cat = new_val.copy()
 
     def generate_match_query(self, row):
         """
@@ -140,7 +141,7 @@ class Star:
             if star.is_good_reference == False:
                 pass
             else:
-                references[star.star_id] = star.meta.copy()
+                references[star.star_id] = star.cat.copy()
         references = pd.concat(references, names=['target', 'index'])
         references['used'] = False
         self.references = references
@@ -151,7 +152,7 @@ class Star:
         self.references['sim'] = np.nan
         # for each row, select the references, compute the similarity, and
         # store it in the column
-        for i, row in self.meta.iterrows():
+        for i, row in self.cat.iterrows():
             target_stamp = row['stamp'].data
             query = self.generate_match_query(row)
 
@@ -199,7 +200,7 @@ class Star:
             np.arange(1, reference_stamps.size)
         )
         # return each as an entry in a series. this allows it to be
-        # automatically merged with self.meta
+        # automatically merged with self.cat
         return pd.Series({s.name: s for s in [kl_basis_img, psf_model_img, kl_sub_img]})
 
     def make_detection_map(self):
@@ -234,6 +235,7 @@ def process_stars(
     """
     if isinstance(match_references_on, str):
         match_references_on = [match_references_on]
+    # Create the Star objects from the catalog
     stars = input_catalog.groupby(star_id_column).apply(
         lambda group: Star(
             group.name,
