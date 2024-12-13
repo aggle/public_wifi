@@ -7,7 +7,7 @@ import numpy as np
 from pathlib import Path
 
 # from public_wifi import db_manager
-from public_wifi import starclass
+from public_wifi import starclass as sc
 
 @pytest.fixture()
 def catalog_file():
@@ -41,16 +41,19 @@ def catalog(catalog_file):
 @pytest.fixture()
 def star(catalog, data_folder):
     star_id = np.random.choice(catalog['target'].unique())
-    star = starclass.Star(star_id, catalog.query(f"target == '{star_id}'"), data_folder=data_folder)
+    star = sc.Star(star_id, catalog.query(f"target == '{star_id}'"), data_folder=data_folder)
     return star
 
 @pytest.fixture()
 def all_stars(catalog, data_folder):
     # all the stars, ready for PSF subtraction
     stars = catalog.groupby("target").apply(
-        lambda group: starclass.Star(group.name, group, data_folder=data_folder),
+        lambda group: sc.Star(group.name, group, data_folder=data_folder),
         include_groups=False
     )
     return stars
 
 
+@pytest.fixture()
+def processed_stars(catalog, data_folder):
+    pass

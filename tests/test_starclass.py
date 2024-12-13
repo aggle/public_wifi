@@ -55,10 +55,11 @@ def test_set_references(catalog, data_folder):
     bad_star = stars.iloc[1]
     bad_star.is_good_reference = False
     star = stars.iloc[0]
-    references = star.set_references(stars)
-    assert(isinstance(references, sc.pd.DataFrame))
-    assert(len(references) < len(catalog))
-    assert(bad_star.star_id not in references.index.get_level_values("target"))
+    star.set_references(stars)
+    # print(star.references)
+    assert(isinstance(star.references, sc.pd.DataFrame))
+    assert(len(star.references) < len(catalog))
+    assert(bad_star.star_id not in star.references.index.get_level_values("target"))
 
 def test_query_references(all_stars):
     # test that the references are all appropriate
