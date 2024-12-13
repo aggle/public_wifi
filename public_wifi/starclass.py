@@ -165,23 +165,24 @@ class Star:
             )
             self.references.loc[sim.index, 'sim'] = sim
 
-    def row_get_references(self, row, sim_thresh=0.0, min_refs=5):
+    def row_get_references(self, row, sim_thresh=0.0, min_nref=2):
         """Get the references associated with a row entry"""
         query = self.generate_match_query(row)
         reference_rows = self.references.query(query).sort_values(by='sim', ascending=False)
         # select the refs above threshold, or at least the top 5
         nrefs = len(reference_rows.query(f"sim >= {sim_thresh}"))
-        if nrefs < min_refs:
-            print(f"Warning: {self.star_id} has fewer than {min_refs} references above threshold!")
-            nrefs = min_refs
-            reference_rows = reference_rows[:nrefs]
+        # update nrefs if it is too small
+        if nrefs <= min_nref:
+            print(f"Warning: {self.star_id} has fewer than {min_nref} references above threshold!")
+            nrefs = min_nref
+        reference_rows = reference_rows[:nrefs]
         return reference_rows
 
-    def row_klip_subtract(self, row, numbasis=None, sim_thresh=0.0):
-        """Wrapper for KLIP that can be applied on each row of star.meta"""
+    def row_klip_subtract(self, row, numbasis=None, sim_thresh=0.0, min_nref=2):
+        """Wrapper for KLIP that can be applied on each row of star.cat"""
         target_stamp = row['stamp'].data
         # select the references
-        reference_rows = self.row_get_references(row, sim_thresh)
+        reference_rows = self.row_get_references(row, sim_thresh, min_nref)
         # reset and then set the list of references used
         # only reset the references that match the query
         self.row_get_references(row, -1)['used'] = False
@@ -211,7 +212,9 @@ def process_stars(
         star_id_column : str,
         match_references_on : list,
         data_folder : str | Path,
-        stamp_size : int = 15,
+        stamp_size : int = 11,
+        min_nref : int = 2,
+        sim_thresh : float = 0.5,
 ) -> None :
     """
     Given an input catalog, run the analysis.
@@ -226,6 +229,12 @@ def process_stars(
       these are the columns that you use for matching references
     stamp_size : int = 15
       what stamp size to use
+    min_nref : int = 2
+      Use at least this many reference stamps, regardless of similarity score
+    sim_thresh : float = 0.5
+      A stamp's similarity score must be at least this value to be included
+      If fewer than `min_nref` reference stamps meet this criteria, use the
+      `min_nref` ones with the highest similarity scores    
 
     Output
     ------
@@ -246,30 +255,51 @@ def process_stars(
         ),
         include_groups=False
     )
-    subtract_all_stars(stars)
+    # assign references and compute similarity score
+    for star in stars:
+        star.set_references(stars)
+        star.compute_similarity()
+    subtract_all_stars(stars, sim_thresh=sim_thresh, min_nref=min_nref)
     return stars
 
-def subtract_all_stars(all_stars : pd.Series):
-    """Perform PSF subtraction on all the stars, setting attributes in=place"""
-    sim_thresh = 0.5
-    print(f"Applying similarity score threshold: sim >= {sim_thresh}")
+def subtract_all_stars(
+        all_stars : pd.Series,
+        sim_thresh : float = 0.5,
+        min_nref : int = 2,
+) -> None:
+    """
+    Perform PSF subtraction on all the stars, setting attributes in-place
+
+    Parameters
+    ----------
+    all_stars : pd.Series
+      pandas Series where each entry is a starclass.Star object, and the index is the star identifier
+    min_nref : int = 2
+      Use at least this many reference stamps, regardless of similarity score
+    sim_thresh : float = 0.5
+      A stamp's similarity score must be at least this value to be included
+      If fewer than `min_nref` reference stamps meet this criteria, use the
+      `min_nref` ones with the highest similarity scores
+
+    """
+    print(f"Subtracting with similarity score threshold: sim >= {sim_thresh}")
     for star in all_stars:
-        star.set_references(all_stars)
-        star.compute_similarity()
         # gather subtraction results
-        star.subtraction = star.meta.apply(
+        star.subtraction = star.cat.apply(
             star.row_klip_subtract,
             sim_thresh=sim_thresh,
+            min_nref=min_nref,
             axis=1
         )
-        star.results = star.meta.join(star.subtraction)
+        star.results = star.cat.join(star.subtraction)
     return
 
 
+### PSF subtraction ###
 def klip_subtract(
         target_stamp,
         reference_stamps,
-        numbasis=None,
+        numbasis = None,
 ) -> tuple[pd.Series, pd.Series, pd.Series]:
     """
     Perform KLIP subtraction on the target stamp.
@@ -277,7 +307,7 @@ def klip_subtract(
     """
     stamp_shape = target_stamp.shape
     if numbasis is None:
-        numbasis = len(reference_stamps)-1
+        numbasis = np.array([len(reference_stamps)-1])
     targ_stamp_flat = target_stamp.ravel()
     ref_stamps_flat = np.stack([i.ravel() for i in reference_stamps])
 
@@ -307,7 +337,6 @@ def klip_subtract(
     return kl_sub_img, kl_basis_img, psf_model_img
 
 
-
 def make_matched_filter(stamp, width : int | None = None):
     center = np.floor(np.array(stamp.shape)/2).astype(int)
     if isinstance(width, int):
@@ -318,3 +347,9 @@ def make_matched_filter(stamp, width : int | None = None):
     stamp = stamp - np.min(stamp)
     return stamp.data
 
+
+def apply_matched_filter(
+        target_stamp : np.ndarray,
+        matched_filter : np.ndarray,
+) -> np.ndarray:
+    pass
