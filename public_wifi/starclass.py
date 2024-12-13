@@ -217,7 +217,7 @@ class Star:
 def process_stars(
         input_catalog : pd.DataFrame,
         star_id_column : str,
-        match_references_on : list,
+        match_references_on : str | list,
         data_folder : str | Path,
         stamp_size : int = 11,
         min_nref : int = 2,
