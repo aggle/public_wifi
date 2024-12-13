@@ -131,9 +131,14 @@ class Star:
 
         return stamp
 
-    def set_references(self, other_stars):
+    def set_references(self, other_stars, compute_similarity=True):
         """
         Assemble the references for each stamp. Put "good reference" checks here
+
+        other_stars:
+          pd.Series of Star objects
+        compute_similarity : bool = True:
+          if True, compute the similarity score
         """
         # references = pd.concat(stars[stars.index != self.star_id].apply(lambda s: s.meta.copy()))
         references = {}
@@ -145,6 +150,8 @@ class Star:
         references = pd.concat(references, names=['target', 'index'])
         references['used'] = False
         self.references = references
+        if compute_similarity:
+            self.compute_similarity()
 
     def compute_similarity(self):
         """Compute the similarity between the target stamps and the references"""
@@ -257,8 +264,7 @@ def process_stars(
     )
     # assign references and compute similarity score
     for star in stars:
-        star.set_references(stars)
-        star.compute_similarity()
+        star.set_references(stars, compute_similarity=True)
     subtract_all_stars(stars, sim_thresh=sim_thresh, min_nref=min_nref)
     return stars
 

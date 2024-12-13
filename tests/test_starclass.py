@@ -34,7 +34,7 @@ def test_starclass_check_reference(star):
     assert(star.is_good_reference == True)
 
 def test_starclass_get_stamp(star, data_folder):
-    print(star.star_id)
+    print("Getting stamp from " + star.star_id)
     assert(data_folder.exists())
     stamp_size = 15
     stamps = star.cat.apply(lambda row: star.get_stamp(row, stamp_size, data_folder), axis=1)
@@ -92,7 +92,7 @@ def test_klip_subtract(all_stars):
     star_id = sc.np.random.choice(all_stars.index)
     print("KLIP subtraction tested on ", star_id)
     star = all_stars.loc[star_id]
-    star.set_references(all_stars)
+    star.set_references(all_stars, compute_similarity=True)
     star.subtraction = star.cat.apply(star.row_klip_subtract, axis=1)
     # the RMS should be monotonically declining
     rms_descent = star.subtraction['kl_sub'].apply(
