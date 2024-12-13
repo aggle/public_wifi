@@ -56,4 +56,5 @@ def all_stars(catalog, data_folder):
 
 @pytest.fixture()
 def processed_stars(catalog, data_folder):
-    pass
+    stars = sc.process_stars(catalog, 'target', ['filter'], data_folder, 11)
+    return stars

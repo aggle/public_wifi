@@ -1,6 +1,7 @@
 """
 Result visualization dashboard. Uses Bokeh to draw interactive plots.
 """
+import sys
 from pathlib import Path
 import numpy as np
 import pandas as pd
@@ -16,8 +17,6 @@ import bokeh.models as bkmdls
 #from bokeh.models import ColumnDataSource, Slider, ColorBar, LogColorMapper
 from bokeh.plotting import figure
 from bokeh.themes import Theme
-
-from public_wifi import starclass as sc
 
 def standalone(func):
     """
@@ -144,7 +143,7 @@ def generate_cube_scroller_widget(
     palette = 'Magma256'
     if use_diverging_cmap:
         palette = bokeh.palettes.diverging_palette(
-            bokeh.palettes.brewer['Blues'][256],
+            bokeh.palettes.brewer['Greys'][256],
             bokeh.palettes.brewer['Reds'][256],
             256
         )
@@ -203,8 +202,7 @@ make_cube_scroller = standalone(generate_cube_scroller_widget)
 
 def make_static_img_plot(
         img : np.ndarray | bkmdls.ColumnDataSource,
-        width = 400,
-        height = 400,
+        size = 400,
         # dw = 10,
         # dh = 10,
         title='',
@@ -218,7 +216,7 @@ def make_static_img_plot(
     # kwargs['palette'] = kwargs.get('palette', 'Magma256')
     kwargs['level']=kwargs.get("level", "image")
     p = bkplt.figure(
-        width=width, height=height,
+        width=size, height=size,
         title=title, tools=tools,
         match_aspect=True,
     )
@@ -269,18 +267,37 @@ def make_row_cds(row, star, cds_dict={}):
 
 def make_row_plots(row, row_cds, size=400):
     filt = row['filter']
-    img_plot = make_static_img_plot(row_cds['stamp'], title=filt)
+    img_plot = make_static_img_plot(row_cds['stamp'], title=filt, size=size)
+    # References
+    cds = row_cds["references"]
+    plot_kwargs={
+        "title": f"References",
+        "width": size, "height": size
+    }
     ref_scroller = generate_cube_scroller_widget(
-        row_cds['references'], plot_kwargs={'title':'References', 'width': size, 'height': size},
+        cds, plot_kwargs=plot_kwargs,
     )
+    # PSF model
+    cds = row_cds["psf_model"]
+    plot_kwargs={
+        "title": f"PSF model",
+        "width": size, "height": size
+    }
     psf_model_scroller = generate_cube_scroller_widget(
-            row_cds['psf_model'], 
-            plot_kwargs={'title':'PSF model', 'width': size, 'height': size},
+        cds, plot_kwargs=plot_kwargs,
     )
+    # KLIP residuals
+    cds = row_cds["klip_residuals"]
+    plot_kwargs={
+        "title": f"KLIP residuals",
+        "width": size, "height": size
+    }
     klip_resid_scroller = generate_cube_scroller_widget(
-        row_cds['klip_residuals'], 
-        plot_kwargs={'title':'KLIP residuals', 'width': size, 'height': size},
+        cds, plot_kwargs=plot_kwargs,
+        use_diverging_cmap=True,
     )
+
+    # Put them all in a dict
     plots = dict(
         stamp=img_plot,
         references=ref_scroller, 
@@ -288,9 +305,12 @@ def make_row_plots(row, row_cds, size=400):
         klip_residuals=klip_resid_scroller
     )
     return plots
+
 def all_stars_dashboard(
-    stars : pd.Series
+    stars : pd.Series,
+    plot_size = 400,
 ):
+    # This returns a Bokeh application that takes a doc for displaying
     
     def app(doc):
         
@@ -302,9 +322,28 @@ def all_stars_dashboard(
             axis=1
         )
         plot_dicts = stars.loc[init_star].results.apply(
-            lambda row: make_row_plots(row, cds_dicts[row.name]),
+            lambda row: make_row_plots(row, cds_dicts[row.name], size=plot_size),
             axis=1
         )
+        catalog_cds = bkmdls.ColumnDataSource(stars.loc[init_star].cat.drop("stamp", axis=1))
+        catalog_columns = []
+        for k in catalog_cds.data.keys():
+            formatter = bkmdls.StringFormatter()
+            if isinstance(catalog_cds.data[k][0], float):
+                formatter = bkmdls.NumberFormatter(format='0.00')
+            catalog_columns.append(
+                bkmdls.TableColumn(field=k, title=k, formatter=formatter)
+            )
+        catalog_table = bkmdls.DataTable(
+            source=catalog_cds,
+            columns=catalog_columns,
+            # sizing_mode="stretch_width",
+            width=3*plot_size, height=100,
+        )
+
+        # Button to stop the server
+        quit_button = bkmdls.Button(label="Stop server", button_type="warning")
+        quit_button.on_click(lambda: sys.exit())
 
         # star selector
         star_selector = bkmdls.Select(
@@ -314,17 +353,21 @@ def all_stars_dashboard(
         )
         def change_star(attrname, old_id, new_id):
             ## update the data structures and scroller limits
+            update_catalog_cds()
             update_cds_dicts()
             update_scrollers()
         star_selector.on_change("value", change_star)
-        
-        
+
+
+        def update_catalog_cds():
+           catalog_cds.data.update(stars.loc[star_selector.value].cat.drop("stamp", axis=1))
+
         def update_cds_dicts():
             """Update the target filter stamp"""
             for i, row in stars.loc[star_selector.value].results.iterrows():
                 # assign new data to the existing CDSs
                 cds_dicts[i] = make_row_cds(row, stars.loc[star_selector.value], cds_dicts[i])
-                
+
         def update_scrollers():
             # update scroller range and options
             for i, row_plot in plot_dicts.items():
@@ -333,123 +376,25 @@ def all_stars_dashboard(
                     row_plot[k].children[1].update(
                         value = 0,
                         end = source.data['nimgs'][0]-1,
-                        title = source.data['i'][0],                        
+                        title = source.data['i'][0],
                     )
-    
+
         lyt = bklyts.layout([
             # the target selectors
-            bklyts.column(
-                bklyts.row(star_selector),
-                bklyts.row(
-                    plot_dicts[0]['stamp'],
-                    plot_dicts[0]['references'],
-                    plot_dicts[0]['psf_model'],
-                    plot_dicts[0]['klip_residuals'],
-                ),
-                bklyts.row(
-                    plot_dicts[1]['stamp'],
-                    plot_dicts[1]['references'],
-                    plot_dicts[1]['psf_model'],
-                    plot_dicts[1]['klip_residuals'],
-                ),
-            )
+            bklyts.row(star_selector, catalog_table, quit_button),
+            bklyts.row(
+                plot_dicts[0]['stamp'],
+                plot_dicts[0]['references'],
+                plot_dicts[0]['psf_model'],
+                plot_dicts[0]['klip_residuals'],
+            ),
+            bklyts.row(
+                plot_dicts[1]['stamp'],
+                plot_dicts[1]['references'],
+                plot_dicts[1]['psf_model'],
+                plot_dicts[1]['klip_residuals'],
+            ),
         ])
         doc.add_root(lyt)
     
     return app
-
-
-
-
-# def generate_cube_scroller_widgets(
-#         cds : bkmdls.ColumnDataSource = None,
-#         plot_kwargs={},
-#         slider_kwargs={},
-#         cmap_class : bokeh.core.has_props.MetaHasProps = bkmdls.LinearColorMapper,
-#         add_log_scale : bool = False,
-#         diverging_cmap = False,
-# ):
-#     """
-#     Generate a plot and a scroller to scroll through the cube stored in a provided ColumnDataSource
-    
-#     Parameters
-#     ----------
-#     cube : pd.Series
-#       data cube to plot
-#     plot_kwargs : dict
-#       kwargs to pass to bkplt.figure
-#     slider_kwargs : dict
-#       kwargs to pass to bkmdls.Slider
-#     add_log_scale : bool = False
-#       Add a switch to change the color mapping between linear and log scaling
-#     diverging_cmap : bool = False
-#       If True, use a diverging Blue-Red colormap that is white in the middle
-#     """
-#     # use this to store the plot elements
-#     TOOLS='save'
-
-#     plot_kwargs['match_aspect'] = plot_kwargs.get('match_aspect', True)
-#     plot_kwargs['title'] = plot_kwargs.get('title', cds.tags[0])
-
-#     plot = bkplt.figure(
-#         tools=TOOLS,
-#         **plot_kwargs
-#     )
-#     plot.x_range.range_padding = plot.y_range.range_padding = 0
-#     img_plot = plot.image(
-#         image='img',
-#         source=cds,
-#         x='x', y='y',
-#         dw='dw', dh='dh',
-#     )
-#     # add a color bar to the plot
-#     color_bar = bkmdls.ColorBar(color_mapper=color_mapper, label_standoff=12)
-#     plot.add_layout(color_bar, 'right')
-
-#     # add hover tool
-#     hover_tool = bkmdls.HoverTool()
-#     hover_tool.tooltips=[("value", "@curimg"),
-#                          ("(x,y)", "($x{0}, $y{0})")]
-#     plot.add_tools(hover_tool)
-#     plot.toolbar.active_inspect = None
-    
-#     # add a slider to update the image and color bar when it moves
-#     slider_title_prefix = slider_kwargs.get("title", cds.tags[1])
-#     slider_title = lambda val: f"{slider_title_prefix}: {val}"
-#     slider_kwargs['title'] = slider_title(cds.data['index'][0][0])
-#     def slider_change(attr, old, new):
-#         cds.data.update({
-#                     'img': [cds.data['cube'][0][new]],
-#                     'i': [cds.data['index'][0][new]],
-#                 })
-#         low, high = compute_cmap_lims(cds.data['img'][0], diverging_cmap)
-#         color_mapper.update(low=low, high=high)
-#         slider.update(title = slider_title(cds.data['i'][0]))
-
-#     slider_kwargs['show_value'] = slider_kwargs.get('show_value', False)
-#     slider = bkmdls.Slider(
-#         start=0, end=cube.index.size-1, value=0, step=1,
-#         **slider_kwargs
-#     )
-#     slider.on_change('value', slider_change)
-    
-#     # if requested, add a switch to change the color scale to log
-#     if add_log_scale == True:
-#         menu = {"Linear": bkmdls.LinearColorMapper, "Log": bkmdls.LogColorMapper}
-#         cmap_switcher = bkmdls.Select(title='Switch color map',
-#                                       value=sorted(menu.keys())[0],
-#                                       options=sorted(menu.keys()))
-#         def cmap_switcher_callback(attr, old, new):
-#             cmap_class = menu[new]
-#             color_mapper = cmap_class(palette=palette,
-#                                       low=np.nanmin(cds.data['curimg']),
-#                                       high=np.nanmax(cds.data['curimg']))
-#             # update the color mapper on image
-#             img_plot.glyph.update(color_mapper=color_mapper)
-#         cmap_switcher.on_change('value', cmap_switcher_callback)
-#         # define the layout
-#         layout = bklyts.column(plot, bklyts.row(slider, cmap_switcher))
-#     else:
-#         layout = bklyts.column(plot, slider)
-#     return layout
-
