@@ -59,7 +59,7 @@ def standalone(func):
 
 
 def generate_cube_scroller_widgets(
-        cds : bkmdls.ColumnDataSource | pd.Series,
+        cube : pd.Series,
         cmap_class : bokeh.core.has_props.MetaHasProps = bkmdls.LinearColorMapper,
         slider_title_prefix : str = '',
         plot_kwargs={},
@@ -81,15 +81,28 @@ def generate_cube_scroller_widgets(
     diverging_cmap : bool = False
       If True, use a diverging Blue-Red colormap that is white in the middle
     """
-    if isinstance(cds, pd.Series):
-        cds = series_to_CDS(cds)
+    # initialize the CDS. The plot looks inside here for what to plot
+    # so when you change the slider, update these values
+    cds = bkmdls.ColumnDataSource(
+        data={
+            'img': [cube.iloc[0]],
+            'index': [cube.index[0]],
+            'x': [-0.5],
+            'y': [-0.5],
+            'dw': [cube.iloc[0].shape[-1]],
+            'dh': [cube.iloc[0].shape[-2]],
+            'len': [len(cube)],
+        },
+        tags = [cube.name, cube.index.name]
+    )
     # use this to store the plot elements
 
     TOOLS='save'
 
     plot_kwargs['match_aspect'] = plot_kwargs.get('match_aspect', True)
-    plot = figure(
-        title=cds.data.get('title', [''])[0],
+    plot_kwargs['title'] = plot_kwargs.get('title', cds.tags[0])
+
+    plot = bkplt.figure(
         tools=TOOLS,
         **plot_kwargs
     )
@@ -114,14 +127,14 @@ def generate_cube_scroller_widgets(
             high = np.max(np.absolute([np.nanmin(img), np.nanmax(img)]))
             low = -1*high
         return low, high
-    low, high = compute_cmap_lims(cds.data['curimg'], diverging_cmap)
+    low, high = compute_cmap_lims(cds.data['img'], diverging_cmap)
     color_mapper = cmap_class(
         palette=palette,
         low=low, high=high,
     )
 
     img_plot = plot.image(
-        image='curimg',
+        image='img',
         source=cds,
         x='x', y='y',
         dw='dw', dh='dh',
@@ -139,24 +152,20 @@ def generate_cube_scroller_widgets(
     plot.toolbar.active_inspect = None
     
     # add a slider to update the image and color bar when it moves
-    slider_title = lambda val: f"{slider_title_prefix}: {val}"
+    slider_title = lambda val: f"{cds.tags[1]}: {val}"
     def slider_change(attr, old, new):
-        # update the 'image' entry to the desired image
-        try:
-            new_index = cds.data['index'][0][new]
-        except IndexError:
-            # if the index is out of range, do nothing
-            return
-        img = cds.data['cube'][0][new_index]
-        cds.data['curimg'] = [img]
-        # set the color scaling for the new image
-        low, high = compute_cmap_lims(img, diverging_cmap)
+        cds.data.update({
+                    'img': [cube.iloc[new]],
+                    'index': [cube.index[new]],
+                })
+        low, high = compute_cmap_lims(cds.data['img'][0], diverging_cmap)
         color_mapper.update(low=low, high=high)
-        slider.update(title = slider_title(new_index))
+        slider.update(title = slider_title(cds.data['index'][0]))
 
+    slider_kwargs['show_value'] = slider_kwargs.get('show_value', False)
     slider = bkmdls.Slider(
-        start=0, end=len(cds.data['index'][0])-1, value=0, step=1,
-        title = slider_title(cds.data['index'][0][0]),
+        start=0, end=cube.index.size-1, value=0, step=1,
+        title = slider_title(cube.index[0]),
         **slider_kwargs
     )
     slider.on_change('value', slider_change)
@@ -206,6 +215,9 @@ def series_to_CDS(
     if cds == None:
         # if none provided, make one.
         cds = bkmdls.ColumnDataSource()
+    # series metadata
+    cds.tags = [cube.name, cube.index.name]
+
     # cds.data.update({str(i): [j] for i, j in enumerate(cube)})
     cds.data.update(cube=[cube])
     cds.data.update(index=[list(cube.index)])

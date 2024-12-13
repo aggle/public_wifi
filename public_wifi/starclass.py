@@ -4,13 +4,13 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
+from skimage.metrics import structural_similarity as ssim
+
 from astropy.io import fits
 from astropy.nddata import Cutout2D
 from astropy.wcs import WCS
 
 from pyklip import klip
-
-from public_wifi.utils import detection_utils
 
 class Star:
     """
@@ -35,14 +35,16 @@ class Star:
             star_id : str,
             group : pd.DataFrame,
             data_folder : str | Path,
-            stamp_size=15,
+            stamp_size : int  = 15,
+            match_by : list[str] = ['filter'],
     ) -> None:
         """
         Initialize a Star object from a row of the catalog
-        parameters
+
+        Parameters
         ----------
-        other_stars : pd.Series | None
-          if a Series, the index must be the star_id
+        match_by : list[str] = ['filter']
+          a list of columns to use for matching targets with references. e.g. which filter
         """
         self.star_id = star_id
         self.is_good_reference = True # assumed True
@@ -54,6 +56,7 @@ class Star:
             lambda row: self.get_stamp(row, stamp_size, data_folder),
             axis=1,
         )
+        self.match_by = match_by
         return
 
     # has_companions should always be the opposite of is_good_reference
@@ -74,7 +77,14 @@ class Star:
         new_val = new_val.reset_index(names='stamp_id')
         self._meta = new_val.copy()
 
-
+    def generate_match_query(self, row):
+        """
+        Generate the query string based on self.match_by.
+        The columns specified by match_by must be of type str
+        """
+        match_values = {m: row[m] for m in self.match_by}
+        query = "and ".join(f"{m} == '{v}'" for m, v in match_values.items())
+        return query
 
     def check_reference(self):
         """This method checks for all the conditions"""
@@ -132,14 +142,54 @@ class Star:
             else:
                 references[star.star_id] = star.meta.copy()
         references = pd.concat(references, names=['target', 'index'])
+        references['used'] = False
         self.references = references
 
-    def row_klip_subtract(self, row, numbasis=None):
+    def compute_similarity(self):
+        """Compute the similarity between the target stamps and the references"""
+        # initialize an empty column of floats
+        self.references['sim'] = np.nan
+        # for each row, select the references, compute the similarity, and
+        # store it in the column
+        for i, row in self.meta.iterrows():
+            target_stamp = row['stamp'].data
+            query = self.generate_match_query(row)
+
+            sim = self.references.query(query)['stamp'].apply(
+                lambda ref_stamp: ssim(
+                    ref_stamp.data,
+                    target_stamp,
+                    data_range=np.ptp(np.stack([ref_stamp.data, target_stamp]))
+                )
+            )
+            self.references.loc[sim.index, 'sim'] = sim
+
+    def row_get_references(self, row, sim_thresh=0.0, min_refs=5):
+        """Get the references associated with a row entry"""
+        query = self.generate_match_query(row)
+        reference_rows = self.references.query(query).sort_values(by='sim', ascending=False)
+        # select the refs above threshold, or at least the top 5
+        nrefs = len(reference_rows.query(f"sim >= {sim_thresh}"))
+        if nrefs < min_refs:
+            print(f"Warning: {self.star_id} has fewer than {min_refs} references above threshold!")
+            nrefs = min_refs
+            reference_rows = reference_rows[:nrefs]
+        return reference_rows
+
+    def row_klip_subtract(self, row, numbasis=None, sim_thresh=0.0):
         """Wrapper for KLIP that can be applied on each row of star.meta"""
-        filt = row['filter']
         target_stamp = row['stamp'].data
+        # select the references
+        reference_rows = self.row_get_references(row, sim_thresh)
+        # reset and then set the list of references used
+        # only reset the references that match the query
+        self.row_get_references(row, -1)['used'] = False
+        self.references.loc[reference_rows.index, 'used'] = True
+
+        # pull out the stamps
+        reference_stamps = reference_rows['stamp'].apply(lambda ref: ref.data)
+
         target_stamp = target_stamp - target_stamp.min()
-        reference_stamps = self.references.query(f"filter == '{filt}'")['stamp'].apply(lambda ref: ref.data)
         reference_stamps = reference_stamps.apply(lambda ref: ref - ref.min())
         scale = target_stamp.max() / reference_stamps.apply(np.max)
         reference_stamps = reference_stamps * scale#.apply(lambda ref: ref / ref.max())
@@ -155,19 +205,62 @@ class Star:
     def make_detection_map(self):
         pass
 
+def process_stars(
+        input_catalog : pd.DataFrame,
+        star_id_column : str,
+        match_references_on : list,
+        data_folder : str | Path,
+        stamp_size : int = 15,
+) -> None :
+    """
+    Given an input catalog, run the analysis.
+
+    Parameters
+    ----------
+    input_catalog : pd.DataFrame
+      a catalog where each detection is a row
+    star_id_column : str,
+      this is the column that has the star identifier
+    match_references_on : list
+      these are the columns that you use for matching references
+    stamp_size : int = 15
+      what stamp size to use
+
+    Output
+    ------
+    stars : pd.Series
+      A series where each entry is a Star object with the data and analysis results
+
+    """
+    if isinstance(match_references_on, str):
+        match_references_on = [match_references_on]
+    stars = input_catalog.groupby(star_id_column).apply(
+        lambda group: Star(
+            group.name,
+            group,
+            data_folder = data_folder,
+            stamp_size = stamp_size,
+            match_by = match_references_on,
+        ),
+        include_groups=False
+    )
+    subtract_all_stars(stars)
+    return stars
 
 def subtract_all_stars(all_stars : pd.Series):
     """Perform PSF subtraction on all the stars, setting attributes in=place"""
+    sim_thresh = 0.5
+    print(f"Applying similarity score threshold: sim >= {sim_thresh}")
     for star in all_stars:
         star.set_references(all_stars)
+        star.compute_similarity()
         # gather subtraction results
-        star.subtraction = star.meta.apply(star.row_klip_subtract, axis=1)
+        star.subtraction = star.meta.apply(
+            star.row_klip_subtract,
+            sim_thresh=sim_thresh,
+            axis=1
+        )
         star.results = star.meta.join(star.subtraction)
-        # star.psf_models = star.results.apply(
-        #     star.row_build_psf_model,
-        #     axis=1
-        # )
-        # star.results['psf_model'] = star.psf_models
     return
 
 
@@ -175,7 +268,7 @@ def klip_subtract(
         target_stamp,
         reference_stamps,
         numbasis=None,
-) -> tuple[pd.Series, pd.Series]:
+) -> tuple[pd.Series, pd.Series, pd.Series]:
     """
     Perform KLIP subtraction on the target stamp.
     Returns the KL basis vectors, the subtracted images, and the PSF models
@@ -217,8 +310,9 @@ def make_matched_filter(stamp, width : int | None = None):
     center = np.floor(np.array(stamp.shape)/2).astype(int)
     if isinstance(width, int):
         stamp = Cutout2D(stamp, center[::-1], width).data
-    stamp = np.ma.masked_array(stamp, mask=np.isnan(mask))
+    stamp = np.ma.masked_array(stamp, mask=np.isnan(stamp))
     stamp = stamp - np.min(stamp)
     stamp = stamp/np.sum(stamp)
     stamp = stamp - np.min(stamp)
     return stamp.data
+
