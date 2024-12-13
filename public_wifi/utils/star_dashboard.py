@@ -379,22 +379,60 @@ def all_stars_dashboard(
                         title = source.data['i'][0],
                     )
 
-        lyt = bklyts.layout([
-            # the target selectors
-            bklyts.row(star_selector, catalog_table, quit_button),
-            bklyts.row(
-                plot_dicts[0]['stamp'],
-                plot_dicts[0]['references'],
-                plot_dicts[0]['psf_model'],
-                plot_dicts[0]['klip_residuals'],
-            ),
-            bklyts.row(
-                plot_dicts[1]['stamp'],
-                plot_dicts[1]['references'],
-                plot_dicts[1]['psf_model'],
-                plot_dicts[1]['klip_residuals'],
-            ),
-        ])
+        # lyt = bklyts.layout([
+        #     # the target selectors
+        #     bklyts.row(star_selector, catalog_table, quit_button),
+        #     bklyts.row(
+        #         plot_dicts[0]['stamp'],
+        #         plot_dicts[0]['references'],
+        #         plot_dicts[0]['psf_model'],
+        #         plot_dicts[0]['klip_residuals'],
+        #     ),
+        #     bklyts.row(
+        #         plot_dicts[1]['stamp'],
+        #         plot_dicts[1]['references'],
+        #         plot_dicts[1]['psf_model'],
+        #         plot_dicts[1]['klip_residuals'],
+        #     ),
+        # ])
+        tab1 = bkmdls.TabPanel(
+            title='Overview',
+            child= bklyts.layout([
+                # the target selectors
+                bklyts.row(
+                    plot_dicts[0]['stamp'],
+                    plot_dicts[0]['references'],
+                    plot_dicts[0]['psf_model'],
+                ),
+                bklyts.row(
+                    plot_dicts[1]['stamp'],
+                    plot_dicts[1]['references'],
+                    plot_dicts[1]['psf_model'],
+                ),
+            ]),
+        )
+        tab2 = bkmdls.TabPanel(
+            title='Detection',
+            child= bklyts.layout([
+                # the target selectors
+                bklyts.row(
+                    plot_dicts[0]['klip_residuals'],
+                ),
+                bklyts.row(
+                    plot_dicts[1]['klip_residuals'],
+                ),
+            ]),
+        )
+        tab = bkmdls.Tabs(tabs=[tab1, tab2])
+
+        lyt = bklyts.layout(
+            [
+                bklyts.row(star_selector, catalog_table, quit_button),
+                bklyts.row(tab),
+            ]
+        )
+            
+        
         doc.add_root(lyt)
     
     return app
