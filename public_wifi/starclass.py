@@ -378,14 +378,22 @@ def klip_subtract(
     klip_model_img = klip_model.apply(lambda img: img.reshape(stamp_shape))
     return kl_sub_img, klip_model_img
 
-# def nmf_subtract(target_stamp, reference_stamps, verbose=False, kwargs={}):
+# def nmf_subtract(
+#         target_stamp : np.ndarray,
+#         reference_stamps : pd.Series,
+#         numbasis : int | np.ndarray | None = None,
+#         n_components : int | np.ndarray | None = None,
+#         verbose=False,
+# ):
 #     """
 #     Perform NMF subtraction on one target and its references
 
 #     Parameters
 #     ----------
-#     target_stamp : 2-D target stamp
-#     reference_stamps : pd.Series of reference stamps
+#     target_stamp : np.ndarray
+#       2-D target stamp
+#     reference_stamps : pd.Series[np.ndarray]
+#       the reference PSFs
 #     kwargs : {}
 #       other arguments, some to pass to NonnegNMFPy's NMFPy.SolveNMF
 
@@ -393,54 +401,42 @@ def klip_subtract(
 #     ------
 #     tuple with residuals and psf_models
 #     """
-#     # prep reference images
-#     try:
-#         assert(len(reference_stamps) > 0)
-#     except AssertionError:
-#         raise ZeroRefsError("Error: No references given!")
-#     shared_utils.debug_print(False, f'Nrefs = {len(reference_stamps)}, continuing...')
+#     stamp_shape = target_stamp.shape
+#     if numbasis is None:
+#         numbasis = len(reference_stamps)-1
+#     if isinstance(numbasis, int):
+#         numbasis = np.array([int])
+#     # flatten the stamps
+#     targ_stamp_flat = target_stamp.ravel()
+#     ref_stamps_flat = np.stack([i.ravel() for i in reference_stamps])
 
-#     # synchronize the global argument dictionary and the passed one
-#     # self.nmf_args_dict serves as a record; kwargs is used here
-#     self.nmf_args_dict.update(kwargs)
-#     kwargs.update(self.nmf_args_dict)
-
-#     # flatten
-#     refs_flat = np.stack(reference_stamps.apply(np.ravel))
-#     # generate the PSF model from the transformed data and components
-#     nrefs, npix = refs_flat.shape
+#     nrefs, npix = ref_stamps_flat.shape
 
 
 #     # get the number of free parameters
-#     if kwargs.get('n_components', None) is None:
-#         kwargs['n_components'] = nrefs
-#     n_components = kwargs.pop('n_components')
+#     if (n_components is None) or (n_components > nrefs):
+#         n_components = nrefs
+#     if isinstance(n_components, int):
+#         n_components = np.array([n_components])
 
 
-#     try:
-#         ordered = kwargs.pop('ordered')
-#     except KeyError:
-#         ordered = False
-#     if ordered == True:
-#         # this bit copied from Bin's nmf_imaging (https://github.com/seawander/nmf_imaging)
-#         # initialize
-#         W_ini = np.random.rand(nrefs, nrefs)
-#         H_ini = np.random.rand(nrefs, npix)
-#         g_refs = NMFPy.NMF(refs_flat, n_components=1)
-#         W_ini[:, :1] = g_refs.W[:]
-#         H_ini[:1, :] = g_refs.H[:]
-#         for n in range(1, n_components+1):
-#             if verbose == True:
-#                 print("\t" + str(n) + " of " + str(n_components))
-#             W_ini[:, :(n-1)] = np.copy(g_refs.W)
-#             W_ini = np.array(W_ini, order = 'F') #Fortran ordering
-#             H_ini[:(n-1), :] = np.copy(g_refs.H)
-#             H_ini = np.array(H_ini, order = 'C') #C ordering, row elements contiguous in memory.
-#             g_refs = NMFPy.NMF(refs_flat, W=W_ini[:, :n], H=H_ini[:n, :], n_components=n)
-#             chi2 = g_refs.SolveNMF(**kwargs)
-#     else:
-#         g_refs = NMFPy.NMF(refs_flat, n_components=n_components)
-#         g_refs.SolveNMF(**kwargs)
+#     # this bit copied from Bin's nmf_imaging (https://github.com/seawander/nmf_imaging)
+#     # initialize
+#     W_ini = np.random.rand(nrefs, nrefs)
+#     H_ini = np.random.rand(nrefs, npix)
+#     g_refs = NMFPy.NMF(refs_flat, n_components=1)
+#     W_ini[:, :1] = g_refs.W[:]
+#     H_ini[:1, :] = g_refs.H[:]
+#     for n in range(1, n_components+1):
+#         if verbose == True:
+#             print("\t" + str(n) + " of " + str(n_components))
+#         W_ini[:, :(n-1)] = np.copy(g_refs.W)
+#         W_ini = np.array(W_ini, order = 'F') #Fortran ordering
+#         H_ini[:(n-1), :] = np.copy(g_refs.H)
+#         H_ini = np.array(H_ini, order = 'C') #C ordering, row elements contiguous in memory.
+#         g_refs = NMFPy.NMF(refs_flat, W=W_ini[:, :n], H=H_ini[:n, :], n_components=n)
+#         chi2 = g_refs.SolveNMF(**kwargs)
+
 #     # now you have to find the coefficients to scale the components to your target
 #     g_targ = NMFPy.NMF(target_stamp.ravel()[None, :], H=g_refs.H, n_components=n_components)
 #     g_targ.SolveNMF(W_only=True)
@@ -452,7 +448,6 @@ def klip_subtract(
 #     # add an index
 #     residuals = pd.Series({i+1: r for i, r in enumerate(residuals)})
 #     psf_models = pd.Series({i+1: r for i, r in enumerate(psf_models)})
-
 #     return residuals, psf_models
 
 ## Detection
