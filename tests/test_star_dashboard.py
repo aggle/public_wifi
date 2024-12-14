@@ -25,7 +25,7 @@ catalog['x'] = catalog['x'] - 1
 catalog['y'] = catalog['y'] - 1
 
 # reduce catalog for quicker testing
-catalog = catalog.query(f"target in {list(catalog['target'].unique()[:10])}")
+catalog = catalog.query(f"target in {list(catalog['target'].unique())}")
 
 print("processing catalog")
 # set the SIM threshold low to make sure you have enough references

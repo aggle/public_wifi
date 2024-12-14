@@ -39,6 +39,12 @@ def catalog(catalog_file):
     return catalog
 
 @pytest.fixture()
+def high_snr_catalog(catalog):
+    high_snr_stars = catalog.groupby("target")['snr'].sum().sort_values(ascending=False)[:10]
+    high_snr_rows = catalog.query(f"target in {list(high_snr_stars.index)}").copy()
+    return high_snr_rows
+
+@pytest.fixture()
 def star(catalog, data_folder):
     star_id = np.random.choice(catalog['target'].unique())
     star = sc.Star(star_id, catalog.query(f"target == '{star_id}'"), data_folder=data_folder)
@@ -53,8 +59,8 @@ def all_stars(catalog, data_folder):
     )
     return stars
 
-
 @pytest.fixture()
-def processed_stars(catalog, data_folder):
-    stars = sc.process_stars(catalog, 'target', ['filter'], data_folder, 11)
+def processed_stars(high_snr_catalog, data_folder):
+    stars = sc.process_stars(high_snr_catalog, 'target', ['filter'], data_folder, 11)
     return stars
+
