@@ -308,6 +308,43 @@ def make_row_plots(row, row_cds, size=400):
     )
     return plots
 
+def make_catalog_display(
+        catalog_rows : pd.DataFrame,
+        plot_size : int = 1000,
+
+) -> tuple[bkmdls.ColumnDataSource, bkmdls.DataTable] :
+    """
+    Generete the column data source and display widget for a star's catalog rows
+
+    Parameters
+    ----------
+    catalog_rows : pd.DataFrame
+      The entries in a catalog that correspond to a particular star
+    plot_size : int = 400
+      the size parameter for the widget
+
+    Output
+    ------
+    Define your output
+
+    """
+    catalog_cds = bkmdls.ColumnDataSource(catalog_rows)
+    catalog_columns = []
+    for k in catalog_cds.data.keys():
+        formatter = bkmdls.StringFormatter()
+        if isinstance(catalog_cds.data[k][0], float):
+            formatter = bkmdls.NumberFormatter(format='0.00')
+        catalog_columns.append(
+            bkmdls.TableColumn(field=k, title=k, formatter=formatter)
+        )
+    catalog_table = bkmdls.DataTable(
+        source=catalog_cds,
+        columns=catalog_columns,
+        # sizing_mode="stretch_width",
+        width=plot_size, height=40*len(catalog_rows),
+    )
+    return catalog_cds, catalog_table
+
 def all_stars_dashboard(
     stars : pd.Series,
     plot_size = 400,
@@ -318,34 +355,28 @@ def all_stars_dashboard(
         
         init_star = stars.index[0]
 
-        # generate the data structures and initialize the plots
+        catalog_cds, catalog_table = make_catalog_display(
+            stars.loc[init_star].cat.drop("stamp", axis=1),
+            70*len(stars.loc[init_star].cat.columns),
+        )
+        # each row of the catalog corresponds to a particular set of plots
         cds_dicts = stars.loc[init_star].results.apply(
             lambda row: make_row_cds(row, star=stars.loc[init_star], cds_dict={}),
             axis=1
         )
+        # pass these ColumnDataSources to the plots that will read from them
         plot_dicts = stars.loc[init_star].results.apply(
             lambda row: make_row_plots(row, cds_dicts[row.name], size=plot_size),
             axis=1
         )
-        catalog_cds = bkmdls.ColumnDataSource(stars.loc[init_star].cat.drop("stamp", axis=1))
-        catalog_columns = []
-        for k in catalog_cds.data.keys():
-            formatter = bkmdls.StringFormatter()
-            if isinstance(catalog_cds.data[k][0], float):
-                formatter = bkmdls.NumberFormatter(format='0.00')
-            catalog_columns.append(
-                bkmdls.TableColumn(field=k, title=k, formatter=formatter)
-            )
-        catalog_table = bkmdls.DataTable(
-            source=catalog_cds,
-            columns=catalog_columns,
-            # sizing_mode="stretch_width",
-            width=3*plot_size, height=100,
-        )
+        # this 
 
         # Button to stop the server
         quit_button = bkmdls.Button(label="Stop server", button_type="warning")
-        quit_button.on_click(lambda: sys.exit())
+        def stop_server():
+            quit_button.update(button_type='danger')
+            sys.exit()
+        quit_button.on_click(stop_server)
 
         # star selector
         star_selector = bkmdls.Select(
@@ -375,28 +406,13 @@ def all_stars_dashboard(
             for i, row_plot in plot_dicts.items():
                 for k in ['references', 'psf_model', 'klip_residuals']:
                     source = cds_dicts[i][k]
-                    row_plot[k].children[1].update(
+                    # row_plot[k].children[1].update(
+                    row_plot[k].select(name='slider').update(
                         value = 0,
                         end = source.data['nimgs'][0]-1,
                         title = source.data['i'][0],
                     )
 
-        # lyt = bklyts.layout([
-        #     # the target selectors
-        #     bklyts.row(star_selector, catalog_table, quit_button),
-        #     bklyts.row(
-        #         plot_dicts[0]['stamp'],
-        #         plot_dicts[0]['references'],
-        #         plot_dicts[0]['psf_model'],
-        #         plot_dicts[0]['klip_residuals'],
-        #     ),
-        #     bklyts.row(
-        #         plot_dicts[1]['stamp'],
-        #         plot_dicts[1]['references'],
-        #         plot_dicts[1]['psf_model'],
-        #         plot_dicts[1]['klip_residuals'],
-        #     ),
-        # ])
         tab1 = bkmdls.TabPanel(
             title='Overview',
             child= bklyts.layout([
@@ -433,8 +449,8 @@ def all_stars_dashboard(
                 bklyts.row(tab),
             ]
         )
-            
-        
+
+
         doc.add_root(lyt)
-    
+
     return app
