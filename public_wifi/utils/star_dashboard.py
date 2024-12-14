@@ -154,7 +154,8 @@ def generate_cube_scroller_widget(
         plot_kwargs[k] = plot_kwargs.get(k, v)
     plot = figure(
         tools=TOOLS,
-        **plot_kwargs
+        **plot_kwargs,
+        name='plot',
     )
     # Stamp image
     img_plot = plot.image(
@@ -176,7 +177,8 @@ def generate_cube_scroller_widget(
     slider = bkmdls.Slider(
         start=0, end=source.data['nimgs'][0]-1,
         value=0, step=1,
-        title = str(source.data['i'][0])
+        title = str(source.data['i'][0]),
+        name='slider',
     )
     def slider_change(attr, old, new):
         # update the current index, used for the slider title
