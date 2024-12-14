@@ -49,12 +49,14 @@ def img_to_CDS(
         img : np.ndarray,
         cds : bkmdls.ColumnDataSource = None,
         properties : dict = {},
+        cmap_range = (0.01, 0.99),
 ) -> None:
     # store the images in the CDS
     if cds is None:
         # if none provided, make one.
         cds = bkmdls.ColumnDataSource()
 
+    # low, high = np.nanquantile(img, cmap_range)
     data = dict(
         # these are the fields that the plots will inspect
         img=[img],
@@ -63,7 +65,8 @@ def img_to_CDS(
         x = [-0.5], y = [-0.5],
         # image height and width in pixels
         dw = [img.shape[-1]], dh = [img.shape[-2]],
-        low = [np.nanmin(img)], high = [np.nanmax(img)],
+        # low = [np.nanmin(img)], high = [np.nanmax(img)],
+        # low=[low], high=[high],
     )
     data.update(**properties)
     cds.data.update(**data)
@@ -120,6 +123,7 @@ def generate_cube_scroller_widget(
         source,
         plot_kwargs={},
         use_diverging_cmap : bool = False,
+        cmap_range : tuple[float, float] = (0.01, 0.99),
 ):
     """
     Generate a contained layout object to scroll through a cube. Can be added to other documents.
@@ -137,6 +141,9 @@ def generate_cube_scroller_widget(
     diverging_cmap : bool = False
       If True, use a diverging Blue-Red colormap that is white in the middle
       This is useful for residual plots that are mean 0
+    cmap_range : tuple[float] = (0.1, 0.9)
+      color range
+      
     """
     TOOLS = "box_select,pan,reset"
 
@@ -157,21 +164,37 @@ def generate_cube_scroller_widget(
         **plot_kwargs,
         name='plot',
     )
+
+    # set the color bar
+    # low, high = np.nanquantile(source.data['img'][0], cmap_range)
+    color_mapper = bkmdls.LinearColorMapper(
+        palette=palette,
+        # low=low, high=high,
+    )
+
     # Stamp image
     img_plot = plot.image(
         image='img',
         source=source,
         x=-0.5, y=-0.5,
         dw=source.data['img'][0].shape[-1], dh=source.data['img'][0].shape[-2],
-        palette=palette,
+        # palette=palette,
+        color_mapper=color_mapper,
     )
     # Add a color bar to the image
-    color_mapper = bkmdls.LinearColorMapper(
-        palette=palette,
-        low=np.nanmin(source.data['img'][0]), high=np.nanmax(source.data['img'][0]),
+    color_bar = bkmdls.ColorBar(
+        color_mapper=color_mapper,
+        height=int(0.9*plot_kwargs['height']),
+        label_standoff=12
     )
-    color_bar = bkmdls.ColorBar(color_mapper=color_mapper, label_standoff=12)
     plot.add_layout(color_bar, 'right')
+
+    # add hover tool
+    hover_tool = bkmdls.HoverTool()
+    hover_tool.tooltips=[("value", "@img"),
+                         ("(x,y)", "($x{0}, $y{0})")]
+    plot.add_tools(hover_tool)
+    plot.toolbar.active_inspect = hover_tool
 
     # Slider
     slider = bkmdls.Slider(
@@ -187,9 +210,11 @@ def generate_cube_scroller_widget(
         source.data['img'] = [source.data['cube'][0][new]]
         # update the slider title
         slider.update(title=str(source.data['i'][0]))
+        # low, high = np.nanquantile(source.data['img'][0], cmap_range)
         color_mapper.update(
-            low=np.nanmin(source.data['img'][0]),
-            high=np.nanmax(source.data['img'][0]),
+            # low=np.nanmin(source.data['img'][0]),
+            # high=np.nanmax(source.data['img'][0]),
+            # low=low, high=high
         )
     slider.on_change('value', slider_change)
 
@@ -217,17 +242,17 @@ def make_static_img_plot(
     # update the kwargs with defaults
     # kwargs['palette'] = kwargs.get('palette', 'Magma256')
     kwargs['level']=kwargs.get("level", "image")
-    p = bkplt.figure(
+    plot = bkplt.figure(
         width=size, height=size,
         title=title, tools=tools,
         match_aspect=True,
     )
-    p.x_range.range_padding = p.y_range.range_padding = 0
+    plot.x_range.range_padding = plot.y_range.range_padding = 0
     color_mapper = cmap_class(
         palette='Magma256',
         # low=np.nanmin(img.data['img'][0]), high=np.nanmax(img.data['img'][0]),
     )
-    p.image(
+    plot.image(
         source=img,
         image='img',
         x='x', y='y',
@@ -237,11 +262,19 @@ def make_static_img_plot(
         # low='low', high='high',
         **kwargs
     )
-    p.grid.grid_line_width = 0
+    plot.grid.grid_line_width = 0
     # add a color bar to the plot
     color_bar = bkmdls.ColorBar(color_mapper=color_mapper, label_standoff=12)
-    p.add_layout(color_bar, 'right')
-    return p
+    plot.add_layout(color_bar, 'right')
+
+    # add hover tool
+    hover_tool = bkmdls.HoverTool()
+    hover_tool.tooltips=[("value", "@img"),
+                         ("(x,y)", "($x{0}, $y{0})")]
+    plot.add_tools(hover_tool)
+    plot.toolbar.active_inspect = hover_tool
+
+    return plot
 
 
 # helper functions for the dashboard
@@ -383,6 +416,7 @@ def make_catalog_display(
 def all_stars_dashboard(
     stars : pd.Series,
     plot_size = 400,
+    
 ):
     # This returns a Bokeh application that takes a doc for displaying
     
@@ -423,7 +457,7 @@ def all_stars_dashboard(
             ## update the data structures and scroller limits
             update_catalog_cds()
             update_cds_dicts()
-            update_scrollers()
+            update_cube_scrollers()
         star_selector.on_change("value", change_star)
 
 
@@ -436,13 +470,17 @@ def all_stars_dashboard(
                 # assign new data to the existing CDSs
                 cds_dicts[i] = make_row_cds(row, stars.loc[star_selector.value], cds_dicts[i])
 
-        def update_scrollers():
-            # update scroller range and options
+        def update_cube_scrollers():
             for i, row_plot in plot_dicts.items():
                 for k in ['references', 'klip_model', 'klip_residuals', 'detection_maps']:
                     source = cds_dicts[i][k]
+                    # update the image limits
+                    low, high = np.nanquantile(source.data['img'][0], (0.01, 0.99))
+                    # row_plot[k].children[0].update(
+                    #     low=low, high=high 
+                    # )
+                    # update slider range and options
                     row_plot[k].children[1].update(
-                    # row_plot[k].select(name='slider').update(
                         value = 0,
                         end = source.data['nimgs'][0]-1,
                         title = source.data['i'][0],
