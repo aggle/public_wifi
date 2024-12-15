@@ -4,14 +4,14 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from scipy.signal import correlate
 from skimage.metrics import structural_similarity as ssim
 
 from astropy.io import fits
 from astropy.nddata import Cutout2D
 from astropy.wcs import WCS
 
-from pyklip import klip
+from public_wifi import subtraction_utils as subutils
+from public_wifi import detection_utils as detutils
 
 class Star:
     """
