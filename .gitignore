@@ -8,3 +8,5 @@ public_wifi/utils/.#*py
 sphinx/make.bat
 sphinx/Makefile
 sphinx/_build/
+/public_wifi.egg-info/
+/public_wifi/utils/.ipynb_checkpoints/
