@@ -10,3 +10,4 @@ sphinx/Makefile
 sphinx/_build/
 /public_wifi.egg-info/
 /public_wifi/utils/.ipynb_checkpoints/
+/src/public_wifi/utils/.ipynb_checkpoints/

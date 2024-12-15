@@ -1,0 +1,38 @@
+[project]
+name = "public_wifi"
+description = "Previously Undiscovered Binaries Lying In Clusers, WIde FIeld"
+readme = "README.rst"
+authors = [
+  { name = "Jonathan Aguilar", email = "jaguilar@stsci.edu" },
+]
+keywords = ["astronomy", "python"]
+classifiers = ["Programming Language :: Python"]
+requires-python = ">=3.9"
+dependencies = [
+  "matplotlib",
+  "numpy",
+  "pandas",
+  "astropy",
+  "pyklip",
+]
+
+dynamic = ["version"]
+
+[project.optional-dependencies]
+test = [
+  "pytest",
+  "pytest-cov",
+]  
+docs = [
+  "sphinx",
+  "sphinx_rtd_theme",
+  "stsci_rtd_theme",
+]
+
+[project.license]
+text = "MIT License"
+
+[build-system]
+requires = ["setuptools >= 61.2",
+            "setuptools_scm[toml]>=7.1"]
+build-backend = 'setuptools.build_meta'

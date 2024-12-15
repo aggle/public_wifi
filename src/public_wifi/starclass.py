@@ -13,6 +13,35 @@ from astropy.wcs import WCS
 from public_wifi import subtraction_utils as subutils
 from public_wifi import detection_utils as detutils
 
+def load_catalog(catalog_file, snr_thresh=50):
+    """Helper function to load the catalog"""
+    dtypes = {
+        'target': str,
+        'file': str,
+        'filter': str,
+        'ra': float,
+        'dec': float,
+        'x': float,
+        'y': float,
+        'mag_aper': float,
+        'e_mag_aper': float,
+        'dist': float,
+        'snr': float,
+    }
+    init_catalog = pd.read_csv(str(catalog_file), dtype=dtypes)
+    init_catalog[['x','y']] = init_catalog[['x','y']]-1
+    print(f"Filtering out stars with SNR < {snr_thresh}")
+    all_stars = init_catalog['target'].unique()
+    snr_thresh = snr_thresh
+    above_thresh = init_catalog.groupby("target").apply(
+        lambda group: all(group['snr'] >= snr_thresh),
+        include_groups=False,
+    )
+    keep_stars = list(all_stars[above_thresh])
+    catalog = init_catalog.query(f"target in {keep_stars}").copy()
+    return catalog
+
+
 class Star:
     """
     This is the central object. It carries around everything associated with a star:
@@ -38,6 +67,7 @@ class Star:
             data_folder : str | Path,
             stamp_size : int  = 15,
             match_by : list[str] = ['filter'],
+            scale_stamps = False,
     ) -> None:
         """
         Initialize a Star object from a row of the catalog
@@ -60,9 +90,9 @@ class Star:
             lambda row: self.get_cutout(row, stamp_size),
             axis=1,
         )
-        self.cat['stamp'] = self.cat['cutout'].apply(
-            lambda ct: self.scale_stamp(ct.data.copy())
-        )
+        self.cat['stamp'] = self.cat['cutout'].apply(lambda ct: ct.data.copy())
+        if scale_stamps:
+            self.cat['stamp'] = self.cat['stamp'].apply(self.scale_stamp)
         # measure the background
         self.cat['bgnd'] = self.measure_bgnd(51, 20)
         return
@@ -267,6 +297,7 @@ def process_stars(
         bad_references : list = [],
         min_nref : int = 2,
         sim_thresh : float = 0.5,
+        scale_stamps : bool = False,
 ) -> pd.Series :
     """
     Given an input catalog, run the analysis.
@@ -287,6 +318,8 @@ def process_stars(
       A stamp's similarity score must be at least this value to be included
       If fewer than `min_nref` reference stamps meet this criteria, use the
       `min_nref` ones with the highest similarity scores    
+    scale_stamps : bool = False
+      If True, scale all stamps from 0 to 1
 
     Output
     ------
@@ -302,6 +335,7 @@ def process_stars(
         data_folder,
         stamp_size,
         bad_references,
+        scale_stamps,
     )
     # perform PSF subtraction
     subtract_all_stars(
@@ -321,6 +355,7 @@ def initialize_stars(
         data_folder : str | Path,
         stamp_size : int = 15,
         bad_references : str | list[str] = [],
+        scale_stamps : bool = False,
 ) -> pd.Series :
     """
     initialize the Star objects as a series. This includes creating the
@@ -361,6 +396,7 @@ def initialize_stars(
             data_folder = data_folder,
             stamp_size = stamp_size,
             match_by = match_references_on,
+            scale_stamps=scale_stamps,
         ),
         include_groups=False
     )
