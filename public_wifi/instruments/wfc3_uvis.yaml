@@ -1,0 +1,20 @@
+# This configuration file defines the relevant properties of the WFC3 detector
+# Author: J. Aguilar
+
+# name of the instrument
+name : WFC3_UVIS
+
+# Number of pixels across each axis
+npix : [2064, 2180]
+
+# Pixel scales, in arcsec
+# may not be known, or may be variable
+pix_scale : [0.13, 0.13]
+pix_scale_unit : arcsec/pixel
+
+# size of the stamp to cut out (NxN)
+# though this is probably more dependent on the
+# filter and target, and not necessarily an instrument property
+# is there a better place to define it?
+stamp_size : 11
+
