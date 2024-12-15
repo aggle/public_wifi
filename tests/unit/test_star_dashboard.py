@@ -25,13 +25,20 @@ catalog['x'] = catalog['x'] - 1
 catalog['y'] = catalog['y'] - 1
 
 # reduce catalog for quicker testing
-catalog = catalog.query(f"target in {list(catalog['target'].unique())}")
+targets = list(catalog['target'].unique())[:10]
+catalog = catalog.query(f"target in {targets}")
+
+
+
 
 print("processing catalog")
 # set the SIM threshold low to make sure you have enough references
 stars = sc.process_stars(catalog, 'target', ['filter'], data_folder, 11, sim_thresh=-1.0)
 print("displaying dashboard")
 dash = sd.all_stars_dashboard(stars, plot_size=350)
+
+
+
 
 if __name__ == "__main__":
     port = 5006

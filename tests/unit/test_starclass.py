@@ -2,6 +2,7 @@ import pytest
 from public_wifi import starclass as sc
 from tests.conftest import data_folder
 
+DEBUG = False # use to turn on debug printing
 
 def test_load_catalog(catalog, catalog_file):
     assert(isinstance(catalog, sc.pd.DataFrame))
@@ -24,6 +25,10 @@ def test_starclass_init(star):
     assert(isinstance(star.cat, sc.pd.DataFrame))
     assert(isinstance(star.cat.iloc[0]['x'], float))
     assert('cat_id' in star.cat.columns)
+    assert("stamp" in star.cat.columns)
+    assert("cutout" in star.cat.columns)
+    assert("bgnd" in star.cat.columns)
+
 
 def test_starclass_check_reference(star):
     assert(star.has_companions == False)
@@ -34,11 +39,12 @@ def test_starclass_check_reference(star):
     star.has_companions = False
     assert(star.is_good_reference == True)
 
-def test_starclass_get_stamp(star, data_folder):
+
+def test_starclass_get_cutout(star, data_folder):
     print("Getting stamp from " + star.star_id)
     assert(data_folder.exists())
     stamp_size = 15
-    stamps = star.cat.apply(lambda row: star.get_stamp(row, stamp_size, data_folder), axis=1)
+    stamps = star.cat.apply(lambda row: star.get_cutout(row, stamp_size), axis=1)
     assert(all(stamps.apply(lambda el: el.shape == (stamp_size, stamp_size))))
     assert(all(stamps.apply(lambda el: isinstance(el, sc.Cutout2D))))
     maxes = stamps.apply(lambda s: sc.np.unravel_index(s.data.argmax(), s.data.shape))
@@ -89,17 +95,42 @@ def test_query_references(all_stars):
             other_refs = ref_subsets[oth].index
             assert(set(row_refs).isdisjoint(set(other_refs)))
 
-def test_klip_subtract(all_stars):
-    star_id = sc.np.random.choice(all_stars.index)
-    print("KLIP subtraction tested on ", star_id)
-    star = all_stars.loc[star_id]
-    star.set_references(all_stars, compute_similarity=True)
-    star.subtraction = star.cat.apply(star.row_klip_subtract, axis=1)
-    # the RMS should be monotonically declining
-    rms_descent = star.subtraction['kl_sub'].apply(
-        lambda sub: all(sc.np.diff(sub.apply(sc.np.nanstd)) < 0)
+
+def test_initialize_stars(catalog, data_folder):
+    bad_reference = 'J162810.30-264024.2'
+    stars = sc.initialize_stars(
+        catalog,
+        star_id_column='target',
+        match_references_on=['filter'],
+        data_folder=data_folder,
+        stamp_size=15,
+        bad_references=bad_reference,
     )
-    assert(rms_descent.all())
+    unique_stars = catalog['target'].unique()
+    
+    assert(len(stars) == len(unique_stars))
+    assert(all(stars.apply(lambda el: isinstance(el, sc.Star))))
+    # check that the attributes are there
+    attrs = ["star_id", "stamp_size", "is_good_reference", "data_folder",
+             "cat", "has_companions", "match_by", "references"]
+    for attr in attrs:
+        if DEBUG:
+            print(attr)
+        assert(all(stars.apply(hasattr, args=[attr])))
+    # check that the bad reference is flagged correctly
+    assert(stars[bad_reference].is_good_reference == False)
+    assert(all(
+        stars.apply(
+            lambda star: bad_reference not in star.references.reset_index()['target']
+        )
+    ))
+
+
+def test_scale_stamp(star):
+    scaled_stamps = star.cat['stamp'].apply(star.scale_stamp)
+    for stamp in scaled_stamps:
+        assert(sc.np.nanmin(stamp) < 1e-10)
+        assert(sc.np.abs(sc.np.nanmax(stamp) - 1) < 1e-10)
 
 def test_similarity(all_stars):
     star_id = sc.np.random.choice(all_stars.index)
@@ -111,6 +142,19 @@ def test_similarity(all_stars):
     assert('sim' in star.references.columns)
     assert(all(star.references['sim']**2 <= 1.))
     assert(any(star.references['sim'].isna()) == False)
+
+
+def test_klip_subtract(all_stars):
+    star_id = sc.np.random.choice(all_stars.index)
+    print("KLIP subtraction tested on ", star_id)
+    star = all_stars.loc[star_id]
+    star.set_references(all_stars, compute_similarity=True)
+    star.subtraction = star.cat.apply(star.row_klip_subtract, axis=1)
+    # the RMS should be monotonically declining
+    rms_descent = star.subtraction['kl_sub'].apply(
+        lambda sub: all(sc.np.diff(sub.apply(sc.np.nanstd)) < 0)
+    )
+    assert(rms_descent.all())
 
 
 def test_process_stars(catalog, data_folder):
@@ -129,82 +173,4 @@ def test_process_stars(catalog, data_folder):
     # assert(len(stars) == len(catalog['target'].unique()))
     # check that attributes have been assigned
     assert(all(stars.apply(lambda s: hasattr(s, 'cat'))))
-
-
-def test_make_matched_filter(processed_stars):
-    """Test the matched filtering"""
-    assert(len(processed_stars) == 10)
-    mfs = processed_stars.apply(
-        # apply to each star
-        lambda star: star.results['klip_model'].apply(
-            # apply to each row of the results dataframe
-            lambda klip_model: klip_model.apply(
-                # the klip_model entries are series
-                sc.make_matched_filter,
-                width=5
-            )
-        )
-    )
-
-    mf_means = mfs.apply(
-        lambda star: star.apply(
-            lambda row: row.apply(sc.np.nanmean)
-        )
-    )
-    for star_id in mf_means.index:
-        for row_id in mf_means.loc[star_id].index:
-            for kklip in mf_means.loc[star_id].loc[row_id].index:
-                val = mf_means.loc[star_id].loc[row_id].loc[kklip]
-                if sc.np.isnan(val):
-                    print(f"NaN encountered: {star_id} {row_id} {kklip} {val}")
-                assert(sc.np.abs(val) < 1e-15)
-
-def test_make_normalized_psf(processed_stars):
-
-    psfs = processed_stars.apply(
-        # apply to each star
-        lambda star: star.results['klip_model'].apply(
-            # apply to each row of the results dataframe
-            lambda klip_model: klip_model.apply(
-                # the klip_model entries are series
-                sc.make_normalized_psf,
-            )
-        )
-    )
-    psf_sums = psfs.apply(
-        lambda star: star.apply(
-            lambda row: row.apply(sc.np.nanmean)
-        )
-    )
-    for star_id in psf_sums.index:
-        for row_id in psf_sums.loc[star_id].index:
-            for kklip in psf_sums.loc[star_id].loc[row_id].index:
-                val = psf_sums.loc[star_id].loc[row_id].loc[kklip]
-                # print(f"{star_id} {row_id} {kklip} {val:0.2e}")
-                assert(val - 1 < 1e-15)
-
-def test_matched_filter_on_normalized_psf(processed_stars):
-    for star in processed_stars:
-        star.results['matched_filter'] = star.results['klip_model'].apply(
-            # the klip_model entries are series
-            sc.make_matched_filter,
-        )
-        star.results['normalized_psf'] = star.results['klip_model'].apply(
-            # the klip_model entries are series
-            sc.make_normalized_psf,
-        ) 
-        assert(
-            all([i in star.results.columns for i in ['matched_filter', 'normalized_psf']])
-        )
-
-def test_row_make_detection_map(processed_stars):
-    star = processed_stars[sc.np.random.choice(processed_stars.index)]
-    row = star.results.iloc[0]
-    row_detmaps = star.row_make_detection_maps(row)
-    assert(len(row_detmaps) == len(row['klip_model']))
-    all_detmaps = star.results.apply(
-        star.row_make_detection_maps,
-        axis=1
-    )
-    print(all_detmaps)
 
