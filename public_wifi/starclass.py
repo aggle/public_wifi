@@ -218,15 +218,19 @@ class Star:
         # automatically merged with self.cat
         return pd.Series({s.name: s for s in [klip_model_img, kl_sub_img]})
 
+
     def row_make_detection_maps(self, row):
         df = pd.DataFrame(row[['klip_model', 'kl_sub']].to_dict())
         detmaps = df.apply(
-            lambda dfrow : apply_matched_filter(dfrow['kl_sub'], dfrow['klip_model']),
+            lambda dfrow : detutils.apply_matched_filter(dfrow['kl_sub'], dfrow['klip_model']),
             axis=1
         )
         center = int(np.floor(self.stamp_size/2))
         primary_fluxes = df.apply(
-            lambda dfrow : apply_matched_filter(row['stamp'].data, dfrow['klip_model'])[center, center],
+            lambda dfrow : detutils.apply_matched_filter(
+                row['stamp'],
+                dfrow['klip_model']
+            )[center, center],
             axis=1
         )
         detmaps = detmaps/primary_fluxes
@@ -240,9 +244,10 @@ def process_stars(
         match_references_on : str | list,
         data_folder : str | Path,
         stamp_size : int = 11,
+        bad_references : list = [],
         min_nref : int = 2,
         sim_thresh : float = 0.5,
-) -> None :
+) -> pd.Series :
     """
     Given an input catalog, run the analysis.
 
@@ -269,8 +274,65 @@ def process_stars(
       A series where each entry is a Star object with the data and analysis results
 
     """
+    # initialize the catalog
+    stars = initialize_stars(
+        input_catalog,
+        star_id_column,
+        match_references_on,
+        data_folder,
+        stamp_size,
+        bad_references,
+    )
+    # perform PSF subtraction
+    subtract_all_stars(
+        stars,
+        sim_thresh=sim_thresh,
+        min_nref=min_nref
+    )
+    # perform the detection analysis
+    detect_all_stars(stars)
+    return stars
+
+
+def initialize_stars(
+        input_catalog : pd.DataFrame,
+        star_id_column : str,
+        match_references_on : str | list[str],
+        data_folder : str | Path,
+        stamp_size : int = 15,
+        bad_references : str | list[str] = [],
+) -> pd.Series :
+    """
+    initialize the Star objects as a series. This includes creating the
+    Star objects from corresponding catalog rows, collecting the corresponding
+    references, and computing the stamp similarity scores,.
+
+    Parameters
+    ----------
+    input_catalog : pd.DataFrame
+      a catalog where each detection is a row
+    star_id_column : str
+      this is the column that has the star identifier
+    match_references_on : list
+      these are the columns that you use for matching references
+    stamp_size : int = 15
+      what stamp size to use
+    bad_references : str | list[str] = []
+      a list of values of the [star_id_column] that should be flagged as not
+      suitable for use as PSF references
+
+    Output
+    ------
+    stars : pd.Series
+      A series where each entry is a Star object with the data and analysis results
+
+    """
+    # input format checking
     if isinstance(match_references_on, str):
         match_references_on = [match_references_on]
+    if isinstance(bad_references, str):
+        bad_references = [bad_references]
+
     # Create the Star objects from the catalog
     stars = input_catalog.groupby(star_id_column).apply(
         lambda group: Star(
@@ -282,12 +344,14 @@ def process_stars(
         ),
         include_groups=False
     )
+    # flag the bad references
+    for br in bad_references:
+        stars[br].is_good_reference = False
     # assign references and compute similarity score
     for star in stars:
         star.set_references(stars, compute_similarity=True)
-    subtract_all_stars(stars, sim_thresh=sim_thresh, min_nref=min_nref)
-    detect_all_stars(stars)
     return stars
+
 
 def subtract_all_stars(
         all_stars : pd.Series,
