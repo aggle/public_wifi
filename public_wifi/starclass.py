@@ -138,6 +138,26 @@ class Star:
 
         return stamp
 
+    def scale_stamp(self, stamp):
+        # scale a stamp form 0 to 1
+        return (stamp - np.nanmin(stamp))/np.ptp(stamp)
+
+    def measure_bgnd(self, stamp_size=51, bgnd_rad=20):
+        """
+        stamp_size = 51
+          the size of the stamp to use for measureing the background
+        bgnd_rad : 20
+            pixels further from the center than this are used to measure the bgnd 
+        """
+        bgnd_stamps = self.cat.apply(self.get_cutout, stamp_size=self.stamp_size, axis=1)
+        center = int(np.floor(self.stamp_size/2))
+        sep_map = np.linalg.norm(np.mgrid[:self.stamp_size, :self.stamp_size] - center, axis=0)
+        bgnd_mask = sep_map < bgnd_rad
+        bgnd = bgnd_stamps.apply(
+            lambda stamp: (np.nanmean(stamp.data[bgnd_mask]), np.nanstd(stamp.data[bgnd_mask]))
+        )
+        return bgnd
+
     def set_references(self, other_stars, compute_similarity=True):
         """
         Assemble the references for each stamp. Put "good reference" checks here
