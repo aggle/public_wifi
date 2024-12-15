@@ -136,10 +136,10 @@ def test_make_matched_filter(processed_stars):
     assert(len(processed_stars) == 10)
     mfs = processed_stars.apply(
         # apply to each star
-        lambda star: star.results['psf_model'].apply(
+        lambda star: star.results['klip_model'].apply(
             # apply to each row of the results dataframe
-            lambda psf_model: psf_model.apply(
-                # the psf_model entries are series
+            lambda klip_model: klip_model.apply(
+                # the klip_model entries are series
                 sc.make_matched_filter,
                 width=5
             )
@@ -156,17 +156,17 @@ def test_make_matched_filter(processed_stars):
             for kklip in mf_means.loc[star_id].loc[row_id].index:
                 val = mf_means.loc[star_id].loc[row_id].loc[kklip]
                 if sc.np.isnan(val):
-                    print(f"{star_id} {row_id} {kklip} {val}")
+                    print(f"NaN encountered: {star_id} {row_id} {kklip} {val}")
                 assert(sc.np.abs(val) < 1e-15)
 
 def test_make_normalized_psf(processed_stars):
 
     psfs = processed_stars.apply(
         # apply to each star
-        lambda star: star.results['psf_model'].apply(
+        lambda star: star.results['klip_model'].apply(
             # apply to each row of the results dataframe
-            lambda psf_model: psf_model.apply(
-                # the psf_model entries are series
+            lambda klip_model: klip_model.apply(
+                # the klip_model entries are series
                 sc.make_normalized_psf,
             )
         )
@@ -185,12 +185,12 @@ def test_make_normalized_psf(processed_stars):
 
 def test_matched_filter_on_normalized_psf(processed_stars):
     for star in processed_stars:
-        star.results['matched_filter'] = star.results['psf_model'].apply(
-            # the psf_model entries are series
+        star.results['matched_filter'] = star.results['klip_model'].apply(
+            # the klip_model entries are series
             sc.make_matched_filter,
         )
-        star.results['normalized_psf'] = star.results['psf_model'].apply(
-            # the psf_model entries are series
+        star.results['normalized_psf'] = star.results['klip_model'].apply(
+            # the klip_model entries are series
             sc.make_normalized_psf,
         ) 
         assert(
@@ -201,9 +201,10 @@ def test_row_make_detection_map(processed_stars):
     star = processed_stars[sc.np.random.choice(processed_stars.index)]
     row = star.results.iloc[0]
     row_detmaps = star.row_make_detection_maps(row)
-    assert(len(row_detmaps) == len(row['psf_model']))
+    assert(len(row_detmaps) == len(row['klip_model']))
     all_detmaps = star.results.apply(
         star.row_make_detection_maps,
         axis=1
     )
     print(all_detmaps)
+
