@@ -283,11 +283,11 @@ def make_row_cds(row, star, cds_dict={}):
     filt = row['filter']
     # filter stamp
     cds = cds_dict.get("stamp", None)
-    cds_dict['stamp'] = img_to_CDS(row['stamp'].data, cds=cds)
+    cds_dict['stamp'] = img_to_CDS(row['stamp'], cds=cds)
     # cube of references
     refs = star.row_get_references(row).query("used == True").copy()
     refs = refs.sort_values(by='sim', ascending=False)
-    refcube = refs['stamp'].apply(getattr, args=['data'])
+    refcube = refs['stamp']#.apply(getattr, args=['data'])
     refcube_index = refs.reset_index().apply(
         lambda row: f"{row['target']} / SIM {row['sim']:0.3f}",
         axis=1
@@ -425,7 +425,7 @@ def all_stars_dashboard(
         init_star = stars.index[0]
 
         catalog_cds, catalog_table = make_catalog_display(
-            stars.loc[init_star].cat.drop("stamp", axis=1),
+            stars.loc[init_star].cat.drop(["cutout", "stamp" ], axis=1),
             70*len(stars.loc[init_star].cat.columns),
         )
         # each row of the catalog corresponds to a particular set of plots
@@ -438,7 +438,6 @@ def all_stars_dashboard(
             lambda row: make_row_plots(row, cds_dicts[row.name], size=plot_size),
             axis=1
         )
-        # this 
 
         # Button to stop the server
         quit_button = bkmdls.Button(label="Stop server", button_type="warning")
@@ -462,7 +461,9 @@ def all_stars_dashboard(
 
 
         def update_catalog_cds():
-           catalog_cds.data.update(stars.loc[star_selector.value].cat.drop("stamp", axis=1))
+           catalog_cds.data.update(
+               stars.loc[star_selector.value].cat.drop(["cutout", "stamp" ], axis=1)
+           )
 
         def update_cds_dicts():
             """Update the target filter stamp"""
@@ -528,8 +529,9 @@ def all_stars_dashboard(
 
         lyt = bklyts.layout(
             [
-                bklyts.row(star_selector, catalog_table, quit_button),
+                bklyts.row(star_selector, catalog_table),
                 bklyts.row(tab),
+                bklyts.row(quit_button),
             ]
         )
 

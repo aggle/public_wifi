@@ -49,16 +49,22 @@ class Star:
         """
         self.star_id = star_id
         self.stamp_size = stamp_size
-        self.is_good_reference = True # assumed True
+        self.data_folder = data_folder
         self.cat = group#.reset_index(drop=True)
-        # values that that need setter and getter methods
+        self.match_by = match_by
+        # status flags
+        self.is_good_reference = True # assumed True
         self.has_companions = False
         # values that are initialized by methods
-        self.cat['stamp'] = self.cat.apply(
-            lambda row: self.get_stamp(row, stamp_size, data_folder),
+        self.cat['cutout'] = self.cat.apply(
+            lambda row: self.get_cutout(row, stamp_size),
             axis=1,
         )
-        self.match_by = match_by
+        self.cat['stamp'] = self.cat['cutout'].apply(
+            lambda ct: self.scale_stamp(ct.data.copy())
+        )
+        # measure the background
+        self.cat['bgnd'] = self.measure_bgnd(51, 20)
         return
 
     # has_companions should always be the opposite of is_good_reference
@@ -96,16 +102,15 @@ class Star:
             is_ok = True
         self.is_good_reference = is_ok
 
-    def get_stamp(
+    def get_cutout(
             self,
             row,
             stamp_size : int,
-            data_folder : str | Path
     ) -> Cutout2D:
         """
         Cut out the stamp from the data
         """
-        filepath = data_folder / row['file']
+        filepath = self.data_folder / row['file']
         img = fits.getdata(str(filepath), 'SCI')
         wcs = WCS(fits.getheader(str(filepath), 'SCI'))
         stamp = Cutout2D(
@@ -162,14 +167,14 @@ class Star:
         # for each row, select the references, compute the similarity, and
         # store it in the column
         for i, row in self.cat.iterrows():
-            target_stamp = row['stamp'].data
+            target_stamp = row['stamp']
             query = self.generate_match_query(row)
 
             sim = self.references.query(query)['stamp'].apply(
                 lambda ref_stamp: ssim(
-                    ref_stamp.data,
+                    ref_stamp,
                     target_stamp,
-                    data_range=np.ptp(np.stack([ref_stamp.data, target_stamp]))
+                    data_range=np.ptp(np.stack([ref_stamp, target_stamp]))
                 )
             )
             self.references.loc[sim.index, 'sim'] = sim
@@ -189,7 +194,7 @@ class Star:
 
     def row_klip_subtract(self, row, numbasis=None, sim_thresh=0.0, min_nref=2):
         """Wrapper for KLIP that can be applied on each row of star.cat"""
-        target_stamp = row['stamp'].data
+        target_stamp = row['stamp']
         # select the references
         reference_rows = self.row_get_references(row, sim_thresh, min_nref)
         # reset and then set the list of references used
@@ -198,13 +203,13 @@ class Star:
         self.references.loc[reference_rows.index, 'used'] = True
 
         # pull out the stamps
-        reference_stamps = reference_rows['stamp'].apply(lambda ref: ref.data)
+        reference_stamps = reference_rows['stamp']
 
         target_stamp = target_stamp - target_stamp.min()
         reference_stamps = reference_stamps.apply(lambda ref: ref - ref.min())
         scale = target_stamp.max() / reference_stamps.apply(np.max)
         reference_stamps = reference_stamps * scale#.apply(lambda ref: ref / ref.max())
-        kl_sub_img, klip_model_img = klip_subtract(
+        kl_sub_img, klip_model_img = subutils.klip_subtract(
             target_stamp,
             reference_stamps,
             np.arange(1, reference_stamps.size)
@@ -336,150 +341,3 @@ def detect_all_stars(
         )
         star.results = star.results.join(star.detmap)
     return
-
-
-### PSF subtraction ###
-def klip_subtract(
-        target_stamp,
-        reference_stamps,
-        numbasis = None,
-) -> tuple[pd.Series, pd.Series]:
-    """
-    Perform KLIP subtraction on the target stamp.
-    Returns the subtracted images, and the PSF models
-    """
-    stamp_shape = target_stamp.shape
-    if numbasis is None:
-        numbasis = np.array([len(reference_stamps)-1])
-    targ_stamp_flat = target_stamp.ravel()
-    ref_stamps_flat = np.stack([i.ravel() for i in reference_stamps])
-
-    kl_sub, kl_basis = klip.klip_math(
-        targ_stamp_flat, ref_stamps_flat,
-        numbasis = numbasis,
-        return_basis = True,
-    )
-    # construct the PSF model
-    coeffs = np.inner(targ_stamp_flat, kl_basis)
-    klip_model = kl_basis * np.expand_dims(coeffs, [i+1 for i in range(kl_basis.ndim-1)])
-    klip_model = np.array([np.sum(klip_model[:k], axis=0) for k in numbasis])
-
-    # store as Series objects
-    if isinstance(numbasis, int):
-        numbasis = [numbasis]
-    kl_basis = pd.Series(dict(zip(range(1, len(kl_basis)+1), kl_basis)), name='kl_basis')
-    kl_basis.index.name = 'numbasis'
-    kl_sub = pd.Series(dict(zip(numbasis, kl_sub.T)), name='kl_sub')
-    kl_sub.index.name = 'numbasis'
-    klip_model = pd.Series(dict(zip(numbasis, klip_model)), name='klip_model')
-    klip_model.index.name = 'numbasis'
-    # return the subtracted stamps as images
-    kl_sub_img = kl_sub.apply(lambda img: img.reshape(stamp_shape))
-    klip_model_img = klip_model.apply(lambda img: img.reshape(stamp_shape))
-    return kl_sub_img, klip_model_img
-
-# def nmf_subtract(
-#         target_stamp : np.ndarray,
-#         reference_stamps : pd.Series,
-#         numbasis : int | np.ndarray | None = None,
-#         n_components : int | np.ndarray | None = None,
-#         verbose=False,
-# ):
-#     """
-#     Perform NMF subtraction on one target and its references
-
-#     Parameters
-#     ----------
-#     target_stamp : np.ndarray
-#       2-D target stamp
-#     reference_stamps : pd.Series[np.ndarray]
-#       the reference PSFs
-#     kwargs : {}
-#       other arguments, some to pass to NonnegNMFPy's NMFPy.SolveNMF
-
-#     Output
-#     ------
-#     tuple with residuals and psf_models
-#     """
-#     stamp_shape = target_stamp.shape
-#     if numbasis is None:
-#         numbasis = len(reference_stamps)-1
-#     if isinstance(numbasis, int):
-#         numbasis = np.array([int])
-#     # flatten the stamps
-#     targ_stamp_flat = target_stamp.ravel()
-#     ref_stamps_flat = np.stack([i.ravel() for i in reference_stamps])
-
-#     nrefs, npix = ref_stamps_flat.shape
-
-
-#     # get the number of free parameters
-#     if (n_components is None) or (n_components > nrefs):
-#         n_components = nrefs
-#     if isinstance(n_components, int):
-#         n_components = np.array([n_components])
-
-
-#     # this bit copied from Bin's nmf_imaging (https://github.com/seawander/nmf_imaging)
-#     # initialize
-#     W_ini = np.random.rand(nrefs, nrefs)
-#     H_ini = np.random.rand(nrefs, npix)
-#     g_refs = NMFPy.NMF(refs_flat, n_components=1)
-#     W_ini[:, :1] = g_refs.W[:]
-#     H_ini[:1, :] = g_refs.H[:]
-#     for n in range(1, n_components+1):
-#         if verbose == True:
-#             print("\t" + str(n) + " of " + str(n_components))
-#         W_ini[:, :(n-1)] = np.copy(g_refs.W)
-#         W_ini = np.array(W_ini, order = 'F') #Fortran ordering
-#         H_ini[:(n-1), :] = np.copy(g_refs.H)
-#         H_ini = np.array(H_ini, order = 'C') #C ordering, row elements contiguous in memory.
-#         g_refs = NMFPy.NMF(refs_flat, W=W_ini[:, :n], H=H_ini[:n, :], n_components=n)
-#         chi2 = g_refs.SolveNMF(**kwargs)
-
-#     # now you have to find the coefficients to scale the components to your target
-#     g_targ = NMFPy.NMF(target_stamp.ravel()[None, :], H=g_refs.H, n_components=n_components)
-#     g_targ.SolveNMF(W_only=True)
-#     # create the models by component using some linalg tricks
-#     W = np.tile(g_targ.W, g_targ.W.shape[::-1])
-#     psf_models = np.dot(np.tril(W), g_targ.H)
-#     psf_models = image_utils.make_image_from_flat(psf_models)
-#     residuals = target_stamp - psf_models
-#     # add an index
-#     residuals = pd.Series({i+1: r for i, r in enumerate(residuals)})
-#     psf_models = pd.Series({i+1: r for i, r in enumerate(psf_models)})
-#     return residuals, psf_models
-
-## Detection
-
-def make_matched_filter(stamp, width : int | None = None):
-    center = np.floor(np.array(stamp.shape)/2).astype(int)
-    if isinstance(width, int):
-        stamp = Cutout2D(stamp, center[::-1], width).data
-    stamp = np.ma.masked_array(stamp, mask=np.isnan(stamp))
-    stamp = stamp - np.nanmin(stamp)
-    stamp = stamp/np.nansum(stamp)
-    stamp = stamp - np.nanmean(stamp)
-    return stamp.data
-
-def make_normalized_psf(stamp):
-    stamp = stamp - np.nanmin(stamp)
-    stamp = stamp/np.nansum(stamp)
-    return stamp
-
-
-def apply_matched_filter(
-        target_stamp : np.ndarray,
-        psf_model : np.ndarray,
-) -> np.ndarray:
-    """
-    Apply the matched filter as a correlation. Normalize by the matched filter norm.
-    """
-    matched_filter = make_matched_filter(psf_model)
-    detmap = correlate(
-        target_stamp,
-        matched_filter,
-        method='direct',
-        mode='same')
-    detmap = detmap / np.linalg.norm(matched_filter)**2
-    return detmap
