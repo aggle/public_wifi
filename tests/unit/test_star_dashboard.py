@@ -7,22 +7,23 @@ from bokeh.server.server import Server
 catalog_file = sc.Path("~/Projects/Research/hst17167-ffp/catalogs/targets_drc.csv")
 data_folder = sc.Path("/Users/jaguilar/Projects/Research/hst17167-ffp/data/HST/")
 
-dtypes = {
-    'target': str,
-    'file': str,
-    'filter': str,
-    'ra': float,
-    'dec': float,
-    'x': float,
-    'y': float,
-    'mag_aper': float,
-    'e_mag_aper': float,
-    'dist': float,
-    'snr': float,
-}
-catalog = pd.read_csv(str(catalog_file), dtype=dtypes)
-catalog['x'] = catalog['x'] - 1
-catalog['y'] = catalog['y'] - 1
+# dtypes = {
+#     'target': str,
+#     'file': str,
+#     'filter': str,
+#     'ra': float,
+#     'dec': float,
+#     'x': float,
+#     'y': float,
+#     'mag_aper': float,
+#     'e_mag_aper': float,
+#     'dist': float,
+#     'snr': float,
+# }
+# catalog = pd.read_csv(str(catalog_file), dtype=dtypes)
+# catalog['x'] = catalog['x'] - 1
+# catalog['y'] = catalog['y'] - 1
+catalog = sc.load_catalog(catalog_file, 100)
 
 # reduce catalog for quicker testing
 targets = list(catalog['target'].unique())[:10]
@@ -33,7 +34,7 @@ catalog = catalog.query(f"target in {targets}")
 
 print("processing catalog")
 # set the SIM threshold low to make sure you have enough references
-stars = sc.process_stars(catalog, 'target', ['filter'], data_folder, 11, sim_thresh=-1.0)
+stars = sc.process_stars(catalog, 'target', ['filter'], data_folder, 11, sim_thresh=-1.0, scale_stamps=True)
 print("displaying dashboard")
 dash = sd.all_stars_dashboard(stars, plot_size=350)
 
