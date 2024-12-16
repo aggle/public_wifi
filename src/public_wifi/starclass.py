@@ -208,6 +208,10 @@ class Star:
         references = pd.concat(references, names=['target', 'index'])
         references['used'] = False
         self.references = references
+        self.nrefs = self.references.groupby(
+            self.match_by).apply(
+                len, include_groups=False,
+            )
         if compute_similarity:
             self.compute_similarity()
 
@@ -252,6 +256,11 @@ class Star:
         # only reset the references that match the query
         self.row_get_references(row, -1)['used'] = False
         self.references.loc[reference_rows.index, 'used'] = True
+        self.nrefs = self.references.query("used == True").groupby(
+            self.match_by).apply(
+                len,
+                include_groups=False,
+            )
 
         # pull out the stamps
         reference_stamps = reference_rows['stamp']
@@ -362,6 +371,7 @@ def initialize_stars(
         stamp_size : int = 15,
         bad_references : str | list[str] = [],
         scale_stamps : bool = False,
+        min_nrefs : int = 1,
 ) -> pd.Series :
     """
     initialize the Star objects as a series. This includes creating the
@@ -381,6 +391,8 @@ def initialize_stars(
     bad_references : str | list[str] = []
       a list of values of the [star_id_column] that should be flagged as not
       suitable for use as PSF references
+    min_nrefs : int = 1
+      Stars with fewer than this many references in either filter are rejected
 
     Output
     ------
