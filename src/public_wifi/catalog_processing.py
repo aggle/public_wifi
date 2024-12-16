@@ -43,7 +43,7 @@ def load_catalog(
 
 # This method does all the processing steps. Write your next step below, and
 # add it to the execution list
-def process_stars(
+def process_catalog(
         input_catalog : pd.DataFrame,
         star_id_column : str,
         match_references_on : str | list,
@@ -83,7 +83,7 @@ def process_stars(
 
     """
     # initialize the catalog
-    stars = initialize_stars(
+    stars = catalog_initialization(
         input_catalog,
         star_id_column,
         match_references_on,
@@ -93,17 +93,17 @@ def process_stars(
         scale_stamps,
     )
     # perform PSF subtraction
-    subtract_all_stars(
+    catalog_subtraction(
         stars,
         sim_thresh=sim_thresh,
         min_nref=min_nref
     )
     # perform the detection analysis
-    detect_all_stars(stars)
+    catalog_detection(stars)
     return stars
 
 
-def initialize_stars(
+def catalog_initialization(
         input_catalog : pd.DataFrame,
         star_id_column : str,
         match_references_on : str | list[str],
@@ -148,7 +148,7 @@ def initialize_stars(
 
     # Create the Star objects from the catalog
     stars = input_catalog.groupby(star_id_column).apply(
-        lambda group: Star(
+        lambda group: sc.Star(
             group.name,
             group,
             data_folder = data_folder,
@@ -167,7 +167,7 @@ def initialize_stars(
     return stars
 
 
-def subtract_all_stars(
+def catalog_subtraction(
         all_stars : pd.Series,
         sim_thresh : float = 0.5,
         min_nref : int = 2,
@@ -200,7 +200,7 @@ def subtract_all_stars(
     return
 
 
-def detect_all_stars(
+def catalog_detection(
         all_stars : pd.Series,
 ) -> None:
     """

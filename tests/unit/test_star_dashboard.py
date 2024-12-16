@@ -34,7 +34,7 @@ catalog = catalog.query(f"target in {targets}")
 
 print("processing catalog")
 # set the SIM threshold low to make sure you have enough references
-stars = sc.process_stars(catalog, 'target', ['filter'], data_folder, 11, sim_thresh=-1.0, scale_stamps=True)
+stars = sc.process_catalog(catalog, 'target', ['filter'], data_folder, 11, sim_thresh=-1.0, scale_stamps=True)
 print("displaying dashboard")
 dash = sd.all_stars_dashboard(stars, plot_size=350)
 

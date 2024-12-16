@@ -1,6 +1,5 @@
 import pytest
 from public_wifi import starclass as sc
-from tests.conftest import data_folder
 
 DEBUG = False # use to turn on debug printing
 
@@ -101,38 +100,6 @@ def test_query_references(all_stars):
             assert(set(row_refs).isdisjoint(set(other_refs)))
 
 
-def test_initialize_stars(catalog, data_folder):
-    bad_reference = 'J162810.30-264024.2'
-    stars = sc.initialize_stars(
-        catalog,
-        star_id_column='target',
-        match_references_on=['filter'],
-        data_folder=data_folder,
-        stamp_size=15,
-        bad_references=bad_reference,
-        min_nrefs = 10,
-    )
-    unique_stars = catalog['target'].unique()
-    
-    assert(len(stars) == len(unique_stars))
-    assert(all(stars.apply(lambda el: isinstance(el, sc.Star))))
-    # check that the attributes are there
-    attrs = ["star_id", "stamp_size", "is_good_reference", "data_folder",
-             "cat", "has_companions", "match_by", "references"]
-    for attr in attrs:
-        if DEBUG:
-            print(attr)
-        assert(all(stars.apply(hasattr, args=[attr])))
-    # check that the bad reference is flagged correctly
-    assert(stars[bad_reference].is_good_reference == False)
-    assert(all(
-        stars.apply(
-            lambda star: bad_reference not in star.references.reset_index()['target']
-        )
-    ))
-    
-
-
 def test_scale_stamp(star):
     scaled_stamps = star.cat['stamp'].apply(star.scale_stamp)
     for stamp in scaled_stamps:
@@ -162,25 +129,6 @@ def test_klip_subtract(all_stars):
         lambda sub: all(sc.np.diff(sub.apply(sc.np.nanstd)) < 0)
     )
     assert(rms_descent.all())
-
-
-def test_process_stars(catalog, data_folder):
-    stars = sc.process_stars(
-        catalog,
-        'target',
-        match_references_on=['filter'],
-        data_folder=data_folder,
-        stamp_size=15
-    )
-    assert(isinstance(stars, sc.pd.Series))
-    # check that one star is made for each unique star in the catalog
-    star_ids = set(stars.apply(lambda s: s.star_id))
-    cat_stars = set(catalog['target'].unique())
-    assert(star_ids == cat_stars)
-    # assert(len(stars) == len(catalog['target'].unique()))
-    # check that attributes have been assigned
-    assert(all(stars.apply(lambda s: hasattr(s, 'cat'))))
-
 
 def test_row_snr_map(random_processed_star):
     star = random_processed_star

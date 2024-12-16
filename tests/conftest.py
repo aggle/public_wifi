@@ -51,7 +51,7 @@ def all_stars(catalog, data_folder):
     #     lambda group: sc.Star(group.name, group, data_folder=data_folder),
     #     include_groups=False
     # )
-    stars = catproc.initialize_stars(
+    stars = catproc.catalog_initialization(
         catalog,
         star_id_column='target',
         match_references_on=['filter'],
@@ -64,7 +64,7 @@ def all_stars(catalog, data_folder):
 
 @pytest.fixture()
 def processed_stars(high_snr_catalog, data_folder):
-    stars = catproc.process_stars(
+    stars = catproc.process_catalog(
         input_catalog=high_snr_catalog,
         star_id_column='target',
         match_references_on=['filter'],
@@ -77,4 +77,4 @@ def processed_stars(high_snr_catalog, data_folder):
 @pytest.fixture()
 def random_processed_star(processed_stars):
     """Get a star with subtraction and detection results attached"""
-    return sc.np.random.choice(processed_stars)
+    return np.random.choice(processed_stars)
