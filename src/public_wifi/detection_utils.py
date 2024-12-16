@@ -3,10 +3,12 @@ from scipy.signal import correlate
 
 from astropy.nddata import Cutout2D
 
-## Detection
 def make_matched_filter(stamp, width : int | None = None):
     center = np.floor(np.array(stamp.shape)/2).astype(int)
+    # make sure the width is appropriate
     if isinstance(width, int):
+        if width > max(stamp.shape):
+            width = min(stamp.shape)
         stamp = Cutout2D(stamp, center[::-1], width).data
     stamp = np.ma.masked_array(stamp, mask=np.isnan(stamp))
     stamp = stamp - np.nanmin(stamp)
