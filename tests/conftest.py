@@ -8,6 +8,7 @@ from pathlib import Path
 
 # from public_wifi import db_manager
 from public_wifi import starclass as sc
+from public_wifi import catalog_processing as catproc
 
 @pytest.fixture()
 def catalog_file():
@@ -20,7 +21,7 @@ def data_folder():
 
 @pytest.fixture()
 def catalog(catalog_file):
-    catalog = sc.load_catalog(catalog_file)
+    catalog = catproc.load_catalog(catalog_file)
     return catalog
 
 @pytest.fixture()
@@ -46,15 +47,24 @@ def star(catalog, data_folder):
 @pytest.fixture()
 def all_stars(catalog, data_folder):
     # all the stars, ready for PSF subtraction
-    stars = catalog.groupby("target").apply(
-        lambda group: sc.Star(group.name, group, data_folder=data_folder),
-        include_groups=False
+    # stars = catalog.groupby("target").apply(
+    #     lambda group: sc.Star(group.name, group, data_folder=data_folder),
+    #     include_groups=False
+    # )
+    stars = catproc.initialize_stars(
+        catalog,
+        star_id_column='target',
+        match_references_on=['filter'],
+        data_folder=data_folder,
+        stamp_size=15,
+        bad_references=[],
+        min_nrefs = 1,
     )
     return stars
 
 @pytest.fixture()
 def processed_stars(high_snr_catalog, data_folder):
-    stars = sc.process_stars(
+    stars = catproc.process_stars(
         input_catalog=high_snr_catalog,
         star_id_column='target',
         match_references_on=['filter'],
