@@ -9,6 +9,7 @@ from skimage.metrics import structural_similarity as ssim
 from astropy.io import fits
 from astropy.nddata import Cutout2D
 from astropy.wcs import WCS
+from astropy.stats import sigma_clipped_stats
 
 from public_wifi import subtraction_utils as subutils
 from public_wifi import detection_utils as detutils
@@ -268,8 +269,13 @@ class Star:
         # automatically merged with self.cat
         return pd.Series({s.name: s for s in [klip_model_img, kl_sub_img]})
 
+    def row_make_snr_map(self, row):
+        resids = row['kl_sub']
+        std_maps = row['kl_sub'].apply(lambda img: sigma_clipped_stats(img)[-1])
+        snr_maps = resids/std_maps
+        return pd.Series({'snrmap': snr_maps})
 
-    def row_make_detection_maps(self, row):
+    def row_convolve_psf(self, row):
         df = pd.DataFrame(row[['klip_model', 'kl_sub']].to_dict())
         detmaps = df.apply(
             lambda dfrow : detutils.apply_matched_filter(dfrow['kl_sub'], dfrow['klip_model']),
@@ -455,9 +461,16 @@ def detect_all_stars(
     """
     for star in all_stars:
         # gather subtraction results
-        star.detmap = star.results.apply(
-            star.row_make_detection_maps,
-            axis=1
+        star.results = star.results.join(
+            star.results.apply(
+                star.row_convolve_psf,
+                axis=1
+            )
         )
-        star.results = star.results.join(star.detmap)
+        star.results = star.results.join(
+            star.results.apply(
+                star.row_make_snr_map,
+                axis=1
+            )
+        )
     return

@@ -174,3 +174,14 @@ def test_process_stars(catalog, data_folder):
     # check that attributes have been assigned
     assert(all(stars.apply(lambda s: hasattr(s, 'cat'))))
 
+
+def test_row_snr_map(random_processed_star):
+    star = random_processed_star
+    assert(hasattr(star, 'results'))
+    assert(hasattr(star, 'row_make_snr_map'))
+    row = star.results.iloc[0]
+    snr_map = star.row_make_snr_map(row)
+    assert(len(snr_map['snr_map'])==len(row['kl_sub']))
+    snr_maps = star.results.apply(star.row_make_snr_map, axis=1)
+    assert(isinstance(snr_maps, sc.pd.DataFrame))
+    assert('snr_map' in star.results.join(snr_maps).columns)

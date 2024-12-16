@@ -7,6 +7,7 @@ import numpy as np
 import pandas as pd
 
 import functools
+from itertools import combinations
  
 import yaml
 import bokeh
@@ -321,6 +322,12 @@ def make_row_cds(row, star, cds_dict={}):
         cds,
         index=list(row['detmap'].index.astype(str).values)
     )
+    cds = cds_dict.get("snr_maps", None)
+    cds_dict['snr_maps'] = series_to_CDS(
+        row['snrmap'],
+        cds,
+        index=list(row['snrmap'].index.astype(str).values)
+    )
 
     return cds_dict
 
@@ -365,14 +372,24 @@ def make_row_plots(row, row_cds, size=400):
         cds, plot_kwargs=plot_kwargs,
         use_diverging_cmap=False,
     )
+    cds = row_cds["snr_maps"]
+    plot_kwargs={
+        "title": f"SNR map",
+        "width": size, "height": size
+    }
+    snr_map_scroller = generate_cube_scroller_widget(
+        cds, plot_kwargs=plot_kwargs,
+        use_diverging_cmap=False,
+    )
 
     # Put them all in a dict
     plots = dict(
         stamp=img_plot,
-        references=ref_scroller, 
-        klip_model=psf_model_scroller, 
+        references=ref_scroller,
+        klip_model=psf_model_scroller,
         klip_residuals=klip_resid_scroller,
         detection_maps=det_map_scroller,
+        snr_maps=snr_map_scroller
     )
     return plots
 
@@ -445,7 +462,7 @@ def all_stars_dashboard(
             quit_button.update(button_type='danger')
             sys.exit()
         quit_button.on_click(stop_server)
-
+        
         # star selector
         star_selector = bkmdls.Select(
             title="Star",
@@ -458,6 +475,11 @@ def all_stars_dashboard(
             update_cds_dicts()
             update_cube_scrollers()
         star_selector.on_change("value", change_star)
+        # Print a star name to terminal for copying
+        print_button = bkmdls.Button(label="Print star name", button_type="default")
+        def print_star_name():
+            print(star_selector.value)
+        print_button.on_click(print_star_name)
 
 
         def update_catalog_cds():
@@ -488,13 +510,24 @@ def all_stars_dashboard(
                     )
 
         # link all Kklip scrollers together:
+        link_scrollers = [
+            'klip_residuals', 'detection_maps', 'snr_maps',
+        ]
         for kp in plot_dicts.keys():
-            plot_dicts[kp]['klip_residuals'].children[1].js_link(
-                'value', plot_dicts[kp]['detection_maps'].children[1], 'value'
-            )
-            plot_dicts[kp]['detection_maps'].children[1].js_link(
-                'value', plot_dicts[kp]['klip_residuals'].children[1], 'value'
-            )
+            for combo in combinations(link_scrollers, 2):
+                plot_dicts[kp][combo[0]].children[1].js_link(
+                    'value', plot_dicts[kp][combo[1]].children[1], 'value'
+                )
+                plot_dicts[kp][combo[1]].children[1].js_link(
+                    'value', plot_dicts[kp][combo[0]].children[1], 'value'
+                )
+                
+            # plot_dicts[kp]['klip_residuals'].children[1].js_link(
+            #     'value', plot_dicts[kp]['detection_maps'].children[1], 'value'
+            # )
+            # plot_dicts[kp]['detection_maps'].children[1].js_link(
+            #     'value', plot_dicts[kp]['klip_residuals'].children[1], 'value'
+            # )
         tab1 = bkmdls.TabPanel(
             title='Overview',
             child= bklyts.layout([
@@ -518,10 +551,12 @@ def all_stars_dashboard(
                 bklyts.row(
                     plot_dicts[0]['klip_residuals'],
                     plot_dicts[0]['detection_maps'],
+                    plot_dicts[0]['snr_maps'],
                 ),
                 bklyts.row(
                     plot_dicts[1]['klip_residuals'],
                     plot_dicts[1]['detection_maps'],
+                    plot_dicts[1]['snr_maps'],
                 ),
             ]),
         )
@@ -529,7 +564,7 @@ def all_stars_dashboard(
 
         lyt = bklyts.layout(
             [
-                bklyts.row(star_selector, catalog_table),
+                bklyts.row(bklyts.column(star_selector, print_button), catalog_table),
                 bklyts.row(tab),
                 bklyts.row(quit_button),
             ]
