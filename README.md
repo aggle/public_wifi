@@ -59,6 +59,8 @@ Components
 TODO
 ----
 
+   1. Contrast maps : compute the matched filter throughput-corrected array. Then apply the matched filter to the initial target stamp and get what the MF thinks the flux of the target is. Then, divide the MF throughput-corrected array by the MF value of the target stamp. That is a contrast map!
+
    1. Right now, the user can only specify which catalog columns to use for
       matching references (e.g. match on the same filter). The user should be able
       to write their own function to match references that operates on the catalog
