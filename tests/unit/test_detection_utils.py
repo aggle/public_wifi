@@ -81,5 +81,14 @@ def test_row_make_detection_map(processed_stars):
 
 def test_snr_map(random_processed_star):
     star = random_processed_star
-    assert(isinstance(star, sc.Star))
-
+    print(f"Randomly chosen star: {star.star_id}")
+    assert('snrmap' in star.results.columns)
+    # assert(len(star.results.snrmap.iloc[0]) == len(star.results['kl_sub'] c)
+    assert(
+        all(
+            star.results.apply(
+                lambda row: sc.np.shape(sc.np.stack(row['kl_sub'])) == sc.np.shape(sc.np.stack(row['snrmap'])),
+                axis=1
+            )
+        )
+    )

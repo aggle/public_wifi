@@ -59,7 +59,9 @@ def processed_stars(high_snr_catalog, data_folder):
         star_id_column='target',
         match_references_on=['filter'],
         data_folder=data_folder,
-        stamp_size=11,)
+        stamp_size=11,
+        sim_thresh=-1.0
+    )
     return stars
 
 @pytest.fixture()
