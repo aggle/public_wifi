@@ -78,3 +78,8 @@ def test_row_make_detection_map(processed_stars):
         axis=1
     )
     print(all_detmaps)
+
+def test_snr_map(random_processed_star):
+    star = random_processed_star
+    assert(isinstance(star, sc.Star))
+
