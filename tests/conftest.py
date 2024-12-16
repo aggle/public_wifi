@@ -54,7 +54,12 @@ def all_stars(catalog, data_folder):
 
 @pytest.fixture()
 def processed_stars(high_snr_catalog, data_folder):
-    stars = sc.process_stars(high_snr_catalog, 'target', ['filter'], data_folder, 11)
+    stars = sc.process_stars(
+        input_catalog=high_snr_catalog,
+        star_id_column='target',
+        match_references_on=['filter'],
+        data_folder=data_folder,
+        stamp_size=11,)
     return stars
 
 @pytest.fixture()
