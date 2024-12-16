@@ -61,11 +61,15 @@ class Star:
             lambda row: self.get_cutout(row, stamp_size),
             axis=1,
         )
-        self.cat['stamp'] = self.cat['cutout'].apply(lambda ct: ct.data.copy())
-        if scale_stamps:
-            self.cat['stamp'] = self.cat['stamp'].apply(self.scale_stamp)
         # measure the background
         self.cat['bgnd'] = self.measure_bgnd(51, 20)
+        # cut out the stamps and subtract the background
+        self.cat['stamp'] = self.cat.row.apply(
+            lambda row: row['cutout'].data.copy() - row['bgnd'][0],
+            axis=1
+        )
+        if scale_stamps:
+            self.cat['stamp'] = self.cat['stamp'].apply(self.scale_stamp)
         return
 
     # has_companions should always be the opposite of is_good_reference
