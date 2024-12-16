@@ -1,0 +1,21 @@
+List of TODOs
+
+* TODO Oversample matched filter
+because the drc files are well-sampled combinations of dithers
+
+* TODO Contrast maps
+Contrast maps : compute the matched filter throughput-corrected array. Then
+apply the matched filter to the initial target stamp and get what the MF thinks
+the flux of the target is. Then, divide the MF throughput-corrected array by the
+MF value of the target stamp. That is a contrast map!
+
+* TODO Generic reference matching function
+Right now, the user can only specify which catalog columns to use for matching
+references (e.g. match on the same filter). The user should be able to write
+their own function to match references that operates on the catalog and returns
+True or False.
+
+* TODO catalog processing class 
+Rewrite the catalog processing as a class that requires the user to implement a
+`load_catalog()` method and a `match_references()` method! Then the class runs
+all the processing steps and shows the dashboard.
