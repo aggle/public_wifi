@@ -332,65 +332,73 @@ def make_row_cds(row, star, cds_dict={}):
     return cds_dict
 
 def make_row_plots(row, row_cds, size=400):
+    plots = {}
+
     filt = row['filter']
-    img_plot = make_static_img_plot(row_cds['stamp'], title=filt, size=size)
+    plots['stamp'] = make_static_img_plot(row_cds['stamp'], title=filt, size=size)
+
     # References
     cds = row_cds["references"]
     plot_kwargs={
         "title": f"References",
         "width": size, "height": size
     }
-    ref_scroller = generate_cube_scroller_widget(
+    plots['references'] = generate_cube_scroller_widget(
         cds, plot_kwargs=plot_kwargs,
     )
+
     # PSF model
     cds = row_cds["klip_model"]
     plot_kwargs={
         "title": f"KLIP model",
         "width": size, "height": size
     }
-    psf_model_scroller = generate_cube_scroller_widget(
+    plots['klip_model'] = generate_cube_scroller_widget(
         cds, plot_kwargs=plot_kwargs,
     )
+
     # KLIP residuals
     cds = row_cds["klip_residuals"]
     plot_kwargs={
         "title": f"KLIP residuals",
         "width": size, "height": size
     }
-    klip_resid_scroller = generate_cube_scroller_widget(
+    plots['klip_residuals'] = generate_cube_scroller_widget(
         cds, plot_kwargs=plot_kwargs,
         use_diverging_cmap=False,
     )
+
     # Detection maps
     cds = row_cds["detection_maps"]
     plot_kwargs={
         "title": f"Detection map",
         "width": size, "height": size
     }
-    det_map_scroller = generate_cube_scroller_widget(
+    plots['detection_maps'] = generate_cube_scroller_widget(
         cds, plot_kwargs=plot_kwargs,
         use_diverging_cmap=False,
     )
+
+    # SNR map
     cds = row_cds["snr_maps"]
     plot_kwargs={
         "title": f"SNR map",
         "width": size, "height": size
     }
-    snr_map_scroller = generate_cube_scroller_widget(
+    plots['snr_maps'] = generate_cube_scroller_widget(
         cds, plot_kwargs=plot_kwargs,
         use_diverging_cmap=False,
     )
 
     # Put them all in a dict
-    plots = dict(
-        stamp=img_plot,
-        references=ref_scroller,
-        klip_model=psf_model_scroller,
-        klip_residuals=klip_resid_scroller,
-        detection_maps=det_map_scroller,
-        snr_maps=snr_map_scroller
-    )
+    # plots = dict(
+    #     stamp=img_plot,
+    #     references=ref_scroller,
+    #     klip_model=psf_model_scroller,
+    #     klip_residuals=klip_resid_scroller,
+    #     detection_maps=det_map_scroller,
+    #     snr_maps=snr_map_scroller
+    # )
     return plots
 
 def make_catalog_display(
@@ -494,14 +502,13 @@ def all_stars_dashboard(
                 cds_dicts[i] = make_row_cds(row, stars.loc[star_selector.value], cds_dicts[i])
 
         def update_cube_scrollers():
+            scroller_keys = [
+                'references', 'klip_model',
+                'klip_residuals', 'detection_maps', 'snr_maps',
+            ]
             for i, row_plot in plot_dicts.items():
-                for k in ['references', 'klip_model', 'klip_residuals', 'detection_maps']:
+                for k in scroller_keys:
                     source = cds_dicts[i][k]
-                    # update the image limits
-                    low, high = np.nanquantile(source.data['img'][0], (0.01, 0.99))
-                    # row_plot[k].children[0].update(
-                    #     low=low, high=high 
-                    # )
                     # update slider range and options
                     row_plot[k].children[1].update(
                         value = 0,
