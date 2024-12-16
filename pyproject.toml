@@ -1,7 +1,7 @@
 [project]
 name = "public_wifi"
 description = "Previously Undiscovered Binaries Lying In Clusers, WIde FIeld"
-readme = "README.rst"
+readme = "README.md"
 authors = [
   { name = "Jonathan Aguilar", email = "jaguilar@stsci.edu" },
 ]
