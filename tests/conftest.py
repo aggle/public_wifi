@@ -20,23 +20,16 @@ def data_folder():
 
 @pytest.fixture()
 def catalog(catalog_file):
-    dtypes = {
-        'target': str,
-        'file': str,
-        'filter': str,
-        'ra': float,
-        'dec': float,
-        'x': float,
-        'y': float,
-        'mag_aper': float,
-        'e_mag_aper': float,
-        'dist': float,
-        'snr': float,
-    }
-    catalog = pd.read_csv(str(catalog_file), dtype=dtypes)
-    catalog['x'] = catalog['x'] - 1
-    catalog['y'] = catalog['y'] - 1
+    catalog = sc.load_catalog(catalog_file)
     return catalog
+
+@pytest.fixture()
+def random_cat_rows(catalog):
+    """Get a group of rows at random to initialize a Star object"""
+    star_id = np.random.choice(catalog['target'])
+    rows = catalog.query(f"target == '{star_id}'")
+    return dict(star_id=rows)
+
 
 @pytest.fixture()
 def high_snr_catalog(catalog):
@@ -64,3 +57,7 @@ def processed_stars(high_snr_catalog, data_folder):
     stars = sc.process_stars(high_snr_catalog, 'target', ['filter'], data_folder, 11)
     return stars
 
+@pytest.fixture()
+def random_processed_star(processed_stars):
+    """Get a star with subtraction and detection results attached"""
+    return sc.np.random.choice(processed_stars)
