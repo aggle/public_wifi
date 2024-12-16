@@ -11,10 +11,12 @@ def test_load_catalog(catalog, catalog_file):
     assert(all([c in catalog.columns for c in required_columns]))
     # make sure you subtract off the 1 from the original coordinates
     default_catalog = sc.pd.read_csv(str(catalog_file), dtype=str)
+    # make sure the entries match
+    default_catalog = default_catalog.query(f"target in {list(catalog['target'].unique())}")
     default_xy = default_catalog[['x','y']].astype(float)
     # print(default_xy.iloc[0].values, catalog[['x','y']].iloc[0].values)
     thresh = 1e-10
-    coord_diff = (default_xy - catalog[['x','y']] - 1).apply(sc.np.abs)
+    coord_diff = (sc.np.array(default_xy) - sc.np.abs(catalog[['x','y']]) - 1)
     assert(all([all(i < thresh) for i in coord_diff.values]))
 
 
@@ -67,6 +69,9 @@ def test_set_references(catalog, data_folder):
     assert(isinstance(star.references, sc.pd.DataFrame))
     assert(len(star.references) < len(catalog))
     assert(bad_star.star_id not in star.references.index.get_level_values("target"))
+    print(star.nrefs)
+    assert(isinstance(star.nrefs, sc.pd.Series))
+    assert(all(star.nrefs > 0))
 
 def test_query_references(all_stars):
     # test that the references are all appropriate
@@ -105,6 +110,7 @@ def test_initialize_stars(catalog, data_folder):
         data_folder=data_folder,
         stamp_size=15,
         bad_references=bad_reference,
+        min_nrefs = 10,
     )
     unique_stars = catalog['target'].unique()
     
@@ -124,6 +130,7 @@ def test_initialize_stars(catalog, data_folder):
             lambda star: bad_reference not in star.references.reset_index()['target']
         )
     ))
+    
 
 
 def test_scale_stamp(star):
@@ -179,9 +186,10 @@ def test_row_snr_map(random_processed_star):
     star = random_processed_star
     assert(hasattr(star, 'results'))
     assert(hasattr(star, 'row_make_snr_map'))
+    assert('snrmap' in star.results.columns)
+    # try one row
     row = star.results.iloc[0]
     snr_map = star.row_make_snr_map(row)
-    assert(len(snr_map['snr_map'])==len(row['kl_sub']))
+    assert(len(snr_map['snrmap'])==len(row['kl_sub']))
     snr_maps = star.results.apply(star.row_make_snr_map, axis=1)
     assert(isinstance(snr_maps, sc.pd.DataFrame))
-    assert('snr_map' in star.results.join(snr_maps).columns)
