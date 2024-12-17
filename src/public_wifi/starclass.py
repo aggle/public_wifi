@@ -64,7 +64,7 @@ class Star:
         # measure the background
         self.cat['bgnd'] = self.measure_bgnd(51, 20)
         # cut out the stamps and subtract the background
-        self.cat['stamp'] = self.cat.row.apply(
+        self.cat['stamp'] = self.cat.apply(
             lambda row: row['cutout'].data.copy() - row['bgnd'][0],
             axis=1
         )
@@ -264,16 +264,23 @@ class Star:
             lambda dfrow : detutils.apply_matched_filter(dfrow['kl_sub'], dfrow['klip_model']),
             axis=1
         )
-        center = int(np.floor(self.stamp_size/2))
-        primary_fluxes = df.apply(
-            lambda dfrow : detutils.apply_matched_filter(
-                row['stamp'],
-                dfrow['klip_model']
-            )[center, center],
-            axis=1
-        )
-        detmaps = detmaps/primary_fluxes
-
+        # center = int(np.floor(self.stamp_size/2))
+        # primary_fluxes = df.apply(
+        #     lambda dfrow : detutils.apply_matched_filter(
+        #         row['stamp'],
+        #         dfrow['klip_model'],
+        #         correlate_mode='valid',
+        #     )[0, 0],
+        #     axis=1
+        # )
+        # detmaps = detmaps/primary_fluxes
         return pd.Series({'detmap': detmaps})
+    def row_detect_snrmap_candidates(self, row, snr_thresh=3, n_modes=3):
+        candidates = detutils.detect_snrmap(
+            row['snrmap'],
+            snr_thresh=snr_thresh,
+            n_modes=n_modes
+        )
+        return pd.Series({'snr_candidates': candidates})
 
 
