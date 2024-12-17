@@ -6,6 +6,15 @@ from astropy.convolution import convolve
 
 from astropy.nddata import Cutout2D
 
+
+def make_normalized_psf(psf_stamp : np.ndarray):
+    """
+    normalize a PSF to have flux 1
+    """
+    norm_psf = psf_stamp - np.nanmin(psf_stamp)
+    norm_psf /= np.nansum(norm_psf)
+    return norm_psf
+
 def make_matched_filter(stamp, width : int | None = None):
     stamp = stamp.copy()
     center = np.floor(np.array(stamp.shape)/2).astype(int)
@@ -30,19 +39,19 @@ def apply_matched_filter(
     target_stamp : np.ndarray
       the stamp in which you are looking for signal
     psf_model  : np.ndarray
-      the 2-D psf model 
+      the 2-D psf model
     correlate_mode : str
       'same' or 'valid'. use 'same' for searches, and 'valid' if you have an
       unsubtracted psf and want the flux
     """
-    # matched_filter = make_matched_filter(psf_model)
-    # detmap = correlate(
-    #     target_stamp,
-    #     matched_filter,
-    #     method='direct',
-    #     mode=correlate_mode)
-    # detmap = detmap / np.linalg.norm(matched_filter)**2
-    detmap = convolve(target_stamp, psf_model-psf_model.min(), normalize_kernel=True)
+    matched_filter = make_matched_filter(psf_model)
+    detmap = correlate(
+        target_stamp,
+        matched_filter,
+        method='direct',
+        mode=correlate_mode)
+    detmap = detmap / np.linalg.norm(matched_filter)**2
+    # detmap = convolve(target_stamp, psf_model-psf_model.min(), normalize_kernel=True)
     return detmap
 
 def detect_snrmap(snrmaps, snr_thresh=5, n_modes=3) -> pd.Series:

@@ -1,17 +1,18 @@
 import pytest
 from public_wifi import starclass as sc
+from public_wifi import detection_utils as dutils
+from public_wifi import misc
 
 
 def test_make_matched_filter(processed_stars):
     """Test the matched filtering"""
-    assert(len(processed_stars) == 10)
     mfs = processed_stars.apply(
         # apply to each star
         lambda star: star.results['klip_model'].apply(
             # apply to each row of the results dataframe
             lambda klip_model: klip_model.apply(
                 # the klip_model entries are series
-                sc.make_matched_filter,
+                dutils.make_matched_filter,
                 width=5
             )
         )
@@ -19,16 +20,29 @@ def test_make_matched_filter(processed_stars):
 
     mf_means = mfs.apply(
         lambda star: star.apply(
-            lambda row: row.apply(sc.np.nanmean)
+            lambda row: row.apply(dutils.np.nanmean)
         )
     )
     for star_id in mf_means.index:
         for row_id in mf_means.loc[star_id].index:
             for kklip in mf_means.loc[star_id].loc[row_id].index:
                 val = mf_means.loc[star_id].loc[row_id].loc[kklip]
-                if sc.np.isnan(val):
-                    print(f"NaN encountered: {star_id} {row_id} {kklip} {val}")
-                assert(sc.np.abs(val) < 1e-15)
+                assert(dutils.np.abs(val) < 1e-15)
+
+def test_apply_matched_filter(random_processed_star):
+    star = random_processed_star
+    print("Testing matched filter accuracy on ", star.star_id)
+    mf = dutils.make_matched_filter(star.results.loc[0, 'klip_model'][1], 7)
+    stamp = (mf - mf.min())/dutils.np.ptp(mf)
+    stamp = stamp / stamp.sum()
+    print(f"Stamp sum: {stamp.sum():0.10e}")
+    stamp_center = misc.calc_stamp_center(stamp)
+    mf_flux = dutils.apply_matched_filter(stamp, mf)[*stamp_center]
+    print(f"MF flux: {mf_flux:0.10e}")
+    assert(dutils.np.abs(mf_flux - stamp.sum()) < 1e-10)
+    mf_flux = dutils.apply_matched_filter(stamp, mf, correlate_mode='valid').squeeze()
+    print(f"MF flux, 'valid' mode: {mf_flux:0.10e}")
+    assert(dutils.np.abs(mf_flux - stamp.sum()) < 1e-10)
 
 def test_make_normalized_psf(processed_stars):
 
@@ -38,13 +52,13 @@ def test_make_normalized_psf(processed_stars):
             # apply to each row of the results dataframe
             lambda klip_model: klip_model.apply(
                 # the klip_model entries are series
-                sc.make_normalized_psf,
+                dutils.make_normalized_psf,
             )
         )
     )
     psf_sums = psfs.apply(
         lambda star: star.apply(
-            lambda row: row.apply(sc.np.nanmean)
+            lambda row: row.apply(dutils.np.nansum)
         )
     )
     for star_id in psf_sums.index:
@@ -58,26 +72,26 @@ def test_matched_filter_on_normalized_psf(processed_stars):
     for star in processed_stars:
         star.results['matched_filter'] = star.results['klip_model'].apply(
             # the klip_model entries are series
-            sc.make_matched_filter,
+            lambda series: dutils.pd.Series({series.name: series.apply(dutils.make_matched_filter)}),
         )
         star.results['normalized_psf'] = star.results['klip_model'].apply(
             # the klip_model entries are series
-            sc.make_normalized_psf,
-        ) 
+            lambda series: dutils.pd.Series({series.name: series.apply(dutils.make_normalized_psf)}),
+        )
         assert(
             all([i in star.results.columns for i in ['matched_filter', 'normalized_psf']])
         )
 
-def test_row_make_detection_map(processed_stars):
-    star = processed_stars[sc.np.random.choice(processed_stars.index)]
+def test_row_convolve_psf(processed_stars):
+    star = processed_stars[dutils.np.random.choice(processed_stars.index)]
     row = star.results.iloc[0]
-    row_detmaps = star.row_make_detection_maps(row)
+    row_detmaps = star.row_convolve_psf(row)
     assert(len(row_detmaps) == len(row['klip_model']))
     all_detmaps = star.results.apply(
-        star.row_make_detection_maps,
+        star.row_convolve_psf,
         axis=1
     )
-    print(all_detmaps)
+    assert(len(all_detmaps) == len(star.results))
 
 def test_snr_map(random_processed_star):
     star = random_processed_star
@@ -87,7 +101,7 @@ def test_snr_map(random_processed_star):
     assert(
         all(
             star.results.apply(
-                lambda row: sc.np.shape(sc.np.stack(row['kl_sub'])) == sc.np.shape(sc.np.stack(row['snrmap'])),
+                lambda row: dutils.np.shape(sc.np.stack(row['kl_sub'])) == sc.np.shape(sc.np.stack(row['snrmap'])),
                 axis=1
             )
         )
