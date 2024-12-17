@@ -85,7 +85,7 @@ def test_matched_filter_on_normalized_psf(processed_stars):
 def test_row_convolve_psf(processed_stars):
     star = processed_stars[dutils.np.random.choice(processed_stars.index)]
     row = star.results.iloc[0]
-    row_detmaps = star.row_convolve_psf(row)
+    row_detmaps = star.row_convolve_psf(row)['detmap']
     assert(len(row_detmaps) == len(row['klip_model']))
     all_detmaps = star.results.apply(
         star.row_convolve_psf,

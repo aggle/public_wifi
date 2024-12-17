@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+from public_wifi import detection_utils as dutils
 
 def inject_psf(
         stamp : np.ndarray,
@@ -48,3 +49,30 @@ def inject_psf(
     return injected_stamp[
         psf.shape[1]:-psf.shape[1], psf.shape[0]:-psf.shape[0]
     ].copy()
+
+
+
+def inject_subtract_detect(star, pos, scale):
+    """
+    Inject a PSF into a star and recover it.
+    star : star object
+    pos : (x, y) position relative to center
+    scale : contrast relative to primary
+    """
+    ind = 0
+    stamp = star.cat.loc[ind, 'stamp'].copy()
+    # make a PSF to inject, but first use it as a matched filter to meaure the
+    # star flux
+    psf = dutils.make_normalized_psf(
+        star.results.loc[ind, 'klip_model'].iloc[-1].copy(),
+        7,
+        1.,
+    )
+    mf = dutils.make_matched_filter(psf)
+    star_flux = dutils.apply_matched_filter(stamp, mf, correlate_mode='valid').max()
+    inj_flux = star_flux * scale
+    psf *= inj_flux
+    print(stamp[5, 5], star_flux, psf[3, 3])
+
+    inj_stamp = inject_psf(stamp, psf, pos)
+    return stamp, psf, inj_stamp
