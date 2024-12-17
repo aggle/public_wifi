@@ -316,9 +316,9 @@ def make_row_cds(row, star, cds_dict={}):
     # klip residuals
     cds = cds_dict.get("klip_residuals", None)
     cds_dict['klip_residuals'] = series_to_CDS(
-        row['kl_sub'],
+        row['klip_sub'],
         cds,
-        index=list(row['kl_sub'].index.astype(str).values)
+        index=list(row['klip_sub'].index.astype(str).values)
     )
 
     # detection maps

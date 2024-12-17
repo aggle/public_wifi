@@ -31,30 +31,30 @@ def klip_subtract(
     targ_stamp_flat = target_stamp.ravel()
     ref_stamps_flat = np.stack([i.ravel() for i in reference_stamps])
 
-    kl_sub, kl_basis = klip.klip_math(
+    klip_sub, klip_basis = klip.klip_math(
         targ_stamp_flat, ref_stamps_flat,
         numbasis = numbasis,
         return_basis = True,
     )
     # construct the PSF model
-    coeffs = np.inner(targ_stamp_flat, kl_basis)
-    klip_model = kl_basis * np.expand_dims(coeffs, [i+1 for i in range(kl_basis.ndim-1)])
+    coeffs = np.inner(targ_stamp_flat, klip_basis)
+    klip_model = klip_basis * np.expand_dims(coeffs, [i+1 for i in range(klip_basis.ndim-1)])
     klip_model = np.array([np.sum(klip_model[:k], axis=0) for k in numbasis])
 
     # store as Series objects
     if isinstance(numbasis, int):
         numbasis = [numbasis]
-    kl_basis = pd.Series(dict(zip(range(1, len(kl_basis)+1), kl_basis)), name='kl_basis')
-    kl_basis.index.name = 'numbasis'
-    kl_sub = pd.Series(dict(zip(numbasis, kl_sub.T)), name='kl_sub')
-    kl_sub.index.name = 'numbasis'
+    klip_basis = pd.Series(dict(zip(range(1, len(klip_basis)+1), klip_basis)), name='klip_basis')
+    klip_basis.index.name = 'numbasis'
+    klip_sub = pd.Series(dict(zip(numbasis, klip_sub.T)), name='klip_sub')
+    klip_sub.index.name = 'numbasis'
     klip_model = pd.Series(dict(zip(numbasis, klip_model)), name='klip_model')
     klip_model.index.name = 'numbasis'
     # return the subtracted stamps as images
-    kl_basis_img = kl_basis.apply(lambda img: img.reshape(stamp_shape))
-    kl_sub_img = kl_sub.apply(lambda img: img.reshape(stamp_shape))
+    klip_basis_img = klip_basis.apply(lambda img: img.reshape(stamp_shape))
+    klip_sub_img = klip_sub.apply(lambda img: img.reshape(stamp_shape))
     klip_model_img = klip_model.apply(lambda img: img.reshape(stamp_shape))
-    return kl_basis_img, kl_sub_img, klip_model_img
+    return klip_basis_img, klip_sub_img, klip_model_img
 
 def nmf_subtract(
         target_stamp : np.ndarray,

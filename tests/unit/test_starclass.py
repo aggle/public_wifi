@@ -125,7 +125,7 @@ def test_klip_subtract(all_stars):
     star.set_references(all_stars, compute_similarity=True)
     star.subtraction = star.cat.apply(star.row_klip_subtract, axis=1)
     # the RMS should be monotonically declining
-    rms_descent = star.subtraction['kl_sub'].apply(
+    rms_descent = star.subtraction['klip_sub'].apply(
         lambda sub: all(sc.np.diff(sub.apply(sc.np.nanstd)) < 0)
     )
     assert(rms_descent.all())
@@ -138,6 +138,6 @@ def test_row_snr_map(random_processed_star):
     # try one row
     row = star.results.iloc[0]
     snr_map = star.row_make_snr_map(row)
-    assert(len(snr_map['snrmap'])==len(row['kl_sub']))
+    assert(len(snr_map['snrmap'])==len(row['klip_sub']))
     snr_maps = star.results.apply(star.row_make_snr_map, axis=1)
     assert(isinstance(snr_maps, sc.pd.DataFrame))

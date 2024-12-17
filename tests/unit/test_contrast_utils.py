@@ -1,13 +1,15 @@
 import pytest
 import numpy as np
 from matplotlib import pyplot as plt
-from public_wifi import contrast_utils as cu
+from public_wifi import contrast_utils as cutils
+from public_wifi import detection_utils as dutils
 
 
 def test_inject_psf(random_processed_star):
     star = random_processed_star
     print("Testing injections on ", star.star_id)
     stamp = star.cat.loc[0, 'stamp']
+    # psf = star.results.loc[0, 'klip_model'][1][2:-2, 2:-2].copy()
     psf = star.results.loc[0, 'klip_model'][1][2:-2, 2:-2].copy()
     stamp_center = np.floor(np.array(stamp.shape)/2).astype(int)
     psf_center = np.floor(np.array(psf.shape)/2).astype(int)

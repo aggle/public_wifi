@@ -243,25 +243,25 @@ class Star:
         reference_stamps = reference_stamps.apply(lambda ref: ref - ref.min())
         scale = target_stamp.max() / reference_stamps.apply(np.max)
         reference_stamps = reference_stamps * scale#.apply(lambda ref: ref / ref.max())
-        kl_basis_img, kl_sub_img, klip_model_img = subutils.klip_subtract(
+        klip_basis_img, klip_sub_img, klip_model_img = subutils.klip_subtract(
             target_stamp,
             reference_stamps,
             np.arange(1, reference_stamps.size)
         )
         # return each as an entry in a series. this allows it to be
         # automatically merged with self.cat
-        return pd.Series({s.name: s for s in [kl_basis_img, klip_model_img, kl_sub_img]})
+        return pd.Series({s.name: s for s in [klip_basis_img, klip_model_img, klip_sub_img]})
 
     def row_make_snr_map(self, row):
-        resids = row['kl_sub']
-        std_maps = row['kl_sub'].apply(lambda img: sigma_clipped_stats(img)[-1])
+        resids = row['klip_sub']
+        std_maps = row['klip_sub'].apply(lambda img: sigma_clipped_stats(img)[-1])
         snr_maps = resids/std_maps
         return pd.Series({'snrmap': snr_maps})
 
     def row_convolve_psf(self, row):
-        df = pd.DataFrame(row[['klip_model', 'kl_sub']].to_dict())
+        df = pd.DataFrame(row[['klip_model', 'klip_sub']].to_dict())
         detmaps = df.apply(
-            lambda dfrow : detutils.apply_matched_filter(dfrow['kl_sub'], dfrow['klip_model']),
+            lambda dfrow : detutils.apply_matched_filter(dfrow['klip_sub'], dfrow['klip_model']),
             axis=1
         )
         # center = int(np.floor(self.stamp_size/2))
