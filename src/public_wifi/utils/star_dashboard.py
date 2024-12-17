@@ -188,6 +188,10 @@ def generate_cube_scroller_widget(
         # palette=palette,
         color_mapper=color_mapper,
     )
+    # plot crosshairs across the origin
+    line_style = dict(line_width=0.5, line_color="white", line_dash='dashed')
+    plot.hspan(y=[0], **line_style)
+    plot.vspan(x=[0], **line_style)
     # Add a color bar to the image
     color_bar = bkmdls.ColorBar(
         color_mapper=color_mapper,
@@ -462,8 +466,6 @@ def make_candidate_cds(result_rows, cds=None, table=None, plot_size=400):
            width = 60 * 3,
            height = 60 * 10,
        )
-       
-    
     return cds, table
 
 def all_stars_dashboard(
