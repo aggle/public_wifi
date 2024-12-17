@@ -22,7 +22,7 @@ def test_load_catalog(catalog, catalog_file):
 
 
 def test_catalog_initialization(catalog, data_folder):
-    bad_reference = 'J162810.30-264024.2'
+    bad_reference = 'J042705.86+261520.3'
     stars = catproc.catalog_initialization(
         catalog,
         star_id_column='target',
