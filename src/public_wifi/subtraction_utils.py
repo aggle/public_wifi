@@ -20,7 +20,7 @@ def klip_subtract(
         target_stamp,
         reference_stamps,
         numbasis = None,
-) -> tuple[pd.Series, pd.Series]:
+) -> tuple[pd.Series, pd.Series, pd.Series]:
     """
     Perform KLIP subtraction on the target stamp.
     Returns the subtracted images, and the PSF models
@@ -51,9 +51,10 @@ def klip_subtract(
     klip_model = pd.Series(dict(zip(numbasis, klip_model)), name='klip_model')
     klip_model.index.name = 'numbasis'
     # return the subtracted stamps as images
+    kl_basis_img = kl_basis.apply(lambda img: img.reshape(stamp_shape))
     kl_sub_img = kl_sub.apply(lambda img: img.reshape(stamp_shape))
     klip_model_img = klip_model.apply(lambda img: img.reshape(stamp_shape))
-    return kl_sub_img, klip_model_img
+    return kl_basis_img, kl_sub_img, klip_model_img
 
 def nmf_subtract(
         target_stamp : np.ndarray,

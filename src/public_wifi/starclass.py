@@ -243,14 +243,14 @@ class Star:
         reference_stamps = reference_stamps.apply(lambda ref: ref - ref.min())
         scale = target_stamp.max() / reference_stamps.apply(np.max)
         reference_stamps = reference_stamps * scale#.apply(lambda ref: ref / ref.max())
-        kl_sub_img, klip_model_img = subutils.klip_subtract(
+        kl_basis_img, kl_sub_img, klip_model_img = subutils.klip_subtract(
             target_stamp,
             reference_stamps,
             np.arange(1, reference_stamps.size)
         )
         # return each as an entry in a series. this allows it to be
         # automatically merged with self.cat
-        return pd.Series({s.name: s for s in [klip_model_img, kl_sub_img]})
+        return pd.Series({s.name: s for s in [kl_basis_img, klip_model_img, kl_sub_img]})
 
     def row_make_snr_map(self, row):
         resids = row['kl_sub']
