@@ -57,13 +57,16 @@ def img_to_CDS(
         # if none provided, make one.
         cds = bkmdls.ColumnDataSource()
 
+    shape = img.shape
+    center = np.floor(np.array(shape)/2).astype(int)[::-1]
     # low, high = np.nanquantile(img, cmap_range)
     data = dict(
         # these are the fields that the plots will inspect
         img=[img],
         # these fields help format the plots
         # lower left corner coordinates
-        x = [-0.5], y = [-0.5],
+        # x = [-0.5], y = [-0.5],
+        x = [-center[0] - 0.5], y=[-center[1]-0.5],
         # image height and width in pixels
         dw = [img.shape[-1]], dh = [img.shape[-2]],
         # low = [np.nanmin(img)], high = [np.nanmax(img)],
@@ -102,6 +105,7 @@ def series_to_CDS(
     cds.tags = [cube.name, cube.index.name]
 
     cube_shape = np.stack(cube.values).shape
+    center = np.floor(np.array(cube_shape[-2:])/2).astype(int)[::-1]
     data = dict(
         # these are the fields that the plots will inspect
         img=[cube.iloc[0]],
@@ -112,7 +116,7 @@ def series_to_CDS(
         # these fields help format the plots
         nimgs = [cube.shape[0]],
         # lower left corner coordinates
-        x = [-0.5], y = [-0.5],
+        x = [-center[0]-0.5], y = [-center[1]-0.5],
         # image height and width in pixels
         dw = [cube_shape[-1]], dh = [cube_shape[-2]],
     )
@@ -177,8 +181,10 @@ def generate_cube_scroller_widget(
     img_plot = plot.image(
         image='img',
         source=source,
-        x=-0.5, y=-0.5,
-        dw=source.data['img'][0].shape[-1], dh=source.data['img'][0].shape[-2],
+        # x=-0.5, y=-0.5,
+        # dw=source.data['img'][0].shape[-1], dh=source.data['img'][0].shape[-2],
+        x='x', y='y',
+        dw='dw', dh='dh',
         # palette=palette,
         color_mapper=color_mapper,
     )
@@ -438,6 +444,28 @@ def make_catalog_display(
     )
     return catalog_cds, catalog_table
 
+def make_candidate_cds(result_rows, cds=None, table=None, plot_size=400):
+    """Make the CDS and display table for the candidates"""
+    cand_df = pd.concat(result_rows.set_index(['filter'])['snr_candidates'].to_dict(), axis=1)
+    cand_df = cand_df[sorted(cand_df.columns)]
+    cand_df.index.name = 'cand_id'
+    cand_df.index += 1
+    cand_df.reset_index(inplace=True)
+    if cds is None:
+        cds = bkmdls.ColumnDataSource()
+    cds.data.update(cand_df)
+    if table is None:
+       columns = [bkmdls.TableColumn(field=k, title=k) for k in cds.data.keys()]
+       table = bkmdls.DataTable(
+           source=cds,
+           columns=columns,
+           width = 60 * 3,
+           height = 60 * 10,
+       )
+       
+    
+    return cds, table
+
 def all_stars_dashboard(
     stars : pd.Series,
     plot_size = 400,
@@ -453,11 +481,18 @@ def all_stars_dashboard(
             stars.loc[init_star].cat.drop(["cutout", "stamp" ], axis=1),
             70*len(stars.loc[init_star].cat.columns),
         )
+        # candidates table
+        candidate_cds, candidate_table = make_candidate_cds(
+            stars.loc[init_star].results,
+            plot_size=plot_size,
+        )
+
         # each row of the catalog corresponds to a particular set of plots
         cds_dicts = stars.loc[init_star].results.apply(
             lambda row: make_row_cds(row, star=stars.loc[init_star], cds_dict={}),
             axis=1
         )
+
         # pass these ColumnDataSources to the plots that will read from them
         plot_dicts = stars.loc[init_star].results.apply(
             lambda row: make_row_plots(row, cds_dicts[row.name], size=plot_size),
@@ -480,6 +515,7 @@ def all_stars_dashboard(
         def change_star(attrname, old_id, new_id):
             ## update the data structures and scroller limits
             update_catalog_cds()
+            update_candidate_cds()
             update_cds_dicts()
             update_cube_scrollers()
         star_selector.on_change("value", change_star)
@@ -490,6 +526,13 @@ def all_stars_dashboard(
         print_button.on_click(print_star_name)
 
 
+        def update_candidate_cds():
+            make_candidate_cds(
+                stars.loc[star_selector.value].results,
+                cds=candidate_cds,
+                table=candidate_table,
+                plot_size=plot_size,
+            )
         def update_catalog_cds():
            catalog_cds.data.update(
                stars.loc[star_selector.value].cat.drop(["cutout", "stamp" ], axis=1)
@@ -557,13 +600,13 @@ def all_stars_dashboard(
                 # the target selectors
                 bklyts.row(
                     plot_dicts[0]['klip_residuals'],
-                    plot_dicts[0]['detection_maps'],
                     plot_dicts[0]['snr_maps'],
+                    plot_dicts[0]['detection_maps'],
                 ),
                 bklyts.row(
                     plot_dicts[1]['klip_residuals'],
-                    plot_dicts[1]['detection_maps'],
                     plot_dicts[1]['snr_maps'],
+                    plot_dicts[1]['detection_maps'],
                 ),
             ]),
         )
@@ -572,7 +615,7 @@ def all_stars_dashboard(
         lyt = bklyts.layout(
             [
                 bklyts.row(bklyts.column(star_selector, print_button), catalog_table),
-                bklyts.row(tab),
+                bklyts.row(candidate_table, tab),
                 bklyts.row(quit_button),
             ]
         )
