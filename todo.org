@@ -1,4 +1,7 @@
 List of TODOs
+* TODO Add a plot of the radial profile to the dashboard
+Direct comparison of the initial stamp's radial profile against the KLIP model
+radial profiles to the info panel on the dashboard.
 
 * TODO Oversample matched filter
 because the drc files are well-sampled combinations of dithers
