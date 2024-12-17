@@ -34,7 +34,7 @@ def random_cat_rows(catalog):
 
 @pytest.fixture()
 def high_snr_catalog(catalog):
-    high_snr_stars = catalog.groupby("target")['snr'].sum().sort_values(ascending=False)[:10]
+    high_snr_stars = catalog.groupby("target")['snr'].sum().sort_values(ascending=False)[:20]
     high_snr_rows = catalog.query(f"target in {list(high_snr_stars.index)}").copy()
     return high_snr_rows
 
