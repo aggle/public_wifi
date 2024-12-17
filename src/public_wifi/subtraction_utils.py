@@ -9,12 +9,6 @@ from pyklip import klip
 from sklearn.decomposition import NMF
 from NonnegMFPy import nmf as NMFPy
 
-def normalized_psf(stamp):
-    stamp = stamp - np.nanmin(stamp)
-    stamp = stamp/np.nansum(stamp)
-    return stamp
-
-
 
 def klip_subtract(
         target_stamp,
