@@ -4,9 +4,8 @@ from matplotlib import pyplot as plt
 from public_wifi import contrast_utils as cu
 
 
-def test_inject_psf(processed_stars):
-    # star = random_processed_star
-    star = processed_stars.iloc[3]
+def test_inject_psf(random_processed_star):
+    star = random_processed_star
     print("Testing injections on ", star.star_id)
     stamp = star.cat.loc[0, 'stamp']
     psf = star.results.loc[0, 'klip_model'][1][2:-2, 2:-2].copy()
@@ -24,5 +23,10 @@ def test_inject_psf(processed_stars):
     # plt.show()
     assert(cu.np.abs(injected_flux - test_flux) < 1e-6)
 
-def test_scale_psf():
+def test_scale_psf(random_processed_star):
+    star = random_processed_star
+    print("Testing injections on ", star.star_id)
+    stamp = star.cat.loc[0, 'stamp']
+    psf = star.results.loc[0, 'klip_model'][1][2:-2, 2:-2].copy()
+
     assert(False)
