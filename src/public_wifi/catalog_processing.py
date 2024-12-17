@@ -44,15 +44,20 @@ def load_catalog(
 # This method does all the processing steps. Write your next step below, and
 # add it to the execution list
 def process_catalog(
+        # initalization args
         input_catalog : pd.DataFrame,
         star_id_column : str,
         match_references_on : str | list,
         data_folder : str | Path,
         stamp_size : int = 11,
         bad_references : list = [],
+        scale_stamps : bool = False,
+        # psf subtraction args
         min_nref : int = 2,
         sim_thresh : float = 0.5,
-        scale_stamps : bool = False,
+        # detection args
+        snr_thresh = 5.,
+        n_modes = 3,
 ) -> pd.Series :
     """
     Given an input catalog, run the analysis.
@@ -67,15 +72,17 @@ def process_catalog(
       these are the columns that you use for matching references
     stamp_size : int = 15
       what stamp size to use
+    scale_stamps : bool = False
+      If True, scale all stamps from 0 to 1
     min_nref : int = 2
       Use at least this many reference stamps, regardless of similarity score
     sim_thresh : float = 0.5
       A stamp's similarity score must be at least this value to be included
       If fewer than `min_nref` reference stamps meet this criteria, use the
       `min_nref` ones with the highest similarity scores    
-    scale_stamps : bool = False
-      If True, scale all stamps from 0 to 1
 
+    snr_thresh = 5.
+    n_modes = 3,
     Output
     ------
     stars : pd.Series
@@ -99,7 +106,7 @@ def process_catalog(
         min_nref=min_nref
     )
     # perform the detection analysis
-    catalog_detection(stars)
+    catalog_detection(stars, snr_thresh, n_modes)
     return stars
 
 
@@ -202,6 +209,8 @@ def catalog_subtraction(
 
 def catalog_detection(
         all_stars : pd.Series,
+        snr_thresh : float,
+        n_modes : int,
 ) -> None:
     """
     Perform MF detection on all the stars
@@ -222,6 +231,14 @@ def catalog_detection(
         star.results = star.results.join(
             star.results.apply(
                 star.row_make_snr_map,
+                axis=1
+            )
+        )
+        star.results = star.results.join(
+            star.results.apply(
+                star.row_detect_snrmap_candidates,
+                snr_thresh=snr_thresh,
+                n_modes=n_modes,
                 axis=1
             )
         )
