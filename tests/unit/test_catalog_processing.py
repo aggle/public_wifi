@@ -51,13 +51,64 @@ def test_catalog_initialization(catalog, data_folder):
         )
     ))
 
-def test_process_catalog(catalog, data_folder):
-    stars = catproc.process_catalog(
+def test_catalog_subtraction(catalog, data_folder):
+    bad_reference = 'J042705.86+261520.3'
+    stars = catproc.catalog_initialization(
         catalog,
-        'target',
+        star_id_column='target',
         match_references_on=['filter'],
         data_folder=data_folder,
-        stamp_size=15
+        stamp_size=15,
+        bad_references=bad_reference,
+        min_nrefs = 10,
+    )
+    sim_thresh = -1
+    min_nref = 1
+    catproc.catalog_subtraction(
+        stars,
+        sim_thresh=sim_thresh,
+        min_nref=min_nref
+    )
+    assert(all(hasattr(star, 'results') for star in stars))
+    subtr_cols = ['klip_sub', 'klip_basis', 'klip_model']
+    for star in stars:
+        assert(all([ c in star.results.columns for c in subtr_cols]))
+
+def test_catalog_detection(catalog, data_folder):
+    bad_reference = 'J042705.86+261520.3'
+    stars = catproc.catalog_initialization(
+        catalog,
+        star_id_column='target',
+        match_references_on=['filter'],
+        data_folder=data_folder,
+        stamp_size=15,
+        bad_references=bad_reference,
+        min_nrefs = 10,
+    )
+    sim_thresh = -1
+    min_nref = 1
+    catproc.catalog_subtraction(
+        stars,
+        sim_thresh=sim_thresh,
+        min_nref=min_nref
+    )
+    snr_thresh = 3
+    n_modes = 2
+    catproc.catalog_detection(stars, snr_thresh, n_modes)
+    # check that the columns were added
+    det_cols = ['detmap', 'snrmap', 'snr_candidates']
+    for star in stars:
+        assert(all([ c in star.results.columns for c in det_cols]))
+
+def test_process_catalog(catalog, data_folder):
+    stars = catproc.process_catalog(
+        input_catalog=catalog,
+        star_id_column='target',
+        match_references_on=['filter'],
+        data_folder=data_folder,
+        stamp_size=15,
+        min_nref=1,
+        sim_thresh=-1.0,
     )
     assert(isinstance(stars, catproc.pd.Series))
     # check that one star is made for each unique star in the catalog
