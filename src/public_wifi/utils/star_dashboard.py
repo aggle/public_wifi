@@ -8,7 +8,9 @@ import pandas as pd
 
 import functools
 from itertools import combinations
- 
+
+from public_wifi import catalog_processing as catproc
+
 import yaml
 import bokeh
 import bokeh.layouts as bklyts
@@ -209,16 +211,16 @@ def generate_cube_scroller_widget(
 
     # Slider
     slider = bkmdls.Slider(
-        start=0, end=source.data['nimgs'][0]-1,
-        value=0, step=1,
+        start=1, end=source.data['nimgs'][0],
+        value=1, step=1,
         title = str(source.data['i'][0]),
         name='slider',
     )
     def slider_change(attr, old, new):
         # update the current index, used for the slider title
-        source.data['i'] = [source.data['index'][0][new]]
+        source.data['i'] = [source.data['index'][0][new-1]]
         # update which slice of the data
-        source.data['img'] = [source.data['cube'][0][new]]
+        source.data['img'] = [source.data['cube'][0][new-1]]
         # update the slider title
         slider.update(title=str(source.data['i'][0]))
         # low, high = np.nanquantile(source.data['img'][0], cmap_range)
@@ -448,7 +450,28 @@ def make_catalog_display(
     )
     return catalog_cds, catalog_table
 
-def make_candidate_cds(result_rows, cds=None, table=None, plot_size=400):
+def make_table_cds(dataframe : pd.DataFrame, cds=None, table=None, plot_scale=60):
+    if cds is None:
+        cds = bkmdls.ColumnDataSource()
+    cds.data.update(dataframe)
+    if table is None:
+       columns = [bkmdls.TableColumn(field=k, title=k) for k in cds.data.keys()]
+       table = bkmdls.DataTable(
+           source=cds,
+           columns=columns,
+           width = plot_scale * (dataframe.shape[1]+1),
+           height = 60 * (dataframe.shape[0]+1),
+       )
+    return cds, table
+    
+
+def make_candidate_cds(
+        result_rows,
+        cds=None,
+        table=None,
+        group_by=[],
+        plot_size=400,
+):
     """Make the CDS and display table for the candidates"""
     cand_df = pd.concat(result_rows.set_index(['filter'])['snr_candidates'].to_dict(), axis=1)
     cand_df = cand_df[sorted(cand_df.columns)]
@@ -556,8 +579,8 @@ def all_stars_dashboard(
                     source = cds_dicts[i][k]
                     # update slider range and options
                     row_plot[k].children[1].update(
-                        value = 0,
-                        end = source.data['nimgs'][0]-1,
+                        value = 1,
+                        end = source.data['nimgs'][0],
                         title = source.data['i'][0],
                     )
 
@@ -573,13 +596,64 @@ def all_stars_dashboard(
                 plot_dicts[kp][combo[1]].children[1].js_link(
                     'value', plot_dicts[kp][combo[0]].children[1], 'value'
                 )
-                
-            # plot_dicts[kp]['klip_residuals'].children[1].js_link(
-            #     'value', plot_dicts[kp]['detection_maps'].children[1], 'value'
-            # )
-            # plot_dicts[kp]['detection_maps'].children[1].js_link(
-            #     'value', plot_dicts[kp]['klip_residuals'].children[1], 'value'
-            # )
+
+        # reprocessing tools
+        ssim_spinner = bkmdls.Spinner(
+            title='SSIM thresh', low=-1.0, high=1.0, step=0.05, value=0.5, width=80
+        )
+        min_nref_spinner = bkmdls.Spinner(
+            title='Min. refs', low=2, high=len(stars), step=1, value=5, width=80
+        )
+        snr_thresh_spinner = bkmdls.Spinner(
+            title='SNR thresh', low=0, high=len(stars), step=1, value=5, width=80
+        )
+        nmodes_thresh_spinner = bkmdls.Spinner(
+            title='# modes thresh', low=1, high=len(stars), step=1, value=3, width=80
+        )
+
+        subtraction_button = bkmdls.Button(
+            label='Run subtraction', button_type='primary',
+        )
+        def rerun_subtraction_and_update():
+            catproc.catalog_subtraction(
+                stars, ssim_spinner.value, min_nref_spinner.value
+            )
+            catproc.catalog_detection(
+                stars, snr_thresh_spinner.value, nmodes_thresh_spinner.value
+            )
+            # update stuff
+            update_catalog_cds()
+            update_candidate_cds()
+            update_cds_dicts()
+            update_cube_scrollers()
+            print("Finished re-running analysis")
+        subtraction_button.on_click(rerun_subtraction_and_update)
+
+        detection_button = bkmdls.Button(
+            label='Run detection', button_type='primary',
+        )
+        def rerun_detection_and_update():
+            catproc.catalog_detection(
+                stars, snr_thresh_spinner.value, nmodes_thresh_spinner.value
+            )
+            # update stuff
+            update_catalog_cds()
+            update_candidate_cds()
+            update_cds_dicts()
+            update_cube_scrollers()
+            print("Finished re-running analysis")
+        subtraction_lyt = bklyts.row(
+            bklyts.column(
+                subtraction_button,
+                detection_button,
+            ),
+            bklyts.column(
+                ssim_spinner, min_nref_spinner,
+                snr_thresh_spinner, nmodes_thresh_spinner,
+            ),
+        )
+
+
         tab1 = bkmdls.TabPanel(
             title='Overview',
             child= bklyts.layout([
@@ -617,12 +691,14 @@ def all_stars_dashboard(
         lyt = bklyts.layout(
             [
                 bklyts.row(bklyts.column(star_selector, print_button), catalog_table),
-                bklyts.row(candidate_table, tab),
+                bklyts.row(
+                    bklyts.column(subtraction_lyt, candidate_table),
+                    tab
+                ),
                 bklyts.row(quit_button),
             ]
         )
 
 
         doc.add_root(lyt)
-
     return app
