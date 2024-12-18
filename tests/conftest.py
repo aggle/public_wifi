@@ -74,6 +74,7 @@ def processed_stars(high_snr_catalog, data_folder):
     )
     return stars
 
+# individual stars
 @pytest.fixture()
 def random_processed_star(processed_stars):
     """Get a star with subtraction and detection results attached"""
@@ -82,3 +83,6 @@ def random_processed_star(processed_stars):
 def nonrandom_processed_star(processed_stars):
     """Get a star with subtraction and detection results attached"""
     return processed_stars.iloc[2]
+@pytest.fixture()
+def star_with_candidates(processed_stars):
+    return processed_stars.loc["J042705.86+261520.3"]
