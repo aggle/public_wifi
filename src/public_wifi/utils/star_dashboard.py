@@ -450,56 +450,74 @@ def make_catalog_display(
     )
     return catalog_cds, catalog_table
 
-def make_table_cds(dataframe : pd.DataFrame, cds=None, table=None, plot_scale=60):
+def make_table_cds(
+        dataframe : pd.DataFrame,
+        cds=None,
+        table=None,
+        plot_scale=60
+):
     if cds is None:
         cds = bkmdls.ColumnDataSource()
     cds.data.update(dataframe)
     if table is None:
+        # if no table provided, make a new one. Else, just return the existing table
        columns = [bkmdls.TableColumn(field=k, title=k) for k in cds.data.keys()]
        table = bkmdls.DataTable(
            source=cds,
            columns=columns,
            width = plot_scale * (dataframe.shape[1]+1),
-           height = 60 * (dataframe.shape[0]+1),
+           height = plot_scale * (dataframe.shape[0]+1),
        )
     return cds, table
-    
 
 def make_candidate_cds(
         result_rows,
         cds=None,
         table=None,
-        group_by=[],
-        plot_size=400,
+        plot_scale=60,
 ):
-    """Make the CDS and display table for the candidates"""
-    cand_df = pd.concat(result_rows.set_index(['filter'])['snr_candidates'].to_dict(), axis=1)
-    cand_df = cand_df[sorted(cand_df.columns)]
-    cand_df.index.name = 'cand_id'
-    cand_df.index += 1
-    cand_df.reset_index(inplace=True)
-    if cds is None:
-        cds = bkmdls.ColumnDataSource()
+    """
+    Make the CDS and display table for the candidates
+
+    result_rows : dataframe
+      rows to show. each must have the columns ['filter','snr_candidates']
+    cds : ColumnDataSource
+      existing CDS to update, or None to make a new one
+    table : DataTable
+      existing Table to update, or None to make a new one
+    plot_scale : scale the plot size by this times the dataframe shape
+    """
+    # cand_df = pd.concat(result_rows.set_index(['filter'])['snr_candidates'].to_dict(), axis=1)
+    # cand_df = cand_df[sorted(cand_df.columns)]
+    # cand_df.index.name = 'cand_id'
+    # cand_df.index += 1
+    # cand_df.reset_index(inplace=True)
+    candidates = result_rows.set_index("filter")['snr_candidates']
+    cand_df = pd.concat(candidates.to_dict(), names=['filter', 'pix_id'])#.reset_index('filter')
+    cand_df = cand_df.reset_index().drop(columns="pix_id").sort_values(by=['filter', 'cand_id'])
+    source = bkmdls.ColumnDataSource(cand_df)
+    cds, table = make_table_cds(cand_df, cds=cds, table=table, plot_scale=plot_scale)
+    # if cds is None:
+    #     cds, table = make_table_cds(cand_df)
     cds.data.update(cand_df)
-    if table is None:
-       columns = [bkmdls.TableColumn(field=k, title=k) for k in cds.data.keys()]
-       table = bkmdls.DataTable(
-           source=cds,
-           columns=columns,
-           width = 60 * 3,
-           height = 60 * 10,
-       )
+    # if table is None:
+    #    columns = [bkmdls.TableColumn(field=k, title=k) for k in cds.data.keys()]
+    #    table = bkmdls.DataTable(
+    #        source=cds,
+    #        columns=columns,
+    #        width = 60 * 3,
+    #        height = 60 * 10,
+    #    )
     return cds, table
 
 def all_stars_dashboard(
     stars : pd.Series,
     plot_size = 400,
-    
 ):
     # This returns a Bokeh application that takes a doc for displaying
-    
+
     def app(doc):
-        
+
         init_star = stars.index[0]
 
         catalog_cds, catalog_table = make_catalog_display(
@@ -509,7 +527,7 @@ def all_stars_dashboard(
         # candidates table
         candidate_cds, candidate_table = make_candidate_cds(
             stars.loc[init_star].results,
-            plot_size=plot_size,
+            plot_scale=60,
         )
 
         # each row of the catalog corresponds to a particular set of plots
@@ -539,6 +557,7 @@ def all_stars_dashboard(
         )
         def change_star(attrname, old_id, new_id):
             ## update the data structures and scroller limits
+            update_reference_switch()
             update_catalog_cds()
             update_candidate_cds()
             update_cds_dicts()
@@ -550,13 +569,17 @@ def all_stars_dashboard(
             print(star_selector.value)
         print_button.on_click(print_star_name)
 
+        def update_reference_switch():
+            status  = stars.loc[star_selector.value].is_good_reference
+            button_type = "success" if status else "danger"
+            good_reference_switch.update(button_type=button_type)
 
         def update_candidate_cds():
             make_candidate_cds(
                 stars.loc[star_selector.value].results,
                 cds=candidate_cds,
                 table=candidate_table,
-                plot_size=plot_size,
+                plot_scale=plot_size,
             )
         def update_catalog_cds():
            catalog_cds.data.update(
@@ -597,6 +620,21 @@ def all_stars_dashboard(
                     'value', plot_dicts[kp][combo[0]].children[1], 'value'
                 )
 
+        # good reference flat
+        def change_reference_status():
+            status = stars[star_selector.value].is_good_reference
+            new_status = not status
+            stars[star_selector.value].is_good_reference = new_status
+            print(stars[star_selector.value].star_id, f" reference flag set to {new_status}")
+            button_type = "success" if new_status else "danger"
+            good_reference_switch.update(button_type=button_type)
+        good_reference_switch = bkmdls.Button(
+            # label = str(stars[star_selector.value].is_good_reference)
+            label = "Good reference state",
+            button_type = "success" if stars[star_selector.value].is_good_reference else "danger",
+        )
+        good_reference_switch.on_click(change_reference_status)
+
         # reprocessing tools
         ssim_spinner = bkmdls.Spinner(
             title='SSIM thresh', low=-1.0, high=1.0, step=0.05, value=0.5, width=80
@@ -630,7 +668,7 @@ def all_stars_dashboard(
         subtraction_button.on_click(rerun_subtraction_and_update)
 
         detection_button = bkmdls.Button(
-            label='Run detection', button_type='primary',
+            label='Run detection only', button_type='primary',
         )
         def rerun_detection_and_update():
             catproc.catalog_detection(
@@ -642,8 +680,10 @@ def all_stars_dashboard(
             update_cds_dicts()
             update_cube_scrollers()
             print("Finished re-running analysis")
-        subtraction_lyt = bklyts.row(
+
+        reanalysis_lyt = bklyts.row(
             bklyts.column(
+                good_reference_switch,
                 subtraction_button,
                 detection_button,
             ),
@@ -652,7 +692,6 @@ def all_stars_dashboard(
                 snr_thresh_spinner, nmodes_thresh_spinner,
             ),
         )
-
 
         tab1 = bkmdls.TabPanel(
             title='Overview',
@@ -690,9 +729,12 @@ def all_stars_dashboard(
 
         lyt = bklyts.layout(
             [
-                bklyts.row(bklyts.column(star_selector, print_button), catalog_table),
                 bklyts.row(
-                    bklyts.column(subtraction_lyt, candidate_table),
+                    bklyts.column(star_selector, print_button),
+                    catalog_table
+                ),
+                bklyts.row(
+                    bklyts.column(reanalysis_lyt, candidate_table),
                     tab
                 ),
                 bklyts.row(quit_button),

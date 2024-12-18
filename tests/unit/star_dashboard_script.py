@@ -26,6 +26,7 @@ stars = catproc.process_catalog(
     data_folder,
     11,
     sim_thresh=-1.0,
+    bad_references=[ 'J042705.86+261520.3' ], 
     scale_stamps=True
 )
 print("displaying dashboard")

@@ -99,10 +99,10 @@ def detect_snrmap(snrmaps, snr_thresh=5, n_modes=3) -> pd.Series:
         candidate_filter = initial_candidates.groupby(['dy', 'dx']).size() >= n_modes
         candidates = candidate_filter[candidate_filter].index.to_frame().reset_index(drop=True)
         candidates = candidates[['dx','dy']].apply(tuple, axis=1)
-        # candidates = candidates.reset_index(name='pixel')
-        # candidates.rename(columns={"index": "cand_id"}, inplace=True)
-        # return group_candidates(candidates)
-        return candidates
+        # return candidates
+        candidates = candidates.reset_index(name='pixel')
+        candidates.rename(columns={"index": "cand_id"}, inplace=True)
+        return group_candidates(candidates)
 
 
 def group_candidates(candidates):
