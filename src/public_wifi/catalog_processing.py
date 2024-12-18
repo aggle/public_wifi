@@ -168,14 +168,11 @@ def catalog_initialization(
     # flag the bad references
     for br in bad_references:
         stars[br].is_good_reference = False
-    # assign references and compute similarity score
-    for star in stars:
-        star.set_references(stars, compute_similarity=True)
     return stars
 
 
 def catalog_subtraction(
-        all_stars : pd.Series,
+        stars : pd.Series,
         sim_thresh : float = 0.5,
         min_nref : int = 2,
 ) -> None:
@@ -195,7 +192,11 @@ def catalog_subtraction(
 
     """
     print(f"Subtracting with similarity score threshold: sim >= {sim_thresh}")
-    for star in all_stars:
+    # assign references and compute similarity score
+    for star in stars:
+        star.set_references(stars, compute_similarity=True)
+
+    for star in stars:
         # gather subtraction results
         star.subtraction = star.cat.apply(
             star.row_klip_subtract,
