@@ -51,8 +51,8 @@ class Star:
         self.star_id = star_id
         self.stamp_size = stamp_size
         self.data_folder = data_folder
-        self.cat = group#.reset_index(drop=True)
         self.match_by = match_by
+        self.cat = group.sort_values(by=self.match_by)
         # status flags
         self.is_good_reference = True # assumed True
         self.has_companions = False
