@@ -234,7 +234,7 @@ class Star:
             self.match_by).apply(
                 len,
                 include_groups=False,
-            )
+            ).reset_index(name='Nrefs')
 
         # pull out the stamps
         reference_stamps = reference_rows['stamp']
