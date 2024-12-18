@@ -1,4 +1,9 @@
 List of TODOs
+
+* TODO Handle case where no candidates are found
+Stars with no candidates case the dashboard to mess up its state
+
+
 * TODO Add a plot of the radial profile to the dashboard
 Direct comparison of the initial stamp's radial profile against the KLIP model
 radial profiles to the info panel on the dashboard.
