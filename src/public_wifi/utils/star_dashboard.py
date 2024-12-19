@@ -415,9 +415,9 @@ def make_row_plots(row, row_cds, size=400):
         "title": f"SNR map",
         "width": size, "height": size
     }
-    slider_kwargs = dict(title='Kklip')
+    
     plots['snr_maps'] = generate_cube_scroller_widget(
-        cds, plot_kwargs=plot_kwargs, slider_kwargs=slider_kwargs,
+        cds, plot_kwargs=plot_kwargs,
         use_diverging_cmap=False,
     )
 
