@@ -167,7 +167,8 @@ def catalog_initialization(
     )
     # flag the bad references
     for br in bad_references:
-        stars[br].is_good_reference = False
+        if br in stars.index:
+            stars[br].is_good_reference = False
     return stars
 
 
