@@ -222,25 +222,21 @@ def catalog_detection(
       pandas Series where each entry is a starclass.Star object, and the index is the star identifier
     """
     for star in all_stars:
-        # gather subtraction results
-        star.results = star.results.join(
-            star.results.apply(
+        snrmaps = star.results.apply(
+            star.row_make_snr_map,
+            axis=1
+        ).squeeze()
+        star.results[snrmaps.name] = snrmaps
+        detmaps = star.results.apply(
                 star.row_convolve_psf,
                 axis=1
-            )
-        )
-        star.results = star.results.join(
-            star.results.apply(
-                star.row_make_snr_map,
-                axis=1
-            )
-        )
-        star.results = star.results.join(
-            star.results.apply(
-                star.row_detect_snrmap_candidates,
-                snr_thresh=snr_thresh,
-                n_modes=n_modes,
-                axis=1
-            )
-        )
+        ).squeeze()
+        star.results[detmaps.name] = detmaps
+        candidates = star.results.apply(
+            star.row_detect_snrmap_candidates,
+            snr_thresh=snr_thresh,
+            n_modes=n_modes,
+            axis=1
+        ).squeeze()
+        star.results[candidates.name] = candidates
     return
