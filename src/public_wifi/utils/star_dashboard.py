@@ -659,12 +659,9 @@ def all_stars_dashboard(
             catproc.catalog_detection(
                 stars, snr_thresh_spinner.value, nmodes_thresh_spinner.value
             )
-            # update stuff
-            update_catalog_cds()
-            update_candidate_cds()
-            update_cds_dicts()
-            update_cube_scrollers()
-            print("Finished re-running analysis")
+            # update stuff as if it were a new star
+            change_star('value', None, star_selector.value)
+            print("Finished re-running analysis and updating values.")
         subtraction_button.on_click(rerun_subtraction_and_update)
 
         detection_button = bkmdls.Button(
@@ -674,12 +671,10 @@ def all_stars_dashboard(
             catproc.catalog_detection(
                 stars, snr_thresh_spinner.value, nmodes_thresh_spinner.value
             )
-            # update stuff
-            update_catalog_cds()
-            update_candidate_cds()
-            update_cds_dicts()
-            update_cube_scrollers()
-            print("Finished re-running analysis")
+            # update stuff as if it were a new star
+            change_star('value', None, star_selector.value)
+            print("Finished re-running analysis and updating values.")
+        detection_button.on_click(rerun_detection_and_update)
 
         reanalysis_lyt = bklyts.row(
             bklyts.column(
@@ -710,7 +705,7 @@ def all_stars_dashboard(
             ]),
         )
         tab2 = bkmdls.TabPanel(
-            title='Detection',
+            title='KLIP results',
             child= bklyts.layout([
                 # the target selectors
                 bklyts.row(
@@ -725,7 +720,13 @@ def all_stars_dashboard(
                 ),
             ]),
         )
-        tab = bkmdls.Tabs(tabs=[tab1, tab2])
+        tab3 = bkmdls.TabPanel(
+            title='NMF results (tbd)',
+            child= bklyts.layout([
+                bklyts.column()
+            ])
+        )
+        tab = bkmdls.Tabs(tabs=[tab1, tab2, tab3])
 
         lyt = bklyts.layout(
             [
