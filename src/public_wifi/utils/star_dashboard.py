@@ -129,6 +129,7 @@ def series_to_CDS(
 def generate_cube_scroller_widget(
         source,
         plot_kwargs={},
+        slider_kwargs={},
         use_diverging_cmap : bool = False,
         cmap_range : tuple[float, float] = (0.01, 0.99),
 ):
@@ -213,8 +214,9 @@ def generate_cube_scroller_widget(
     slider = bkmdls.Slider(
         start=1, end=source.data['nimgs'][0],
         value=1, step=1,
-        title = str(source.data['i'][0]),
+        # title = str(source.data['i'][0]),
         name='slider',
+        **slider_kwargs,
     )
     def slider_change(attr, old, new):
         # update the current index, used for the slider title
@@ -367,8 +369,9 @@ def make_row_plots(row, row_cds, size=400):
         "title": f"References",
         "width": size, "height": size
     }
+    slider_kwargs = dict(title='Ref #')
     plots['references'] = generate_cube_scroller_widget(
-        cds, plot_kwargs=plot_kwargs,
+        cds, plot_kwargs=plot_kwargs, slider_kwargs=slider_kwargs
     )
 
     # PSF model
@@ -377,8 +380,9 @@ def make_row_plots(row, row_cds, size=400):
         "title": f"KLIP model",
         "width": size, "height": size
     }
+    slider_kwargs = dict(title='Kklip')
     plots['klip_model'] = generate_cube_scroller_widget(
-        cds, plot_kwargs=plot_kwargs,
+        cds, plot_kwargs=plot_kwargs, slider_kwargs=slider_kwargs,
     )
 
     # KLIP residuals
@@ -387,8 +391,9 @@ def make_row_plots(row, row_cds, size=400):
         "title": f"KLIP residuals",
         "width": size, "height": size
     }
+    slider_kwargs = dict(title='Kklip')
     plots['klip_residuals'] = generate_cube_scroller_widget(
-        cds, plot_kwargs=plot_kwargs,
+        cds, plot_kwargs=plot_kwargs, slider_kwargs=slider_kwargs,
         use_diverging_cmap=False,
     )
 
@@ -398,8 +403,9 @@ def make_row_plots(row, row_cds, size=400):
         "title": f"Matched filter",
         "width": size, "height": size
     }
+    slider_kwargs = dict(title='Kklip')
     plots['klip_mf'] = generate_cube_scroller_widget(
-        cds, plot_kwargs=plot_kwargs,
+        cds, plot_kwargs=plot_kwargs, slider_kwargs=slider_kwargs,
         use_diverging_cmap=False,
     )
 
@@ -409,20 +415,12 @@ def make_row_plots(row, row_cds, size=400):
         "title": f"SNR map",
         "width": size, "height": size
     }
+    slider_kwargs = dict(title='Kklip')
     plots['snr_maps'] = generate_cube_scroller_widget(
-        cds, plot_kwargs=plot_kwargs,
+        cds, plot_kwargs=plot_kwargs, slider_kwargs=slider_kwargs,
         use_diverging_cmap=False,
     )
 
-    # Put them all in a dict
-    # plots = dict(
-    #     stamp=img_plot,
-    #     references=ref_scroller,
-    #     klip_model=psf_model_scroller,
-    #     klip_residuals=klip_resid_scroller,
-    #     klip_mf=det_map_scroller,
-    #     snr_maps=snr_map_scroller
-    # )
     return plots
 
 def make_catalog_display(
