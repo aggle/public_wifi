@@ -55,7 +55,7 @@ class Star:
         self.cat = group.sort_values(by=self.match_by)
         # status flags
         self.is_good_reference = True # assumed True
-        self.has_companions = False
+        self.has_candidates = False
         # values that are initialized by methods
         self.cat['cutout'] = self.cat.apply(
             lambda row: self.get_cutout(row, stamp_size),
@@ -72,13 +72,13 @@ class Star:
             self.cat['stamp'] = self.cat['stamp'].apply(self.scale_stamp)
         return
 
-    # has_companions should always be the opposite of is_good_reference
+    # has_candidates should always be the opposite of is_good_reference
     @property
-    def has_companions(self):
-        return self._has_companions
-    @has_companions.setter
-    def has_companions(self, new_val : bool):
-        self._has_companions = new_val
+    def has_candidates(self):
+        return self._has_candidates
+    @has_candidates.setter
+    def has_candidates(self, new_val : bool):
+        self._has_candidates = new_val
         # After the change in state, check and set, if necessary, the reference status
         self.check_reference()
 
@@ -103,7 +103,7 @@ class Star:
     def check_reference(self):
         """This method checks for all the conditions"""
         is_ok = False
-        if self.has_companions == False:
+        if self.has_candidates == False:
             is_ok = True
         self.is_good_reference = is_ok
 

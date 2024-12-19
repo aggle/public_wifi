@@ -32,12 +32,12 @@ def test_starclass_init(star):
 
 
 def test_starclass_check_reference(star):
-    assert(star.has_companions == False)
+    assert(star.has_candidates == False)
     print(star.is_good_reference)
-    # test that updating has_companions also updates is_good_reference
-    star.has_companions = True
+    # test that updating has_candidates also updates is_good_reference
+    star.has_candidates = True
     assert(star.is_good_reference == False)
-    star.has_companions = False
+    star.has_candidates = False
     assert(star.is_good_reference == True)
 
 

@@ -38,7 +38,7 @@ def test_catalog_initialization(catalog, data_folder):
     assert(all(stars.apply(lambda el: isinstance(el, catproc.sc.Star))))
     # check that the attributes are there
     attrs = ["star_id", "stamp_size", "is_good_reference", "data_folder",
-             "cat", "has_companions", "match_by", "references"]
+             "cat", "has_candidates", "match_by", "references"]
     for attr in attrs:
         if DEBUG:
             print(attr)
