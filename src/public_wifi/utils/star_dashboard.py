@@ -292,7 +292,20 @@ def make_static_img_plot(
 
 # helper functions for the dashboard
 def make_row_cds(row, star, cds_dict={}):
-    # make CDSs with the row data, updating the existing CDSs if they are provided
+    """
+    Make CDSs with the row data, updating the existing CDSs if they are provided
+
+    Parameters
+    ----------
+    row : pd.Series
+      A row with the analysis results
+    star : starclass.Star
+      A star object, for selecting references
+    cds_dict : dict = {}
+      A dictionary of pre-existing CDSs. If if the CDSs exist, they will be
+      updated with the new information. If not, CDSs will be created.
+
+    """
     filt = row['filter']
     # filter stamp
     cds = cds_dict.get("stamp", None)
@@ -305,7 +318,6 @@ def make_row_cds(row, star, cds_dict={}):
         lambda row: f"{row['target']} / SIM {row['sim']:0.3f}",
         axis=1
     )
-    # print(len(refs), len(refcube))
     cds = cds_dict.get("references", None)
     cds_dict['references'] = series_to_CDS(
         refcube,
@@ -529,6 +541,7 @@ def all_stars_dashboard(
             stars.loc[init_star].results,
             plot_scale=60,
         )
+        candidate_table.update(sizing_mode='stretch_width')
 
         # each row of the catalog corresponds to a particular set of plots
         cds_dicts = stars.loc[init_star].results.apply(
@@ -621,6 +634,12 @@ def all_stars_dashboard(
                 )
 
         # good reference flat
+        good_reference_switch = bkmdls.Button(
+            # label = str(stars[star_selector.value].is_good_reference)
+            label = "Good reference state",
+            button_type = "success" if stars[star_selector.value].is_good_reference else "danger",
+            sizing_mode='stretch_width',
+        )
         def change_reference_status():
             status = stars[star_selector.value].is_good_reference
             new_status = not status
@@ -651,6 +670,7 @@ def all_stars_dashboard(
 
         subtraction_button = bkmdls.Button(
             label='Run subtraction', button_type='primary',
+            sizing_mode='stretch_width',
         )
         def rerun_subtraction_and_update():
             catproc.catalog_subtraction(
@@ -666,6 +686,7 @@ def all_stars_dashboard(
 
         detection_button = bkmdls.Button(
             label='Run detection only', button_type='primary',
+            sizing_mode='stretch_width',
         )
         def rerun_detection_and_update():
             catproc.catalog_detection(
