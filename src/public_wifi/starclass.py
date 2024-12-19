@@ -281,6 +281,9 @@ class Star:
             snr_thresh=snr_thresh,
             n_modes=n_modes
         )
+        if candidates is None:
+            candidates = pd.DataFrame(None, columns=['cand_id', 'pixel']
+            )
         return pd.Series({'snr_candidates': candidates})
 
 
