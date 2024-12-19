@@ -64,7 +64,7 @@ def apply_matched_filter(
 
 
 
-def detect_snrmap(snrmaps, snr_thresh=5, n_modes=3) -> pd.Series:
+def detect_snrmap(snrmaps, snr_thresh=5, n_modes=3) -> pd.Series | None:
     """
     Detect sources using the SNR maps
     snrmaps : pd.Series
@@ -83,26 +83,25 @@ def detect_snrmap(snrmaps, snr_thresh=5, n_modes=3) -> pd.Series:
         np.where(stack >= snr_thresh),
         index=['kklip','dy','dx']
     ).T
-    initial_candidates['dy'] -= center_pixel[1]
-    initial_candidates['dx'] -= center_pixel[0]
     # no candidates? Quit early
     if len(initial_candidates) == 0:
         return None
-    else:
-        # drop the central pixel
-        central_pixel_filter = initial_candidates[['dy','dx']].apply(
-            lambda row: all(row.values == (0, 0)) == False,
-            axis=1
-        ) 
-        initial_candidates = initial_candidates[central_pixel_filter].copy()
-        # group by row, col and find the ones that appear more than n_modes
-        candidate_filter = initial_candidates.groupby(['dy', 'dx']).size() >= n_modes
-        candidates = candidate_filter[candidate_filter].index.to_frame().reset_index(drop=True)
-        candidates = candidates[['dx','dy']].apply(tuple, axis=1)
-        # return candidates
-        candidates = candidates.reset_index(name='pixel')
-        candidates.rename(columns={"index": "cand_id"}, inplace=True)
-        return group_candidates(candidates)
+    initial_candidates['dy'] -= center_pixel[1]
+    initial_candidates['dx'] -= center_pixel[0]
+    # drop the central pixel
+    central_pixel_filter = initial_candidates[['dy','dx']].apply(
+        lambda row: all(row.values == (0, 0)) == False,
+        axis=1
+    ) 
+    initial_candidates = initial_candidates[central_pixel_filter].copy()
+    # group by row, col and find the ones that appear more than n_modes
+    candidate_filter = initial_candidates.groupby(['dy', 'dx']).size() >= n_modes
+    candidates = candidate_filter[candidate_filter].index.to_frame().reset_index(drop=True)
+    candidates = candidates[['dx','dy']].apply(tuple, axis=1)
+    # return candidates
+    candidates = candidates.reset_index(name='pixel')
+    candidates.rename(columns={"index": "cand_id"}, inplace=True)
+    return group_candidates(candidates)
 
 
 def group_candidates(candidates):
