@@ -571,6 +571,7 @@ def all_stars_dashboard(
         def change_star(attrname, old_id, new_id):
             ## update the data structures and scroller limits
             update_reference_switch()
+            update_candidates_switch()
             update_catalog_cds()
             update_candidate_cds()
             update_cds_dicts()
@@ -586,6 +587,13 @@ def all_stars_dashboard(
             status  = stars.loc[star_selector.value].is_good_reference
             button_type = "success" if status else "danger"
             good_reference_switch.update(button_type=button_type)
+
+        def update_candidates_switch():
+            status  = stars.loc[star_selector.value].has_candidates
+            button_type = "success" if status else "danger"
+            has_candidates_switch.update(button_type=button_type)
+            # also update the reference switch
+            update_reference_switch()
 
         def update_candidate_cds():
             make_candidate_cds(
@@ -636,7 +644,7 @@ def all_stars_dashboard(
         # good reference flat
         good_reference_switch = bkmdls.Button(
             # label = str(stars[star_selector.value].is_good_reference)
-            label = "Good reference state",
+            label = "'Good reference' state",
             button_type = "success" if stars[star_selector.value].is_good_reference else "danger",
             sizing_mode='stretch_width',
         )
@@ -647,12 +655,22 @@ def all_stars_dashboard(
             print(stars[star_selector.value].star_id, f" reference flag set to {new_status}")
             button_type = "success" if new_status else "danger"
             good_reference_switch.update(button_type=button_type)
-        good_reference_switch = bkmdls.Button(
-            # label = str(stars[star_selector.value].is_good_reference)
-            label = "Good reference state",
-            button_type = "success" if stars[star_selector.value].is_good_reference else "danger",
-        )
         good_reference_switch.on_click(change_reference_status)
+
+        has_candidates_switch = bkmdls.Button(
+            # label = str(stars[star_selector.value].is_good_reference)
+            label = "'Has candidates' state",
+            button_type = "success" if stars[star_selector.value].has_candidates else "danger",
+            sizing_mode='stretch_width',
+        )
+        def change_candidates_status():
+            status = stars[star_selector.value].has_candidates
+            new_status = not status
+            stars[star_selector.value].has_candidates = new_status
+            print(stars[star_selector.value].star_id, f" candidates flag set to {new_status}")
+            button_type = "success" if new_status else "danger"
+            has_candidates_switch.update(button_type=button_type)
+        has_candidates_switch.on_click(change_candidates_status)
 
         # reprocessing tools
         ssim_spinner = bkmdls.Spinner(
@@ -700,6 +718,7 @@ def all_stars_dashboard(
         reanalysis_lyt = bklyts.row(
             bklyts.column(
                 good_reference_switch,
+                has_candidates_switch,
                 subtraction_button,
                 detection_button,
             ),
