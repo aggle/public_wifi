@@ -58,11 +58,10 @@ def all_stars(catalog, data_folder):
         data_folder=data_folder,
         stamp_size=15,
         bad_references=[],
-        min_nrefs = 1,
     )
     return stars
 
-@pytest.fixture()
+@pytest.fixture(scope='session')
 def processed_stars(high_snr_catalog, data_folder):
     stars = catproc.process_catalog(
         input_catalog=high_snr_catalog,
@@ -70,19 +69,26 @@ def processed_stars(high_snr_catalog, data_folder):
         match_references_on=['filter'],
         data_folder=data_folder,
         stamp_size=11,
-        sim_thresh=-1.0
+        bad_references = [],
+        scale_stamps = False,
+        # psf subtraction args
+        min_nref = 2,
+        sim_thresh = 0.5,
+        # detection args
+        snr_thresh = 5.,
+        n_modes = 3,
     )
     return stars
 
 # individual stars
-@pytest.fixture()
+@pytest.fixture(scope='session')
 def random_processed_star(processed_stars):
     """Get a star with subtraction and detection results attached"""
     return np.random.choice(processed_stars)
-@pytest.fixture()
+@pytest.fixture(scope='session')
 def nonrandom_processed_star(processed_stars):
     """Get a star with subtraction and detection results attached"""
     return processed_stars.iloc[2]
-@pytest.fixture()
+@pytest.fixture(scope='session')
 def star_with_candidates(processed_stars):
     return processed_stars.loc["J042705.86+261520.3"]

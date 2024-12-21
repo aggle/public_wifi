@@ -118,7 +118,6 @@ def catalog_initialization(
         stamp_size : int = 15,
         bad_references : str | list[str] = [],
         scale_stamps : bool = False,
-        min_nrefs : int = 1,
 ) -> pd.Series :
     """
     initialize the Star objects as a series. This includes creating the
