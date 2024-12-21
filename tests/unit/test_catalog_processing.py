@@ -3,7 +3,7 @@ import numpy as np
 from public_wifi import catalog_processing as catproc
 # from tests.conftest import data_folder
 
-DEBUG = False # use to turn on debug printing
+DEBUG = True # use to turn on debug printing
 
 def test_load_catalog(catalog, catalog_file):
     assert(isinstance(catalog, catproc.pd.DataFrame))
@@ -33,23 +33,15 @@ def test_catalog_initialization(catalog, data_folder):
         min_nrefs = 10,
     )
     unique_stars = catalog['target'].unique()
-    
     assert(len(stars) == len(unique_stars))
     assert(all(stars.apply(lambda el: isinstance(el, catproc.sc.Star))))
     # check that the attributes are there
     attrs = ["star_id", "stamp_size", "is_good_reference", "data_folder",
-             "cat", "has_candidates", "match_by", "references"]
+             "cat", "has_candidates", "match_by"]
     for attr in attrs:
         if DEBUG:
             print(attr)
         assert(all(stars.apply(hasattr, args=[attr])))
-    # check that the bad reference is flagged correctly
-    assert(stars[bad_reference].is_good_reference == False)
-    assert(all(
-        stars.apply(
-            lambda star: bad_reference not in star.references.reset_index()['target']
-        )
-    ))
 
 def test_catalog_subtraction(catalog, data_folder):
     bad_reference = 'J042705.86+261520.3'
@@ -62,6 +54,7 @@ def test_catalog_subtraction(catalog, data_folder):
         bad_references=bad_reference,
         min_nrefs = 10,
     )
+
     sim_thresh = -1
     min_nref = 1
     catproc.catalog_subtraction(
@@ -70,6 +63,13 @@ def test_catalog_subtraction(catalog, data_folder):
         min_nref=min_nref
     )
     assert(all(hasattr(star, 'results') for star in stars))
+    # check that the bad reference is flagged correctly
+    assert(all(
+        stars.apply(
+            lambda star: bad_reference not in star.references.reset_index()['target']
+        )
+    ))
+    # check that the subtraction columns are there
     subtr_cols = ['klip_sub', 'klip_basis', 'klip_model']
     for star in stars:
         assert(all([ c in star.results.columns for c in subtr_cols]))

@@ -216,20 +216,36 @@ class Star:
         nrefs = len(reference_rows.query(f"sim >= {sim_thresh}"))
         # update nrefs if it is too small
         if nrefs <= min_nref:
-            print(f"Warning: {self.star_id} has fewer than {min_nref} references above threshold!")
+            # print(f"Warning: {self.star_id} has fewer than {min_nref} references above threshold!")
             nrefs = min_nref
         reference_rows = reference_rows[:nrefs]
         return reference_rows
 
-    def row_klip_subtract(self, row, numbasis=None, sim_thresh=0.0, min_nref=2):
-        """Wrapper for KLIP that can be applied on each row of star.cat"""
+    def row_set_reference_status(self, row, used_reference_rows):
+        """
+        Flag the reference rows in the index provided as used; flag all others as false
+        """
+        self.row_get_references(row, -1)['used'] = False
+        self.references.loc[used_reference_rows.index, 'used'] = True
+
+    def row_klip_subtract(self, row, sim_thresh=0.0, min_nref=2, jackknife_reference : str = ''):
+        """
+        Wrapper for KLIP that can be applied on each row of star.cat
+        row : star.cat row
+        sim_thresh : float = 0.0
+          minimum similarity score to be included
+        min_nref : int = 2
+          flag at least this many refs as OK to use, in order of similarity score
+        jackknife_reference : str = ''
+          during jackknife testing, exclude this reference
+        """
         target_stamp = row['stamp']
         # select the references
         reference_rows = self.row_get_references(row, sim_thresh, min_nref)
-        # reset and then set the list of references used
-        # only reset the references that match the query
-        self.row_get_references(row, -1)['used'] = False
-        self.references.loc[reference_rows.index, 'used'] = True
+        # reset the list of used references, and then flag the references that
+        # are selected. reset the references that match the query
+        self.row_set_reference_status(row, reference_rows)
+        # if exclude_references is provided, remove these from the 
         self.nrefs = self.references.query("used == True").groupby(
             self.match_by).apply(
                 len,
@@ -237,7 +253,7 @@ class Star:
             ).reset_index(name='Nrefs')
 
         # pull out the stamps
-        reference_stamps = reference_rows['stamp']
+        reference_stamps = reference_rows.query(f"target != '{jackknife_reference}'")['stamp']
 
         target_stamp = target_stamp - target_stamp.min()
         reference_stamps = reference_stamps.apply(lambda ref: ref - ref.min())
@@ -253,9 +269,10 @@ class Star:
         return pd.Series({s.name: s for s in [klip_basis_img, klip_model_img, klip_sub_img]})
 
     def row_make_snr_map(self, row):
-        resids = row['klip_sub']
-        std_maps = row['klip_sub'].apply(lambda img: sigma_clipped_stats(img)[-1])
-        snr_maps = resids/std_maps
+        # resids = row['klip_sub']
+        # std_maps = row['klip_sub'].apply(lambda img: sigma_clipped_stats(img)[-1])
+        # snr_maps = resids/std_maps
+        snr_maps = detutils.make_series_snrmaps(row['klip_sub'])
         return pd.Series({'snrmap': snr_maps})
 
     def row_convolve_psf(self, row):
@@ -286,4 +303,9 @@ class Star:
             )
         return pd.Series({'snr_candidates': candidates})
 
+    def jackknife_analysis(self, sim_thresh, min_nref):
+        """Perform jackknife analysis"""
+        jackknife = detutils.jackknife_analysis(self, sim_thresh, min_nref)
+        return jackknife
+        
 

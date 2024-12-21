@@ -1,11 +1,11 @@
 import numpy as np
 import pandas as pd
+from itertools import combinations
 
 from scipy.signal import correlate
 from astropy.convolution import convolve
-
+from astropy.stats import sigma_clipped_stats
 from astropy.nddata import Cutout2D
-
 
 def make_normalized_psf(
         psf_stamp : np.ndarray,
@@ -63,6 +63,12 @@ def apply_matched_filter(
     return detmap
 
 
+
+def make_series_snrmaps(residuals):
+    """Make SNR maps out of a series of arrays. Compute the sigma-clipped noise of an image and divide through"""
+    std_maps = residuals.apply(lambda img: sigma_clipped_stats(img)[-1])
+    snrmaps = residuals/std_maps
+    return snrmaps
 
 def detect_snrmap(snrmaps, snr_thresh=5, n_modes=3) -> pd.Series | None:
     """
@@ -155,3 +161,42 @@ def group_candidates(candidates):
     # return candidates
     candidates['cand_id'] = groups
     return candidates
+
+def jackknife_analysis(
+        star,
+        sim_thresh = 0.5,
+        min_nref = 2,
+) -> pd.Series :
+    """
+    Perform a jackknife test on a star by iteratively doing PSF subtraction, removing one reference each time.
+
+    Parameters
+    ----------
+    star : starclass.Star
+      the star to analyze
+
+    Output
+    ------
+    jackknife_result : pd.Series
+      a series with a hierarchical index of (target_name, kklip) that stores the subtracted array
+
+    """
+    references = star.references.query("used == True")
+    ref_targets = references.index.get_level_values("target")
+    ref_iterator = {i: list(ref_targets[ref_targets != i]) for i in ref_targets}
+    results = {}
+    for r, refs in ref_iterator.items():
+        results[r] = star.cat.apply(
+            star.row_klip_subtract,
+            sim_thresh=sim_thresh,
+            min_nref=min_nref,
+            jackknife_reference=r,
+            axis=1
+        )['klip_sub']
+    # do two levels of concatenation to turn it onto a proper series
+    jackknife = pd.concat(results, names=['target', 'index']).reorder_levels(['index', 'target'])
+    jackknife = pd.concat(jackknife.to_dict())
+    jackknife.name = 'klip_jackknife'
+    # now make it an SNR map
+    jackknife = make_series_snrmaps(jackknife)
+    return jackknife

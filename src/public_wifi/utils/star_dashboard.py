@@ -129,7 +129,6 @@ def series_to_CDS(
 def generate_cube_scroller_widget(
         source,
         plot_kwargs={},
-        slider_kwargs={},
         use_diverging_cmap : bool = False,
         cmap_range : tuple[float, float] = (0.01, 0.99),
 ):
@@ -142,8 +141,6 @@ def generate_cube_scroller_widget(
       a CDS containing the data to plot. Generate with series_to_CDS(pd.Series)
     plot_kwargs : dict
       kwargs to pass to bkplt.figure
-    slider_kwargs : dict
-      kwargs to pass to bkmdls.Slider
     add_log_scale : bool = False
       Add a switch to change the color mapping between linear and log scaling
     diverging_cmap : bool = False
@@ -214,9 +211,8 @@ def generate_cube_scroller_widget(
     slider = bkmdls.Slider(
         start=1, end=source.data['nimgs'][0],
         value=1, step=1,
-        # title = str(source.data['i'][0]),
+        title = str(source.data['i'][0]),
         name='slider',
-        **slider_kwargs,
     )
     def slider_change(attr, old, new):
         # update the current index, used for the slider title
@@ -293,7 +289,7 @@ def make_static_img_plot(
 
 
 # helper functions for the dashboard
-def make_row_cds(row, star, cds_dict={}):
+def make_row_cds(row, star, cds_dict={}, jackknife_kklip : int = 1):
     """
     Make CDSs with the row data, updating the existing CDSs if they are provided
 
@@ -306,6 +302,8 @@ def make_row_cds(row, star, cds_dict={}):
     cds_dict : dict = {}
       A dictionary of pre-existing CDSs. If if the CDSs exist, they will be
       updated with the new information. If not, CDSs will be created.
+    jackknife_kklip : int = 1
+      select this jackknife mode
 
     """
     filt = row['filter']
@@ -355,6 +353,14 @@ def make_row_cds(row, star, cds_dict={}):
         index=list(row['snrmap'].index.astype(str).values)
     )
 
+    # jackknife test maps
+    cds = cds_dict.get("klip_jackknife", None)
+    jackknife_data = pd.DataFrame(row['klip_jackknife']).query(f"numbasis == {jackknife_kklip}")['klip_jackknife']
+    cds_dict['klip_jackknife'] = series_to_CDS(
+        jackknife_data,
+        cds,
+        index = [f"{i[0]} / {i[1]}" for i in jackknife_data.index],
+    )
     return cds_dict
 
 def make_row_plots(row, row_cds, size=400):
@@ -369,9 +375,8 @@ def make_row_plots(row, row_cds, size=400):
         "title": f"References",
         "width": size, "height": size
     }
-    slider_kwargs = dict(title='Ref #')
     plots['references'] = generate_cube_scroller_widget(
-        cds, plot_kwargs=plot_kwargs, slider_kwargs=slider_kwargs
+        cds, plot_kwargs=plot_kwargs,
     )
 
     # PSF model
@@ -380,9 +385,9 @@ def make_row_plots(row, row_cds, size=400):
         "title": f"KLIP model",
         "width": size, "height": size
     }
-    slider_kwargs = dict(title='Kklip')
+
     plots['klip_model'] = generate_cube_scroller_widget(
-        cds, plot_kwargs=plot_kwargs, slider_kwargs=slider_kwargs,
+        cds, plot_kwargs=plot_kwargs,
     )
 
     # KLIP residuals
@@ -391,9 +396,8 @@ def make_row_plots(row, row_cds, size=400):
         "title": f"KLIP residuals",
         "width": size, "height": size
     }
-    slider_kwargs = dict(title='Kklip')
     plots['klip_residuals'] = generate_cube_scroller_widget(
-        cds, plot_kwargs=plot_kwargs, slider_kwargs=slider_kwargs,
+        cds, plot_kwargs=plot_kwargs,
         use_diverging_cmap=False,
     )
 
@@ -403,9 +407,8 @@ def make_row_plots(row, row_cds, size=400):
         "title": f"Matched filter",
         "width": size, "height": size
     }
-    slider_kwargs = dict(title='Kklip')
     plots['klip_mf'] = generate_cube_scroller_widget(
-        cds, plot_kwargs=plot_kwargs, slider_kwargs=slider_kwargs,
+        cds, plot_kwargs=plot_kwargs,
         use_diverging_cmap=False,
     )
 
@@ -415,8 +418,17 @@ def make_row_plots(row, row_cds, size=400):
         "title": f"SNR map",
         "width": size, "height": size
     }
-    
     plots['snr_maps'] = generate_cube_scroller_widget(
+        cds, plot_kwargs=plot_kwargs,
+        use_diverging_cmap=False,
+    )
+    # Jackknife
+    cds = row_cds["klip_jackknife"]
+    plot_kwargs={
+        "title": f"Jackknife SNR maps",
+        "width": size, "height": size
+    }
+    plots['klip_jackknife'] = generate_cube_scroller_widget(
         cds, plot_kwargs=plot_kwargs,
         use_diverging_cmap=False,
     )
@@ -477,6 +489,7 @@ def make_table_cds(
            columns=columns,
            width = plot_scale * (dataframe.shape[1]+1),
            height = plot_scale * (dataframe.shape[0]+1),
+           sizing_mode='stretch_height',
        )
     return cds, table
 
@@ -497,27 +510,12 @@ def make_candidate_cds(
       existing Table to update, or None to make a new one
     plot_scale : scale the plot size by this times the dataframe shape
     """
-    # cand_df = pd.concat(result_rows.set_index(['filter'])['snr_candidates'].to_dict(), axis=1)
-    # cand_df = cand_df[sorted(cand_df.columns)]
-    # cand_df.index.name = 'cand_id'
-    # cand_df.index += 1
-    # cand_df.reset_index(inplace=True)
     candidates = result_rows.set_index("filter")['snr_candidates']
     cand_df = pd.concat(candidates.to_dict(), names=['filter', 'pix_id'])#.reset_index('filter')
     cand_df = cand_df.reset_index().drop(columns="pix_id").sort_values(by=['filter', 'cand_id'])
-    source = bkmdls.ColumnDataSource(cand_df)
+    # source = bkmdls.ColumnDataSource(cand_df)
     cds, table = make_table_cds(cand_df, cds=cds, table=table, plot_scale=plot_scale)
-    # if cds is None:
-    #     cds, table = make_table_cds(cand_df)
     cds.data.update(cand_df)
-    # if table is None:
-    #    columns = [bkmdls.TableColumn(field=k, title=k) for k in cds.data.keys()]
-    #    table = bkmdls.DataTable(
-    #        source=cds,
-    #        columns=columns,
-    #        width = 60 * 3,
-    #        height = 60 * 10,
-    #    )
     return cds, table
 
 def all_stars_dashboard(
@@ -609,12 +607,12 @@ def all_stars_dashboard(
             """Update the target filter stamp"""
             for i, row in stars.loc[star_selector.value].results.iterrows():
                 # assign new data to the existing CDSs
-                cds_dicts[i] = make_row_cds(row, stars.loc[star_selector.value], cds_dicts[i])
+                cds_dicts[i] = make_row_cds(row, stars.loc[star_selector.value], cds_dicts[i], jackknife_mode_selector.value)
 
         def update_cube_scrollers():
             scroller_keys = [
                 'references', 'klip_model',
-                'klip_residuals', 'klip_mf', 'snr_maps',
+                'klip_residuals', 'klip_mf', 'snr_maps', 'klip_jackknife',
             ]
             for i, row_plot in plot_dicts.items():
                 for k in scroller_keys:
@@ -683,6 +681,11 @@ def all_stars_dashboard(
         nmodes_thresh_spinner = bkmdls.Spinner(
             title='# modes thresh', low=1, high=len(stars), step=1, value=3, width=80
         )
+        jackknife_mode_selector = bkmdls.Spinner(
+            title="Jackknife Kklip",
+            low=1, value=1, high=len(stars), step=1, width=80,
+        )
+        jackknife_mode_selector.on_change('value', lambda attr, old, new: update_cds_dicts)
 
         subtraction_button = bkmdls.Button(
             label='Run subtraction', button_type='primary',
@@ -723,6 +726,7 @@ def all_stars_dashboard(
             bklyts.column(
                 ssim_spinner, min_nref_spinner,
                 snr_thresh_spinner, nmodes_thresh_spinner,
+                jackknife_mode_selector,
             ),
         )
 
@@ -750,11 +754,13 @@ def all_stars_dashboard(
                     plot_dicts[0]['klip_residuals'],
                     plot_dicts[0]['snr_maps'],
                     plot_dicts[0]['klip_mf'],
+                    plot_dicts[0]['klip_jackknife'],
                 ),
                 bklyts.row(
                     plot_dicts[1]['klip_residuals'],
                     plot_dicts[1]['snr_maps'],
                     plot_dicts[1]['klip_mf'],
+                    plot_dicts[1]['klip_jackknife'],
                 ),
             ]),
         )
@@ -764,7 +770,7 @@ def all_stars_dashboard(
                 bklyts.column()
             ])
         )
-        tab = bkmdls.Tabs(tabs=[tab1, tab2, tab3])
+        tabs = bkmdls.Tabs(tabs=[tab1, tab2, tab3])
 
         lyt = bklyts.layout(
             [
@@ -773,8 +779,8 @@ def all_stars_dashboard(
                     catalog_table
                 ),
                 bklyts.row(
-                    bklyts.column(reanalysis_lyt, candidate_table),
-                    tab
+                    bklyts.column(reanalysis_lyt, candidate_table, sizing_mode='stretch_height'),
+                    tabs
                 ),
                 bklyts.row(quit_button),
             ]

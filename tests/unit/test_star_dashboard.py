@@ -43,3 +43,18 @@ def test_make_cds_table_candidates(star_with_candidates):
     print(table)
     # show_widget(table)
 
+def test_make_jackknife_cds(star_with_candidates):
+    star = star_with_candidates
+    jackknife = star.results.loc[1, 'klip_jackknife']
+    cds = sd.series_to_CDS(
+        jackknife,
+        None,
+        index = [f"{i[0]} / {i[1]}" for i in jackknife.index],
+    )
+    # for k in cds.data.keys():
+    #     print(k)
+    #     print(cds.data[k])
+    print(cds.data['img'][0].shape)
+    print(cds.data['cube'][0].shape)
+    print(len(cds.data['index'][0]))
+

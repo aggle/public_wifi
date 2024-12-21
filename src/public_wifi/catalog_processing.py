@@ -36,7 +36,7 @@ def load_catalog(
         lambda group: all(group['snr'] >= snr_thresh),
         include_groups=False,
     )
-    keep_stars = list(all_stars[above_thresh])
+    keep_stars = list(above_thresh[above_thresh].index)
     catalog = init_catalog.query(f"target in {keep_stars}").copy()
     return catalog
 
@@ -206,6 +206,11 @@ def catalog_subtraction(
             axis=1
         )
         star.results = star.cat.join(star.subtraction)
+        # jackknife
+        jackknife = star.jackknife_analysis(sim_thresh=sim_thresh, min_nref=min_nref)
+        jackknife_name = jackknife.name
+        jackknife = star.cat.apply(lambda row: pd.Series({jackknife.name: jackknife.loc[row.name]}), axis=1)
+        star.results[jackknife_name] = jackknife
     return
 
 

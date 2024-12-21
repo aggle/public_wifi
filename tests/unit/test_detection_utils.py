@@ -1,5 +1,5 @@
 import pytest
-from public_wifi import starclass as sc
+from public_wifi import detection_utils, starclass as sc
 from public_wifi import detection_utils as dutils
 from public_wifi import misc
 
@@ -109,3 +109,8 @@ def test_snr_map(random_processed_star):
 
 def test_group_candidates():
     pass
+
+def test_jackknife_test(nonrandom_processed_star):
+    star = nonrandom_processed_star
+    result = dutils.jackknife_analysis(star)
+    assert(isinstance(result, dutils.pd.Series))
