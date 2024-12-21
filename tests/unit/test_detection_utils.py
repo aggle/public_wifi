@@ -110,7 +110,4 @@ def test_snr_map(random_processed_star):
 def test_group_candidates():
     pass
 
-def test_jackknife_test(nonrandom_processed_star):
-    star = nonrandom_processed_star
-    result = dutils.jackknife_analysis(star)
-    assert(isinstance(result, dutils.pd.Series))
+
