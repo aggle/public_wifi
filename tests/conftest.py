@@ -10,21 +10,21 @@ from pathlib import Path
 from public_wifi import starclass as sc
 from public_wifi import catalog_processing as catproc
 
-@pytest.fixture()
+@pytest.fixture(scope='session')
 def catalog_file():
     catalog_file = Path("~/Projects/Research/hst17167-ffp/catalogs/targets_drc.csv")
     return catalog_file
 
-@pytest.fixture()
+@pytest.fixture(scope='session')
 def data_folder():
     return Path("/Users/jaguilar/Projects/Research/hst17167-ffp/data/HST/")
 
-@pytest.fixture()
+@pytest.fixture(scope='session')
 def catalog(catalog_file):
     catalog = catproc.load_catalog(catalog_file)
     return catalog
 
-@pytest.fixture()
+@pytest.fixture(scope='session')
 def random_cat_rows(catalog):
     """Get a group of rows at random to initialize a Star object"""
     star_id = np.random.choice(catalog['target'])
@@ -32,19 +32,19 @@ def random_cat_rows(catalog):
     return dict(star_id=rows)
 
 
-@pytest.fixture()
+@pytest.fixture(scope='session')
 def high_snr_catalog(catalog):
     high_snr_stars = catalog.groupby("target")['snr'].sum().sort_values(ascending=False)[:20]
     high_snr_rows = catalog.query(f"target in {list(high_snr_stars.index)}").copy()
     return high_snr_rows
 
-@pytest.fixture()
+@pytest.fixture(scope='session')
 def star(catalog, data_folder):
     star_id = np.random.choice(catalog['target'].unique())
     star = sc.Star(star_id, catalog.query(f"target == '{star_id}'"), data_folder=data_folder)
     return star
 
-@pytest.fixture()
+@pytest.fixture(scope='session')
 def all_stars(catalog, data_folder):
     # all the stars, ready for PSF subtraction
     # stars = catalog.groupby("target").apply(
@@ -72,7 +72,7 @@ def processed_stars(high_snr_catalog, data_folder):
         bad_references = [],
         scale_stamps = False,
         # psf subtraction args
-        min_nref = 2,
+        min_nref = 3,
         sim_thresh = 0.5,
         # detection args
         snr_thresh = 5.,
