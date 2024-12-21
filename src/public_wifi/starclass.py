@@ -221,12 +221,22 @@ class Star:
         reference_rows = reference_rows[:nrefs]
         return reference_rows
 
+    def update_nrefs(self):
+        """Update the number of refs used based on the `used` flag"""
+        self.nrefs = self.references.query("used == True").groupby(
+            self.match_by).apply(
+                len,
+                include_groups=False,
+            ).reset_index(name='Nrefs')
+
     def row_set_reference_status(self, row, used_reference_rows):
         """
         Flag the reference rows in the index provided as used; flag all others as false
         """
         self.row_get_references(row, -1)['used'] = False
         self.references.loc[used_reference_rows.index, 'used'] = True
+        # update self.nrefs, the number of refs for each set
+        self.update_nrefs()
 
     def row_klip_subtract(self, row, sim_thresh=0.0, min_nref=2, jackknife_reference : str = ''):
         """
@@ -245,14 +255,7 @@ class Star:
         # reset the list of used references, and then flag the references that
         # are selected. reset the references that match the query
         self.row_set_reference_status(row, reference_rows)
-        # if exclude_references is provided, remove these from the 
-        self.nrefs = self.references.query("used == True").groupby(
-            self.match_by).apply(
-                len,
-                include_groups=False,
-            ).reset_index(name='Nrefs')
-
-        # pull out the stamps
+        # if performing a jackknife analysis, remove the reference
         reference_stamps = reference_rows.query(f"target != '{jackknife_reference}'")['stamp']
 
         target_stamp = target_stamp - target_stamp.min()
