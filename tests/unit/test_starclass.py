@@ -130,6 +130,22 @@ def test_klip_subtract(all_stars):
     )
     assert(rms_descent.all())
 
+def test_jackknife_subtraction(star_with_candidates):
+    star = star_with_candidates
+    ref = sc.np.random.choice(star.references.index)[0]
+    klsub = star.cat.apply(
+        star.row_klip_subtract,
+        jackknife_reference=ref,
+        axis=1
+    )['klip_basis']
+    # get the number of jackknife reductions
+    n_jackknife = klsub.apply(len).sum()
+    # get the number of references
+    n_refs = star.nrefs['Nrefs'].sum()
+    # Kklip_max = n_refs - 1, and jackknife removes another reference
+    # so there should be 2 fewer references for each reduction
+    assert((n_refs - n_jackknife) == 2*len(star.cat))
+
 def test_row_snr_map(random_processed_star):
     star = random_processed_star
     assert(hasattr(star, 'results'))
