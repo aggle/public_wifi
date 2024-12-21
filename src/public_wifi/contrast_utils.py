@@ -33,24 +33,48 @@ def inject_psf(
 
     # pad the injection stamp by the PSF shape in each direction.
     # after you add the PSF in, you can cut it back again
-    injected_stamp = np.pad(stamp, psf.shape, 'constant', constant_values=0)
+    pad = psf.shape
+    injected_stamp_padded = np.pad(stamp, pad, 'constant', constant_values=0)
 
     # compute the lower left corner of the injection
     # the new center
-    inj_center = stamp_center + np.array(psf.shape)
+    inj_center = stamp_center + np.array(pad)
     # the place you added the PSF
     injection_pos = inj_center + pos
     # the corner of the injection site
     corner = injection_pos - psf_center
-    yrange = corner[0] , corner[0]+psf.shape[0]
-    xrange = corner[1] , corner[1]+psf.shape[1]
-    injected_stamp[yrange[0]:yrange[1], xrange[0]:xrange[1]] += psf
+    yrange = corner[0] , corner[0]+pad[0]
+    xrange = corner[1] , corner[1]+pad[1]
+    injected_stamp_padded[yrange[0]:yrange[1], xrange[0]:xrange[1]] += psf
     # remove the padding
-    return injected_stamp[
-        psf.shape[1]:-psf.shape[1], psf.shape[0]:-psf.shape[0]
+    injected_stamp =  injected_stamp_padded[
+        pad[1]:-pad[1], pad[0]:-pad[0]
     ].copy()
+    return injected_stamp
 
 
+def measure_primary_flux(
+        stamp : np.ndarray,
+        model_psf : np.ndarray,
+) -> float :
+    """
+    Measure the flux of an unsubtracted PSF
+
+    Parameters
+    ----------
+    stamp : np.ndarray
+      2-D stamp with a star in the middle
+    model_psf : np.ndarray
+      a model of the PSF to use for flux measurement
+
+    Output
+    ------
+    flux : float
+      the flux of the primary
+    """
+    mf = dutils.make_matched_filter(model_psf)
+    star_flux = dutils.apply_matched_filter(stamp, mf, correlate_mode='valid').max()
+    return star_flux
 
 def inject_subtract_detect(star, pos, scale):
     """
@@ -59,20 +83,22 @@ def inject_subtract_detect(star, pos, scale):
     pos : (x, y) position relative to center
     scale : contrast relative to primary
     """
-    ind = 0
+    # filter index
+    ind = 0 # F814W
     stamp = star.cat.loc[ind, 'stamp'].copy()
-    # make a PSF to inject, but first use it as a matched filter to meaure the
+    # make a PSF to inject, but first use it as a matched filter to measure the
     # star flux
     psf = dutils.make_normalized_psf(
-        star.results.loc[ind, 'klip_model'].iloc[-1].copy(),
-        7,
-        1.,
+        star.results.loc[ind, 'blip_model'].iloc[-1].copy(),
+        7, # 7x7 psf
+        1.,  # total flux of final PSF
     )
-    mf = dutils.make_matched_filter(psf)
-    star_flux = dutils.apply_matched_filter(stamp, mf, correlate_mode='valid').max()
+    # measure the primary star flux so you can set the contrast
+    star_flux = measure_primary_flux(stamp, psf)
+    # compute the companion flux at the given contrast
     inj_flux = star_flux * scale
-    psf *= inj_flux
-    print(stamp[5, 5], star_flux, psf[3, 3])
+    inj_stamp = inject_psf(stamp, psf * inj_flux, pos)
 
-    inj_stamp = inject_psf(stamp, psf, pos)
+    # perform PSF subtraction and detection
+
     return stamp, psf, inj_stamp
