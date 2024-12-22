@@ -93,7 +93,11 @@ def flag_candidate_pixels(
     detections = (mode_detections >= n_modes)
     return detections
 
-def detect_snrmap(snrmaps, snr_thresh=5, n_modes=3) -> pd.Series | None:
+def detect_snrmap(
+        snrmaps,
+        snr_thresh : float = 5,
+        n_modes : int = 3
+) -> pd.DataFrame:
     """
     Detect sources using the SNR maps
     snrmaps : pd.Series
@@ -104,37 +108,37 @@ def detect_snrmap(snrmaps, snr_thresh=5, n_modes=3) -> pd.Series | None:
       the threshold on the number of modes in which a candidate must be detected
 
     A detection is a pixel that is over the threshold in at least three modes
+
+    Output
+    ------
+    candidates : pd.DataFrame
+      DataFrame with columns 'cand_id', 'pixel' where pixel is a tuple of (x, y)
+
     """
-    stack = np.stack(snrmaps)
-    # get all the pixels over threshold
-    initial_candidates = pd.DataFrame(
-        np.where(stack >= snr_thresh),
-        index=['kklip','dy','dx']
-    ).T
+    cand_flags = flag_candidate_pixels(snrmaps, snr_thresh, n_modes)
     # no candidates? Quit early
-    if len(initial_candidates) == 0:
-        return None
+    if (cand_flags == False).all():
+        return pd.DataFrame(None, columns=['cand_id', 'pixel'])
 
-    center_pixel = misc.get_stamp_center(stack[0])
-    initial_candidates['dy'] -= center_pixel[1]
-    initial_candidates['dx'] -= center_pixel[0]
-    # drop the central pixel
-    central_pixel_filter = initial_candidates[['dy','dx']].apply(
-        lambda row: all(row.values == (0, 0)) == False,
-        axis=1
-    ) 
-    initial_candidates = initial_candidates[central_pixel_filter].copy()
-    # group by row, col and find the ones that appear more than n_modes
-    candidate_filter = initial_candidates.groupby(['dy', 'dx']).size() >= n_modes
-    candidates = candidate_filter[candidate_filter].index.to_frame().reset_index(drop=True)
-    candidates = candidates[['dx','dy']].apply(tuple, axis=1)
-    # return candidates
-    candidates = candidates.reset_index(name='pixel')
-    candidates.rename(columns={"index": "cand_id"}, inplace=True)
-    return group_candidates(candidates)
+    initial_candidate_pixels = pd.DataFrame(
+        np.where(cand_flags),
+        index=['dy','dx']
+    ).T
+
+    center_pixel = misc.get_stamp_center(snrmaps)
+    initial_candidate_pixels['dy'] -= center_pixel[1]
+    initial_candidate_pixels['dx'] -= center_pixel[0]
+
+    initial_candidate_pixels = initial_candidate_pixels[['dx','dy']].apply(tuple, axis=1)
+    # drop the central pixel - assume you can't make a detection there
+    candidate_pixels = initial_candidate_pixels[initial_candidate_pixels != (0, 0)]
+    candidate_pixels = candidate_pixels.reset_index(name='pixel')
+    candidate_pixels.rename(columns={"index": "cand_id"}, inplace=True)
+    candidates = group_nearest_candidate_pixels(candidate_pixels)
+    return candidates
 
 
-def group_candidates(candidates):
+def group_nearest_candidate_pixels(candidates):
     """
     Given a group of candidate positions, group the contiguous pixels together
     """

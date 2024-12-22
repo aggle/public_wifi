@@ -116,3 +116,21 @@ def test_flag_candidate_pixels(star_with_candidates):
     assert(flags.ndim == 2)
     assert(flags.dtype == bool)
     assert(flags.any())
+
+def test_detect_snrmap(star_with_candidates):
+    star = star_with_candidates
+    snrmap = star.results['snrmap'].iloc[1]
+    candidates = dutils.detect_snrmap(snrmap, 5, 3)
+    print(candidates)
+    assert(isinstance(candidates, dutils.pd.DataFrame))
+    assert(all([c in candidates.columns for c in ['cand_id', 'pixel']]))
+
+
+@pytest.mark.parametrize('snr_thresh', [100, 5])
+def test_detect_snrmap_dev(star_with_candidates, snr_thresh):
+    star = star_with_candidates
+    snrmap = star.results['snrmap'].iloc[1]
+    candidates = dutils.detect_snrmap_dev(snrmap, snr_thresh, 3)
+    print(snr_thresh, candidates)
+    assert(isinstance(candidates, dutils.pd.DataFrame))
+    assert(all([c in candidates.columns for c in ['cand_id', 'pixel']]))
