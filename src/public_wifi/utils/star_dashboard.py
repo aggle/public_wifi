@@ -355,7 +355,8 @@ def make_row_cds(row, star, cds_dict={}, jackknife_kklip : int = 1):
 
     # jackknife test maps
     cds = cds_dict.get("klip_jackknife", None)
-    jackknife_data = pd.DataFrame(row['klip_jackknife']).query(f"numbasis == {jackknife_kklip}")['klip_jackknife']
+    kklip = min([jackknife_kklip, len(row['snrmap'])-1])
+    jackknife_data = pd.DataFrame(row['klip_jackknife']).query(f"numbasis == {kklip}")['klip_jackknife']
     cds_dict['klip_jackknife'] = series_to_CDS(
         jackknife_data,
         cds,
@@ -489,7 +490,7 @@ def make_table_cds(
            columns=columns,
            width = plot_scale * (dataframe.shape[1]+1),
            height = plot_scale * (dataframe.shape[0]+1),
-           sizing_mode='stretch_height',
+           # sizing_mode='stretch_height',
        )
     return cds, table
 
@@ -607,7 +608,13 @@ def all_stars_dashboard(
             """Update the target filter stamp"""
             for i, row in stars.loc[star_selector.value].results.iterrows():
                 # assign new data to the existing CDSs
-                cds_dicts[i] = make_row_cds(row, stars.loc[star_selector.value], cds_dicts[i], jackknife_mode_selector.value)
+                nrefs = stars.loc[star_selector.value].references.shape[0]//2 - 1
+                cds_dicts[i] = make_row_cds(
+                    row,
+                    stars.loc[star_selector.value],
+                    cds_dicts[i],
+                    jackknife_mode_selector.value,
+                )
 
         def update_cube_scrollers():
             scroller_keys = [
