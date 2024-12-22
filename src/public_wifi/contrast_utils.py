@@ -1,6 +1,35 @@
 import numpy as np
 import pandas as pd
+from public_wifi import misc
 from public_wifi import detection_utils as dutils
+from public_wifi import catalog_processing as catproc
+
+
+def measure_primary_flux(
+        stamp : np.ndarray,
+        model_psf : np.ndarray,
+) -> float :
+    """
+    Measure the flux of an unsubtracted PSF
+
+    Parameters
+    ----------
+    stamp : np.ndarray
+      2-D stamp with a star in the middle
+    model_psf : np.ndarray
+      a model of the PSF to use for flux measurement
+
+    Output
+    ------
+    flux : float
+      the flux of the primary
+    """
+    mf = dutils.make_matched_filter(model_psf)
+    star_flux = dutils.apply_matched_filter(
+        stamp, mf, correlate_mode='valid'
+    ).max()
+    return star_flux
+
 
 def inject_psf(
         stamp : np.ndarray,
@@ -53,52 +82,58 @@ def inject_psf(
     return injected_stamp
 
 
-def measure_primary_flux(
-        stamp : np.ndarray,
-        model_psf : np.ndarray,
-) -> float :
+
+def row_inject_psf(row, star, pos, scale, kklip : int = -1) -> np.ndarray:
     """
-    Measure the flux of an unsubtracted PSF
-
-    Parameters
-    ----------
-    stamp : np.ndarray
-      2-D stamp with a star in the middle
-    model_psf : np.ndarray
-      a model of the PSF to use for flux measurement
-
-    Output
-    ------
-    flux : float
-      the flux of the primary
+    inject a PSF 
     """
-    mf = dutils.make_matched_filter(model_psf)
-    star_flux = dutils.apply_matched_filter(stamp, mf, correlate_mode='valid').max()
-    return star_flux
+    result_row = star.results.loc[row.name]
+    stamp = row['stamp']
+    # kklip is actually an index, not a mode number, so subtract 1 
+    if kklip != -1:
+        kklip -= 1
+    psf_model = dutils.make_normalized_psf(
+        result_row['klip_model'].iloc[kklip].copy(),
+        7, # 7x7 psf, hard-coded
+        1.,  # total flux of final PSF
+    )
+    star_flux = measure_primary_flux(stamp, psf_model)
+    # compute the companion flux at the given contrast
+    inj_flux = star_flux * scale
+    inj_stamp = inject_psf(stamp, psf_model * inj_flux, pos)
 
-def inject_subtract_detect(star, pos, scale):
+    inj_row = row.copy()
+    inj_row['stamp'] = inj_stamp
+    return inj_row
+
+
+def make_injected_cat(star, pos, scale, kklip):
+    """Apply row_inject_psf to the whole catalog"""
+    inj_cat = star.cat.apply(
+        row_inject_psf,
+        star=star, pos=pos, scale=scale, kklip=kklip,
+        axis=1
+    )
+    return inj_cat
+
+
+def inject_subtract_detect(star, pos, scale, sim_thresh, min_nref):
     """
     Inject a PSF into a star and recover it.
     star : star object
     pos : (x, y) position relative to center
     scale : contrast relative to primary
     """
-    # filter index
-    ind = 0 # F814W
-    stamp = star.cat.loc[ind, 'stamp'].copy()
-    # make a PSF to inject, but first use it as a matched filter to measure the
-    # star flux
-    psf = dutils.make_normalized_psf(
-        star.results.loc[ind, 'blip_model'].iloc[-1].copy(),
-        7, # 7x7 psf
-        1.,  # total flux of final PSF
+    inj_cat = make_injected_cat(star, pos, scale, -1)
+    results = inj_cat.apply(
+        star.row_klip_subtract,
+        sim_thresh=sim_thresh,
+        min_nref=min_nref,
+        axis=1
     )
-    # measure the primary star flux so you can set the contrast
-    star_flux = measure_primary_flux(stamp, psf)
-    # compute the companion flux at the given contrast
-    inj_flux = star_flux * scale
-    inj_stamp = inject_psf(stamp, psf * inj_flux, pos)
-
-    # perform PSF subtraction and detection
-
-    return stamp, psf, inj_stamp
+    snrmaps = results.apply(
+        star.row_make_snr_map,
+        axis=1
+    ).squeeze()
+    return snrmaps
+    # return stamp, psf, inj_stamp
