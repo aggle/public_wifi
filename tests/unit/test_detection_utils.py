@@ -1,5 +1,6 @@
 import pytest
-from public_wifi import detection_utils, starclass as sc
+
+from public_wifi import starclass as sc
 from public_wifi import detection_utils as dutils
 from public_wifi import misc
 
@@ -36,7 +37,7 @@ def test_apply_matched_filter(random_processed_star):
     stamp = (mf - mf.min())/dutils.np.ptp(mf)
     stamp = stamp / stamp.sum()
     print(f"Stamp sum: {stamp.sum():0.10e}")
-    stamp_center = misc.calc_stamp_center(stamp)
+    stamp_center = misc.get_stamp_center(stamp)
     mf_flux = dutils.apply_matched_filter(stamp, mf)[*stamp_center]
     print(f"MF flux: {mf_flux:0.10e}")
     assert(dutils.np.abs(mf_flux - stamp.sum()) < 1e-10)
@@ -107,7 +108,11 @@ def test_snr_map(random_processed_star):
         )
     )
 
-def test_group_candidates():
-    pass
 
-
+def test_flag_candidate_pixels(star_with_candidates):
+    star = star_with_candidates
+    snrmap = star.results['snrmap'].iloc[1]
+    flags = dutils.flag_candidate_pixels(snrmap, 3, 3)
+    assert(flags.ndim == 2)
+    assert(flags.dtype == bool)
+    assert(flags.any())

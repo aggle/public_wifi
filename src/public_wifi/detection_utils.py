@@ -7,6 +7,8 @@ from astropy.convolution import convolve
 from astropy.stats import sigma_clipped_stats
 from astropy.nddata import Cutout2D
 
+from public_wifi import misc
+
 def make_normalized_psf(
         psf_stamp : np.ndarray,
         width : int | None = None,
@@ -70,6 +72,27 @@ def make_series_snrmaps(residuals):
     snrmaps = residuals/std_maps
     return snrmaps
 
+
+def flag_candidate_pixels(
+        maps : np.ndarray | pd.Series,
+        thresh : float,
+        n_modes : int = 3
+) -> np.ndarray[bool]:
+    """
+    Flag pixels in a detection cube as True if they meet the detection
+    criteria, or False if they don't
+
+    Parameters
+    ----------
+    maps : np.array | pd.Series
+      A stack of detection maps, one per Kklip
+    """
+    stack = np.stack(maps)
+    stackmap = (stack >= thresh)
+    mode_detections = np.sum(stackmap.astype(int), axis=0)
+    detections = (mode_detections >= n_modes)
+    return detections
+
 def detect_snrmap(snrmaps, snr_thresh=5, n_modes=3) -> pd.Series | None:
     """
     Detect sources using the SNR maps
@@ -83,7 +106,6 @@ def detect_snrmap(snrmaps, snr_thresh=5, n_modes=3) -> pd.Series | None:
     A detection is a pixel that is over the threshold in at least three modes
     """
     stack = np.stack(snrmaps)
-    center_pixel = np.floor(((np.array(stack.shape[-2:])-1)/2)).astype(int)
     # get all the pixels over threshold
     initial_candidates = pd.DataFrame(
         np.where(stack >= snr_thresh),
@@ -92,6 +114,8 @@ def detect_snrmap(snrmaps, snr_thresh=5, n_modes=3) -> pd.Series | None:
     # no candidates? Quit early
     if len(initial_candidates) == 0:
         return None
+
+    center_pixel = misc.get_stamp_center(stack[0])
     initial_candidates['dy'] -= center_pixel[1]
     initial_candidates['dx'] -= center_pixel[0]
     # drop the central pixel
@@ -200,3 +224,4 @@ def jackknife_analysis(
     # now make it an SNR map
     jackknife = make_series_snrmaps(jackknife)
     return jackknife
+
