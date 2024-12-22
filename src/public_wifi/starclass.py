@@ -278,22 +278,29 @@ class Star:
         snr_maps = detutils.make_series_snrmaps(row['klip_sub'])
         return pd.Series({'snrmap': snr_maps})
 
-    def row_convolve_psf(self, row):
+    def row_convolve_psf(self, row, contrast=True):
+        """
+        Convolve a matched filter against a residual
+
+        contrast : bool = False
+          If true, convolve the model with the stamp and divide bu the flux
+        """
         df = pd.DataFrame(row[['klip_model', 'klip_sub']].to_dict())
         detmaps = df.apply(
             lambda dfrow : detutils.apply_matched_filter(dfrow['klip_sub'], dfrow['klip_model']),
             axis=1
         )
-        # center = int(np.floor(self.stamp_size/2))
-        # primary_fluxes = df.apply(
-        #     lambda dfrow : detutils.apply_matched_filter(
-        #         row['stamp'],
-        #         dfrow['klip_model'],
-        #         correlate_mode='valid',
-        #     )[0, 0],
-        #     axis=1
-        # )
-        # detmaps = detmaps/primary_fluxes
+        if contrast:
+            center = int(np.floor(self.stamp_size/2))
+            primary_fluxes = df.apply(
+                lambda dfrow : detutils.apply_matched_filter(
+                    row['stamp'],
+                    dfrow['klip_model'],
+                    correlate_mode='valid',
+                ).max(),
+                axis=1
+            )
+            detmaps = detmaps/primary_fluxes
         return pd.Series({'detmap': detmaps})
     def row_detect_snrmap_candidates(self, row, snr_thresh=3, n_modes=3):
         candidates = detutils.detect_snrmap(
