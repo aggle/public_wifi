@@ -91,4 +91,4 @@ def nonrandom_processed_star(processed_stars):
     return processed_stars.iloc[2]
 @pytest.fixture(scope='session')
 def star_with_candidates(processed_stars):
-    return processed_stars.loc["J042705.86+261520.3"]
+    return processed_stars.loc["J041947.39+281534.6"]
