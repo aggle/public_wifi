@@ -1,9 +1,8 @@
 import pytest
 import numpy as np
 from matplotlib import pyplot as plt
-from public_wifi import contrast_utils as cutils
-from public_wifi import detection_utils as dutils
-from tests.conftest import nonrandom_processed_star
+
+from public_wifi import contrast_utils as cutils, detection_utils
 
 
 def test_inject_psf(random_processed_star):
@@ -76,17 +75,36 @@ def test_make_injected_cat(nonrandom_processed_star):
         ).all()
     )
 
-def test_inject_subtract_detect(nonrandom_processed_star):
+# @pytest.mark.parametrize(
+#     ['scale', 'is_detectable'],
+#     [(1, True), (1e-10, False)] # one is detectable the other isn't
+# )
+def test_inject_subtract_detect(nonrandom_processed_star, scale=1., is_detectable=True):
     star = nonrandom_processed_star
     print("Testing injections on ", star.star_id)
     center = cutils.misc.get_stamp_center(star.cat.iloc[0]['stamp'])
-    pos = np.array((-3, -3))
+    pos = np.array((-2, -1))
     inj_pos = center + pos[::-1]
-    results = cutils.inject_subtract_detect(star, pos, 1, 0.5, 5)
-    # fig, axes = plt.subplots(nrows=1, ncols=3, figsize=(15, 5))
-    # for ax, stamp in zip(axes, stamps):
-    #     ax.imshow(stamp, origin='lower')
-    # plt.show()
+    row = star.cat.iloc[1]
+    results = cutils.row_inject_subtract_detect(
+        star,
+        row,
+        pos,
+        contrast=scale,
+        sim_thresh=0.5,
+        min_nref=5,
+        snr_thresh=5,
+        n_modes=3
+    )
     print(results)
-    # assert('klip_sub' in results.columns)
+    # assert(results.all() == is_detectable)
+    # print(results.all(), is_detectable)
+
+def test_build_contrast_curve(nonrandom_processed_star):
+    star = nonrandom_processed_star
+    row = star.cat.iloc[-1]
+    result = cutils.build_contrast_curve(star, row, 0.5, 5, 5, 3)
+    # print(result)
+    # print(cutils.pd.concat(result, axis=1))
+    print(result)
 

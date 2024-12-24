@@ -1,3 +1,4 @@
+import itertools
 import numpy as np
 import pandas as pd
 from public_wifi import misc
@@ -117,23 +118,87 @@ def make_injected_cat(star, pos, scale, kklip):
     return inj_cat
 
 
-def inject_subtract_detect(star, pos, scale, sim_thresh, min_nref):
+def row_inject_subtract_detect(
+        star,
+        row,
+        pos,
+        contrast,
+        sim_thresh,
+        min_nref,
+        snr_thresh,
+        n_modes
+):
     """
     Inject a PSF into a star and recover it.
     star : star object
     pos : (x, y) position relative to center
-    scale : contrast relative to primary
+    contrast : flux relative to primary
+    
+    Output
+    ------
+    True if injection is above SNR threshold, false if not
     """
-    inj_cat = make_injected_cat(star, pos, scale, -1)
-    results = inj_cat.apply(
-        star.row_klip_subtract,
+    inj_row = row_inject_psf(row, star=star, pos=pos, scale=contrast, kklip=-1)
+    results = star.row_klip_subtract(
+        inj_row,
         sim_thresh=sim_thresh,
         min_nref=min_nref,
-        axis=1
     )
-    snrmaps = results.apply(
-        star.row_make_snr_map,
-        axis=1
-    ).squeeze()
-    return snrmaps
-    # return stamp, psf, inj_stamp
+    snrmaps = star.row_make_snr_map(results).squeeze()
+    detmap = dutils.flag_candidate_pixels(
+        snrmaps,
+        thresh=snr_thresh,
+        n_modes=n_modes,
+    )
+    center = np.tile(np.floor((star.stamp_size-1)/2).astype(int), 2)
+    # recover the SNR at the injected position
+    inj_pos = center + np.array(pos)[::-1]
+    inj_snr = np.median(
+        np.stack(snrmaps.values)[..., inj_pos[0], inj_pos[1]]
+    )
+    # get the detection flag at the detected positions
+    is_detected = detmap[*inj_pos]
+    return inj_snr, is_detected
+
+
+def build_contrast_curve(
+        star,
+        row,
+        sim_thresh,
+        min_nref,
+        snr_thresh,
+        n_modes
+):
+    """
+    Return value is an array of the flux required for an snr_thresh detection
+    at a particular radius.
+    """
+    stamp_shape = star.stamp_size
+    center = np.floor((stamp_shape-1)/2).astype(int)
+    positions = itertools.combinations_with_replacement(
+        np.arange(stamp_shape)[2:-2] - center, 2
+    )
+    contrasts = [1., 0.5, 1e-1, 5e-2, 1e-2, 5e-3, 1e-3, 5e-4, 1e-4][:2]
+    detections = []
+    # detmap = np.zeros((stamp_shape, stamp_shape), dtype=bool)
+    pos = list(positions)[0]
+    detections = pd.DataFrame(None, columns=['contrast', 'pos', 'is_det'])
+    # initialize loop variables
+    is_detected, contrast = True, contrasts[0]
+    while is_detected:
+    # for contrast in contrasts:
+        snr, is_detected = row_inject_subtract_detect(
+            star,
+            star.cat.iloc[-1], 
+            pos, contrast,
+            sim_thresh,
+            min_nref,
+            snr_thresh,
+            n_modes
+        )
+        detection = pd.Series({'pos': pos, 'contrast': contrast, 'det': is_detected})
+        print(detection)
+        print(f"PSF detected with snr {snr:.2f} at {contrast:1.1e} contrast")
+        contrast = contrast / 1.1
+    return detections
+
