@@ -83,12 +83,15 @@ def process_catalog(
 
     snr_thresh = 5.
     n_modes = 3,
+
     Output
     ------
     stars : pd.Series
       A series where each entry is a Star object with the data and analysis results
 
     """
+    subtr_args = dict(min_nref=min_nref, sim_thresh=sim_thresh)
+    det_args = dict(snr_thresh=snr_thresh, n_modes=n_modes)
     # initialize the catalog
     stars = catalog_initialization(
         input_catalog,
@@ -102,11 +105,12 @@ def process_catalog(
     # perform PSF subtraction
     catalog_subtraction(
         stars,
-        sim_thresh=sim_thresh,
-        min_nref=min_nref
+        **subtr_args,
     )
     # perform the detection analysis
-    catalog_detection(stars, snr_thresh, n_modes)
+    catalog_detection(
+        stars, **det_args
+    )
     return stars
 
 

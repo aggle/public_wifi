@@ -157,3 +157,49 @@ def test_row_snr_map(random_processed_star):
     assert(len(snr_map['snrmap'])==len(row['klip_sub']))
     snr_maps = star.results.apply(star.row_make_snr_map, axis=1)
     assert(isinstance(snr_maps, sc.pd.DataFrame))
+
+
+@pytest.mark.parametrize('scale', list(range(1, 21)))
+def test_row_inject_psf(nonrandom_processed_star, scale):
+    star = nonrandom_processed_star
+    row = star.cat.iloc[1]
+    # scale = 10
+    # inj_row = cutils.row_inject_psf(row, star, (0, 0), scale, -1)
+    inj_row = star.row_inject_psf(row, (0, 0), scale, -1)
+    # fig, axes = plt.subplots(nrows=1, ncols=2, figsize=(10, 5))
+    # axes[0].imshow(row['stamp'])
+    # axes[1].imshow(inj_row['stamp'])
+    # plt.show()
+    inj_flux = sc.cutils.measure_primary_flux(inj_row['stamp'], row['stamp'])
+    stamp_flux = sc.cutils.measure_primary_flux(row['stamp'], row['stamp'])
+    flux_ratio = inj_flux/stamp_flux
+    print(inj_flux, stamp_flux, scale, flux_ratio)
+    # let's give ourselves a 5% margin
+    assert(sc.np.abs(flux_ratio/(scale+1) - 1) <= 0.05)
+
+@pytest.mark.parametrize('scale', list(range(1, 21)))
+def test_inject_subtract_detect(nonrandom_processed_star, scale):
+    star = nonrandom_processed_star
+    print("Testing injections on ", star.star_id)
+    center = sc.cutils.misc.get_stamp_center(star.cat.iloc[0]['stamp'])
+    pos = sc.np.array((-2, -1))
+    row = star.cat.iloc[1]
+    results = star.row_inject_subtract_detect(
+        row,
+        pos,
+        contrast=scale,
+        # sim_thresh=0.5,
+        # min_nref=5,
+        # snr_thresh=5,
+        # n_modes=3
+    )
+    print(results)
+    snr, is_detected = results
+    if (snr >= star.det_params['snr_thresh']):
+        assert(is_detected)
+    elif (snr < star.det_params['snr_thresh']):
+        assert(not is_detected)
+
+def test_set_subtr_parameters(nonrandom_processed_star):
+    star = nonrandom_processed_star
+    assert(hasattr(star, 'subtr_args'))

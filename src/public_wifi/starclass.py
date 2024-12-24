@@ -11,7 +11,8 @@ from astropy.wcs import WCS
 from astropy.stats import sigma_clipped_stats
 
 from public_wifi import subtraction_utils as subutils
-from public_wifi import detection_utils as detutils
+from public_wifi import detection_utils as dutils
+from public_wifi import contrast_utils as cutils
 
 class Star:
     """
@@ -39,14 +40,31 @@ class Star:
             stamp_size : int  = 15,
             match_by : list[str] = ['filter'],
             scale_stamps = False,
+            subtr_args : dict = {},
+            det_args : dict = {},
     ) -> None:
         """
         Initialize a Star object from a row of the catalog
 
         Parameters
         ----------
+        star_id : str,
+          unique star identifier
+        group : pd.DataFrame
+          the catalog entries for this star
+        data_folder : str | Path
+          parent folder where the exposure files are stored
+        stamp_size : int  = 15
+          stamp size to cut out for analysis
         match_by : list[str] = ['filter']
           a list of columns to use for matching targets with references. e.g. which filter
+        scale_stamps = False
+          if True, scale all stamps from 0 to 1
+        subtr_args : dict = {}
+          arguments passed to the PSF modeling and subtraction algorithm
+        det_args : dict = {}
+          arguments passed to the candidate detection algorithm
+
         """
         self.star_id = star_id
         self.stamp_size = stamp_size
@@ -56,6 +74,9 @@ class Star:
         # status flags
         self.is_good_reference = True # assumed True
         self.has_candidates = False
+        # processing function parameters
+        self.subtr_args = subtr_args
+        self.det_args = det_args
         # values that are initialized by methods
         self.cat['cutout'] = self.cat.apply(
             lambda row: self.get_cutout(row, stamp_size),
@@ -238,17 +259,32 @@ class Star:
         # update self.nrefs, the number of refs for each set
         self.update_nrefs()
 
-    def row_klip_subtract(self, row, sim_thresh=0.0, min_nref=2, jackknife_reference : str = ''):
+    def row_klip_subtract(
+            self,
+            row,
+            sim_thresh : float | None = 0.0,
+            min_nref : int | None = 2,
+            jackknife_reference : str = ''
+    ):
         """
         Wrapper for KLIP that can be applied on each row of star.cat
         row : star.cat row
-        sim_thresh : float = 0.0
+        sim_thresh : float | None = 0.0
           minimum similarity score to be included
-        min_nref : int = 2
+          If None, read from self.subtr_args
+        min_nref : int | None = 2
           flag at least this many refs as OK to use, in order of similarity score
+          If None, read from self.subtr_args
         jackknife_reference : str = ''
           during jackknife testing, exclude this reference
         """
+        # if the subtraction parameters are not provided, read them from the class attr
+        if sim_thresh is None:
+            sim_thresh = self.subtr_args['sim_thresh']
+        if min_nref is None:
+            min_nref = self.subtr_args['min_nref']
+        self.subtr_args=dict(sim_thresh=sim_thresh, min_nref=min_nref)
+
         target_stamp = row['stamp']
         # select the references
         reference_rows = self.row_get_references(row, sim_thresh, min_nref)
@@ -275,7 +311,7 @@ class Star:
         # resids = row['klip_sub']
         # std_maps = row['klip_sub'].apply(lambda img: sigma_clipped_stats(img)[-1])
         # snr_maps = resids/std_maps
-        snr_maps = detutils.make_series_snrmaps(row['klip_sub'])
+        snr_maps = dutils.make_series_snrmaps(row['klip_sub'])
         return pd.Series({'snrmap': snr_maps})
 
     def row_convolve_psf(self, row, contrast=True):
@@ -287,13 +323,13 @@ class Star:
         """
         df = pd.DataFrame(row[['klip_model', 'klip_sub']].to_dict())
         detmaps = df.apply(
-            lambda dfrow : detutils.apply_matched_filter(dfrow['klip_sub'], dfrow['klip_model']),
+            lambda dfrow : dutils.apply_matched_filter(dfrow['klip_sub'], dfrow['klip_model']),
             axis=1
         )
         if contrast:
             center = int(np.floor(self.stamp_size/2))
             primary_fluxes = df.apply(
-                lambda dfrow : detutils.apply_matched_filter(
+                lambda dfrow : dutils.apply_matched_filter(
                     row['stamp'],
                     dfrow['klip_model'],
                     correlate_mode='valid',
@@ -302,8 +338,21 @@ class Star:
             )
             detmaps = detmaps/primary_fluxes
         return pd.Series({'detmap': detmaps})
-    def row_detect_snrmap_candidates(self, row, snr_thresh=3, n_modes=3):
-        candidates = detutils.detect_snrmap(
+
+    def row_detect_snrmap_candidates(
+            self,
+            row,
+            snr_thresh : float | None = 3.,
+            n_modes : int | None  = 3
+    ):
+        # if the subtraction parameters are not provided, read them from the class attr
+        if snr_thresh is None:
+            snr_thresh = self.det_args.get('snr_thresh', 5.0)
+        if n_modes is None:
+            n_modes = self.det_args.get('n_modes', 3)
+        self.det_args = dict(snr_thresh=snr_thresh, n_modes=n_modes)
+
+        candidates = dutils.detect_snrmap(
             row['snrmap'],
             snr_thresh=snr_thresh,
             n_modes=n_modes
@@ -315,7 +364,60 @@ class Star:
 
     def jackknife_analysis(self, sim_thresh, min_nref):
         """Perform jackknife analysis"""
-        jackknife = detutils.jackknife_analysis(self, sim_thresh, min_nref)
+        jackknife = dutils.jackknife_analysis(self, sim_thresh, min_nref)
         return jackknife
-        
 
+
+
+    def row_inject_psf(self, row, pos, scale, kklip : int = -1) -> np.ndarray:
+        """
+        inject a PSF 
+        """
+        result_row = self.results.loc[row.name]
+        stamp = row['stamp']
+        # kklip is actually an index, not a mode number, so subtract 1 
+        if kklip != -1:
+            kklip -= 1
+        psf_model = dutils.make_normalized_psf(
+            result_row['klip_model'].iloc[kklip].copy(),
+            7, # 7x7 psf, hard-coded
+            1.,  # total flux of final PSF
+        )
+        star_flux = cutils.measure_primary_flux(stamp, psf_model)
+        # compute the companion flux at the given contrast
+        inj_flux = star_flux * scale
+        inj_stamp = cutils.inject_psf(stamp, psf_model * inj_flux, pos)
+        inj_row = row.copy()
+        inj_row['stamp'] = inj_stamp
+        return inj_row
+
+    def row_inject_subtract_detect(
+            self,
+            row : pd.Series,
+            pos : tuple[int],
+            contrast : float,
+    ) -> tuple[float, bool]:
+        """Inject, subtract, and detect fake PSFs. Uses the attribute argument parameters"""
+
+        inj_row = self.row_inject_psf(row, pos=pos, scale=contrast, kklip=-1)
+        results = self.row_klip_subtract(
+            inj_row,
+            sim_thresh=self.subtr_args['sim_thresh'],
+            min_nref=self.subtr_args['min_nref'],
+        )
+        snrmaps = self.row_make_snr_map(results).squeeze()
+        detmap = dutils.flag_candidate_pixels(
+            snrmaps,
+            thresh=self.det_args['snr_thresh'],
+            n_modes=self.det_args['n_modes'],
+        )
+        center = np.tile(np.floor((self.stamp_size-1)/2).astype(int), 2)
+        # recover the SNR at the injected position
+        inj_pos = center + np.array(pos)[::-1]
+        inj_snr = np.median(
+            np.stack(snrmaps.values)[..., inj_pos[0], inj_pos[1]]
+        )
+        # get the detection flag at the detected positions
+        is_detected = detmap[*inj_pos]
+        return inj_snr, is_detected
+ 
