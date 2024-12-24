@@ -31,12 +31,12 @@ def random_cat_rows(catalog):
     rows = catalog.query(f"target == '{star_id}'")
     return dict(star_id=rows)
 
-
 @pytest.fixture(scope='session')
 def high_snr_catalog(catalog):
     high_snr_stars = catalog.groupby("target")['snr'].sum().sort_values(ascending=False)[:20]
     high_snr_rows = catalog.query(f"target in {list(high_snr_stars.index)}").copy()
     return high_snr_rows
+
 
 @pytest.fixture(scope='session')
 def star(catalog, data_folder):
@@ -62,9 +62,9 @@ def all_stars(catalog, data_folder):
     return stars
 
 @pytest.fixture(scope='session')
-def processed_stars(high_snr_catalog, data_folder):
+def processed_stars(catalog, data_folder):
     stars = catproc.process_catalog(
-        input_catalog=high_snr_catalog,
+        input_catalog=catalog,
         star_id_column='target',
         match_references_on=['filter'],
         data_folder=data_folder,
@@ -72,8 +72,8 @@ def processed_stars(high_snr_catalog, data_folder):
         bad_references = [],
         scale_stamps = False,
         # psf subtraction args
-        min_nref = 3,
-        sim_thresh = 0.5,
+        min_nref = 8,
+        sim_thresh = 0.9,
         # detection args
         snr_thresh = 5.,
         n_modes = 3,

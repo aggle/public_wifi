@@ -123,7 +123,8 @@ def test_klip_subtract(all_stars):
     print("KLIP subtraction tested on ", star_id)
     star = all_stars.loc[star_id]
     star.set_references(all_stars, compute_similarity=True)
-    star.subtraction = star.cat.apply(star.row_klip_subtract, axis=1)
+    # run with default parameters
+    star.subtraction = star.run_klip_subtraction()
     # the RMS should be monotonically declining
     rms_descent = star.subtraction['klip_sub'].apply(
         lambda sub: all(sc.np.diff(sub.apply(sc.np.nanstd)) < 0)
@@ -133,11 +134,7 @@ def test_klip_subtract(all_stars):
 def test_jackknife_subtraction(star_with_candidates):
     star = star_with_candidates
     ref = sc.np.random.choice(star.references.index)[0]
-    klsub = star.cat.apply(
-        star.row_klip_subtract,
-        jackknife_reference=ref,
-        axis=1
-    )['klip_basis']
+    klsub = star.run_klip_subtraction(jackknife_reference=ref)['klip_sub']
     # get the number of jackknife reductions
     n_jackknife = klsub.apply(len).sum()
     # get the number of references
@@ -193,11 +190,10 @@ def test_inject_subtract_detect(nonrandom_processed_star, scale):
         # snr_thresh=5,
         # n_modes=3
     )
-    print(results)
     snr, is_detected = results
-    if (snr >= star.det_params['snr_thresh']):
+    if (snr >= star.det_args['snr_thresh']):
         assert(is_detected)
-    elif (snr < star.det_params['snr_thresh']):
+    elif (snr < star.det_args['snr_thresh']):
         assert(not is_detected)
 
 def test_set_subtr_parameters(nonrandom_processed_star):

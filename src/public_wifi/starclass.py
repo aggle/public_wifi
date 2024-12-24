@@ -259,11 +259,26 @@ class Star:
         # update self.nrefs, the number of refs for each set
         self.update_nrefs()
 
-    def row_klip_subtract(
+    def run_klip_subtraction(
             self,
-            row,
             sim_thresh : float | None = 0.0,
             min_nref : int | None = 2,
+            jackknife_reference : str = ''
+    ):
+        self.subtr_args.update(dict(
+            sim_thresh=sim_thresh,
+            min_nref=min_nref,
+        ))
+        self.subtraction = self.cat.apply(
+            self._row_klip_subtract,
+            jackknife_reference = jackknife_reference,
+            axis=1
+        )
+        results = self.cat.join(self.subtraction)
+        return results
+    def _row_klip_subtract(
+            self,
+            row,
             jackknife_reference : str = ''
     ):
         """
@@ -279,11 +294,8 @@ class Star:
           during jackknife testing, exclude this reference
         """
         # if the subtraction parameters are not provided, read them from the class attr
-        if sim_thresh is None:
-            sim_thresh = self.subtr_args['sim_thresh']
-        if min_nref is None:
-            min_nref = self.subtr_args['min_nref']
-        self.subtr_args=dict(sim_thresh=sim_thresh, min_nref=min_nref)
+        sim_thresh = self.subtr_args['sim_thresh']
+        min_nref = self.subtr_args['min_nref']
 
         target_stamp = row['stamp']
         # select the references
@@ -365,6 +377,11 @@ class Star:
     def jackknife_analysis(self, sim_thresh, min_nref):
         """Perform jackknife analysis"""
         jackknife = dutils.jackknife_analysis(self, sim_thresh, min_nref)
+        jackknife_name = jackknife.name
+        jackknife = self.cat.apply(
+            lambda row: pd.Series({jackknife_name: jackknife.loc[row.name]}, name=jackknife_name),
+            axis=1
+        )
         return jackknife
 
 
@@ -400,10 +417,10 @@ class Star:
         """Inject, subtract, and detect fake PSFs. Uses the attribute argument parameters"""
 
         inj_row = self.row_inject_psf(row, pos=pos, scale=contrast, kklip=-1)
-        results = self.row_klip_subtract(
+        results = self._row_klip_subtract(
             inj_row,
-            sim_thresh=self.subtr_args['sim_thresh'],
-            min_nref=self.subtr_args['min_nref'],
+            # sim_thresh=self.subtr_args['sim_thresh'],
+            # min_nref=self.subtr_args['min_nref'],
         )
         snrmaps = self.row_make_snr_map(results).squeeze()
         detmap = dutils.flag_candidate_pixels(

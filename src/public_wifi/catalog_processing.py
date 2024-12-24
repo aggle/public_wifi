@@ -201,19 +201,11 @@ def catalog_subtraction(
         star.set_references(stars, compute_similarity=True)
 
     for star in stars:
-        # gather subtraction results
-        star.subtraction = star.cat.apply(
-            star.row_klip_subtract,
-            sim_thresh=sim_thresh,
-            min_nref=min_nref,
-            axis=1
-        )
-        star.results = star.cat.join(star.subtraction)
-        # jackknife
+        # KLIP
+        star.results = star.run_klip_subtraction(sim_thresh=sim_thresh, min_nref=min_nref)
+        # Jackknife loop
         jackknife = star.jackknife_analysis(sim_thresh=sim_thresh, min_nref=min_nref)
-        jackknife_name = jackknife.name
-        jackknife = star.cat.apply(lambda row: pd.Series({jackknife.name: jackknife.loc[row.name]}), axis=1)
-        star.results[jackknife_name] = jackknife
+        star.results['jackknife'] = jackknife
     return
 
 

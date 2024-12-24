@@ -214,12 +214,10 @@ def jackknife_analysis(
     ref_iterator = {i: list(ref_targets[ref_targets != i]) for i in ref_targets}
     results = {}
     for r, refs in ref_iterator.items():
-        results[r] = star.cat.apply(
-            star.row_klip_subtract,
+        results[r] = star.run_klip_subtraction(
             sim_thresh=sim_thresh,
             min_nref=min_nref,
-            jackknife_reference=r,
-            axis=1
+            jackknife_reference=r
         )['klip_sub']
     # do two levels of concatenation to turn it onto a proper series
     jackknife = pd.concat(results, names=['target', 'index']).reorder_levels(['index', 'target'])

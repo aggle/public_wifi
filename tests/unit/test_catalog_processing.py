@@ -30,7 +30,6 @@ def test_catalog_initialization(catalog, data_folder):
         data_folder=data_folder,
         stamp_size=15,
         bad_references=bad_reference,
-        min_nrefs = 10,
     )
     unique_stars = catalog['target'].unique()
     assert(len(stars) == len(unique_stars))
@@ -52,7 +51,6 @@ def test_catalog_subtraction(catalog, data_folder):
         data_folder=data_folder,
         stamp_size=15,
         bad_references=bad_reference,
-        min_nrefs = 10,
     )
 
     sim_thresh = -1
