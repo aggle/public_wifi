@@ -10,6 +10,7 @@ from astropy.nddata import Cutout2D
 from astropy.wcs import WCS
 from astropy.stats import sigma_clipped_stats
 
+from public_wifi import misc
 from public_wifi import subtraction_utils as subutils
 from public_wifi import detection_utils as dutils
 from public_wifi import contrast_utils as cutils
@@ -42,6 +43,7 @@ class Star:
             scale_stamps = False,
             subtr_args : dict = {},
             det_args : dict = {},
+            center_stamps : bool = False,
     ) -> None:
         """
         Initialize a Star object from a row of the catalog
@@ -57,13 +59,16 @@ class Star:
         stamp_size : int  = 15
           stamp size to cut out for analysis
         match_by : list[str] = ['filter']
-          a list of columns to use for matching targets with references. e.g. which filter
+          a list of columns to use for matching targets with references. e.g.
+          which filter
         scale_stamps = False
           if True, scale all stamps from 0 to 1
         subtr_args : dict = {}
           arguments passed to the PSF modeling and subtraction algorithm
         det_args : dict = {}
           arguments passed to the candidate detection algorithm
+        center_stamps : bool = False
+          If True, use scipy.ndimage.shift to shift PSFs to the center
 
         """
         self.star_id = star_id
@@ -79,7 +84,7 @@ class Star:
         self.det_args = det_args
         # values that are initialized by methods
         self.cat['cutout'] = self.cat.apply(
-            lambda row: self.get_cutout(row, stamp_size),
+            lambda row: self._get_cutout(row, stamp_size),
             axis=1,
         )
         # measure the background
@@ -89,8 +94,15 @@ class Star:
             lambda row: row['cutout'].data.copy() - row['bgnd'][0],
             axis=1
         )
+        # stamp manipulation
         if scale_stamps:
-            self.cat['stamp'] = self.cat['stamp'].apply(self.scale_stamp)
+            self.cat['stamp'] = self.cat['stamp'].apply(misc.scale_stamp)
+        if center_stamps:
+            self.cat['stamp'] = self.cat['stamp'].apply(misc.center_stamp)
+
+        # this will hold the analysis results
+        self.results = pd.DataFrame()
+
         return
 
     # has_candidates should always be the opposite of is_good_reference
@@ -101,7 +113,7 @@ class Star:
     def has_candidates(self, new_val : bool):
         self._has_candidates = new_val
         # After the change in state, check and set, if necessary, the reference status
-        self.check_reference()
+        self._check_reference()
 
     @property
     def cat(self):
@@ -121,24 +133,25 @@ class Star:
         query = "and ".join(f"{m} == '{v}'" for m, v in match_values.items())
         return query
 
-    def check_reference(self):
+    def _check_reference(self):
         """This method checks for all the conditions"""
         is_ok = False
         if self.has_candidates == False:
             is_ok = True
         self.is_good_reference = is_ok
 
-    def get_cutout(
+    def _get_cutout(
             self,
             row,
             stamp_size : int,
+            ext : int | str = 'SCI'
     ) -> Cutout2D:
         """
         Cut out the stamp from the data
         """
         filepath = self.data_folder / row['file']
-        img = fits.getdata(str(filepath), 'SCI')
-        wcs = WCS(fits.getheader(str(filepath), 'SCI'))
+        img = fits.getdata(str(filepath), ext)
+        wcs = WCS(fits.getheader(str(filepath), ext))
         stamp = Cutout2D(
             img,
             (row['x'],row['y']),
@@ -164,10 +177,6 @@ class Star:
 
         return stamp
 
-    def scale_stamp(self, stamp):
-        # scale a stamp form 0 to 1
-        return (stamp - np.nanmin(stamp))/np.ptp(stamp)
-
     def measure_bgnd(self, stamp_size=51, bgnd_rad=20):
         """
         stamp_size = 51
@@ -175,7 +184,7 @@ class Star:
         bgnd_rad : 20
             pixels further from the center than this are used to measure the bgnd 
         """
-        bgnd_stamps = self.cat.apply(self.get_cutout, stamp_size=self.stamp_size, axis=1)
+        bgnd_stamps = self.cat.apply(self._get_cutout, stamp_size=self.stamp_size, axis=1)
         center = int(np.floor(self.stamp_size/2))
         sep_map = np.linalg.norm(np.mgrid[:self.stamp_size, :self.stamp_size] - center, axis=0)
         bgnd_mask = sep_map < bgnd_rad
@@ -319,23 +328,43 @@ class Star:
         # automatically merged with self.cat
         return pd.Series({s.name: s for s in [klip_basis_img, klip_model_img, klip_sub_img]})
 
-    def row_make_snr_map(self, row):
-        # resids = row['klip_sub']
-        # std_maps = row['klip_sub'].apply(lambda img: sigma_clipped_stats(img)[-1])
-        # snr_maps = resids/std_maps
+    def run_make_snr_maps(self):
+        """
+        Divide the residual stamps by their standard deviation
+        """
+        snrmaps = self.results.apply(
+            self._row_make_snr_map,
+            axis=1
+        ).squeeze()
+        return snrmaps
+
+    def _row_make_snr_map(self, row):
         snr_maps = dutils.make_series_snrmaps(row['klip_sub'])
         return pd.Series({'snrmap': snr_maps})
 
-    def row_convolve_psf(self, row, contrast=True):
+    def apply_matched_filter(self, contrast=True):
+        detmaps = self.results.apply(
+            self._row_convolve_psf,
+            contrast=contrast,
+            axis=1
+        ).squeeze()
+        return detmaps
+
+    def _row_convolve_psf(self, row, contrast=True):
         """
         Convolve a matched filter against a residual
 
         contrast : bool = False
           If true, convolve the model with the stamp and divide bu the flux
         """
-        df = pd.DataFrame(row[['klip_model', 'klip_sub']].to_dict())
+        df = pd.DataFrame(row[['klip_model', 'klip_sub', 'klip_basis']].to_dict())
         detmaps = df.apply(
-            lambda dfrow : dutils.apply_matched_filter(dfrow['klip_sub'], dfrow['klip_model']),
+            lambda dfrow : dutils.apply_matched_filter(
+                dfrow['klip_sub'],
+                dfrow['klip_model'],
+                # throughput_correction=True,
+                # kl_basis=dfrow['klip_basis']
+            ),
             axis=1
         )
         if contrast:
@@ -344,8 +373,8 @@ class Star:
                 lambda dfrow : dutils.apply_matched_filter(
                     row['stamp'],
                     dfrow['klip_model'],
-                    correlate_mode='valid',
-                ).max(),
+                    correlate_mode='same',
+                )[center, center],
                 axis=1
             )
             detmaps = detmaps/primary_fluxes
@@ -354,15 +383,14 @@ class Star:
     def row_detect_snrmap_candidates(
             self,
             row,
-            snr_thresh : float | None = 3.,
-            n_modes : int | None  = 3
     ):
         # if the subtraction parameters are not provided, read them from the class attr
-        if snr_thresh is None:
+        try:
             snr_thresh = self.det_args.get('snr_thresh', 5.0)
-        if n_modes is None:
             n_modes = self.det_args.get('n_modes', 3)
-        self.det_args = dict(snr_thresh=snr_thresh, n_modes=n_modes)
+        except KeyError as e:
+            print(f"Error: self.det_args probably not set")
+            raise e
 
         candidates = dutils.detect_snrmap(
             row['snrmap'],
@@ -370,12 +398,25 @@ class Star:
             n_modes=n_modes
         )
         if candidates is None:
-            candidates = pd.DataFrame(None, columns=['cand_id', 'pixel']
-            )
+            candidates = pd.DataFrame(None, columns=['cand_id', 'pixel'])
         return pd.Series({'snr_candidates': candidates})
 
     def jackknife_analysis(self, sim_thresh, min_nref):
         """Perform jackknife analysis"""
+        # if self.candidates.empty:
+        #     # provide an empty series
+        #     jackknife = self.cat.apply(
+        #         lambda row: pd.Series({
+        #             'klip_jackknife': pd.Series(
+        #                 [np.ones((self.stamp_size, self.stamp_size))*np.nan],
+        #                 index=[1])
+        #         }),
+        #         axis=1
+        #     )
+        if sim_thresh is None:
+            sim_thresh = self.subtr_args.get('sim_thresh', 5.0)
+        if min_nref is None:
+            min_nref = self.subtr_args.get('min_nref', 3)
         jackknife = dutils.jackknife_analysis(self, sim_thresh, min_nref)
         jackknife_name = jackknife.name
         jackknife = self.cat.apply(
@@ -413,28 +454,35 @@ class Star:
             row : pd.Series,
             pos : tuple[int],
             contrast : float,
+            snr_thresh : float = np.nan,
     ) -> tuple[float, bool]:
-        """Inject, subtract, and detect fake PSFs. Uses the attribute argument parameters"""
+        """
+        Inject, subtract, and detect fake PSFs. Uses the attribute argument parameters
+        snr_thresh : the SNR threshold to declare a detection.
+          If NaN, uses self.det_args. For contrast curves, provide the
+          significance level of the detection you wish to report.
+        """
+        if np.isnan(snr_thresh):
+            print("resetting thresh:")
+            snr_thresh = self.det_args['snr_thresh']
+        n_modes = self.det_args['n_modes']
 
         inj_row = self.row_inject_psf(row, pos=pos, scale=contrast, kklip=-1)
         results = self._row_klip_subtract(
             inj_row,
-            # sim_thresh=self.subtr_args['sim_thresh'],
-            # min_nref=self.subtr_args['min_nref'],
         )
-        snrmaps = self.row_make_snr_map(results).squeeze()
-        detmap = dutils.flag_candidate_pixels(
-            snrmaps,
-            thresh=self.det_args['snr_thresh'],
-            n_modes=self.det_args['n_modes'],
-        )
-        center = np.tile(np.floor((self.stamp_size-1)/2).astype(int), 2)
+        snrmaps = self._row_make_snr_map(results).squeeze()
         # recover the SNR at the injected position
+        center = np.tile(np.floor((self.stamp_size-1)/2).astype(int), 2)
         inj_pos = center + np.array(pos)[::-1]
         inj_snr = np.median(
             np.stack(snrmaps.values)[..., inj_pos[0], inj_pos[1]]
         )
         # get the detection flag at the detected positions
+        detmap = dutils.flag_candidate_pixels(
+            snrmaps,
+            thresh = snr_thresh,
+            n_modes = n_modes,
+        )
         is_detected = detmap[*inj_pos]
         return inj_snr, is_detected
- 

@@ -43,6 +43,8 @@ def apply_matched_filter(
         target_stamp : np.ndarray,
         psf_model : np.ndarray,
         correlate_mode='same',
+        throughput_correction : bool = False,
+        kl_basis : np.ndarray | None = None,
 ) -> np.ndarray:
     """
     Apply the matched filter as a correlation. Normalize by the matched filter norm.
@@ -60,10 +62,53 @@ def apply_matched_filter(
         matched_filter,
         method='direct',
         mode=correlate_mode)
-    detmap = detmap / np.linalg.norm(matched_filter)**2
-    # detmap = convolve(target_stamp, psf_model-psf_model.min(), normalize_kernel=True)
+    # detmap = detmap / np.linalg.norm(matched_filter)**2
+    # detmap = convolve(
+    #     target_stamp,
+    #     psf_model-psf_model.min(),
+    #     normalize_kernel=True
+    # )
+    if throughput_correction:
+        throughput = compute_throughput(matched_filter, klmodes=kl_basis)
+        detmap = detmap / throughput
     return detmap
 
+def compute_throughput(mf, klmodes=None) -> float | np.ndarray[float]:
+    """
+    Make a throughput map for flux calibration
+
+    Parameters
+    ----------
+    mf : np.ndarray
+      The matched filter. We will compute the correlation with the KL modes to
+      get the throughput.
+    klmodes : pd.Series
+      a pandas Series of the KL modes, reshaped into 2-D images
+
+    Output
+    ------
+    throughput_map : np.ndarray
+      A 2-D array, the same shape as the image, containing the throughput
+      correction to correct the detection map into PSF fluxes
+    """
+    # the first term in the throughput is the amplitude of the MF
+    throughput = apply_matched_filter(mf, mf, correlate_mode='valid')[0, 0]
+    # the second term is the amount of the MF captured by the KL basis at each
+    # position
+    if klmodes is not None:
+        # format kl modes as a series
+        if not isinstance(klmodes, pd.Series):
+            klmodes = pd.Series({i+1: mode for i, mode in enumerate(klmodes)})
+        mf_adjust = klmodes.apply(
+            lambda mode: apply_matched_filter(
+                mf,
+                mode,
+                throughput_correction=False
+            )**2
+        )
+        mf_adjust = np.sum(np.stack(mf_adjust), axis=0)
+        throughput = throughput - mf_adjust
+    return throughput
 
 
 def make_series_snrmaps(residuals):

@@ -23,6 +23,8 @@ def test_starclass_init(star):
     assert(isinstance(star, sc.Star))
     assert(hasattr(star, 'star_id'))
     assert(hasattr(star, 'cat'))
+    assert(hasattr(star, 'subtr_args'))
+    assert(hasattr(star, 'det_args'))
     assert(isinstance(star.cat, sc.pd.DataFrame))
     assert(isinstance(star.cat.iloc[0]['x'], float))
     assert('cat_id' in star.cat.columns)
@@ -142,19 +144,30 @@ def test_jackknife_subtraction(star_with_candidates):
     # Kklip_max = n_refs - 1, and jackknife removes another reference
     # so there should be 2 fewer references for each reduction
     assert((n_refs - n_jackknife) == 2*len(star.cat))
+    # star_jackknife = star.jackknife_analysis()
 
 def test_row_snr_map(random_processed_star):
     star = random_processed_star
     assert(hasattr(star, 'results'))
-    assert(hasattr(star, 'row_make_snr_map'))
+    assert(hasattr(star, '_row_make_snr_map'))
     assert('snrmap' in star.results.columns)
     # try one row
     row = star.results.iloc[0]
-    snr_map = star.row_make_snr_map(row)
+    snr_map = star._row_make_snr_map(row)
     assert(len(snr_map['snrmap'])==len(row['klip_sub']))
-    snr_maps = star.results.apply(star.row_make_snr_map, axis=1)
+    snr_maps = star.results.apply(star._row_make_snr_map, axis=1)
     assert(isinstance(snr_maps, sc.pd.DataFrame))
 
+def test_run_make_snr_maps(random_processed_star):
+    """
+    Make sure self.run_make_snr_maps() properly assigns the SNR maps to the
+    results dataframe
+    """
+    star = random_processed_star
+    assert(hasattr(star, 'results'))
+    assert(hasattr(star, 'run_make_snr_maps'))
+    star.run_make_snr_maps()
+    assert('snrmap' in star.results.columns)
 
 @pytest.mark.parametrize('scale', list(range(1, 21)))
 def test_row_inject_psf(nonrandom_processed_star, scale):
@@ -185,10 +198,6 @@ def test_inject_subtract_detect(nonrandom_processed_star, scale):
         row,
         pos,
         contrast=scale,
-        # sim_thresh=0.5,
-        # min_nref=5,
-        # snr_thresh=5,
-        # n_modes=3
     )
     snr, is_detected = results
     if (snr >= star.det_args['snr_thresh']):

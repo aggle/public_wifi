@@ -1,6 +1,7 @@
 import itertools
 import numpy as np
 import pandas as pd
+from scipy import optimize
 from public_wifi import misc
 from public_wifi import detection_utils as dutils
 from public_wifi import catalog_processing as catproc
@@ -139,10 +140,11 @@ def row_inject_subtract_detect(
     True if injection is above SNR threshold, false if not
     """
     inj_row = row_inject_psf(row, star=star, pos=pos, scale=contrast, kklip=-1)
-    results = star.row_klip_subtract(
+    results = star._row_klip_subtract(
         inj_row,
-        sim_thresh=sim_thresh,
-        min_nref=min_nref,
+        **star.det_args,
+        # sim_thresh=sim_thresh,
+        # min_nref=min_nref,
     )
     snrmaps = star.row_make_snr_map(results).squeeze()
     detmap = dutils.flag_candidate_pixels(
@@ -202,3 +204,46 @@ def build_contrast_curve(
         contrast = contrast / 1.1
     return detections
 
+
+def make_star_contrast_curves(
+        star,
+        ub : float = 1.,
+        lb : float = 1e-4
+) -> pd.DataFrame:
+    """
+    Generate the contrast curves for a star
+
+    Parameters
+    ----------
+    star : starclass.Star
+    ub : float = 1.
+      The upper bound of the contrasts to search
+    lb : float = 1e-4
+      Contrast search lower bound
+    """
+    def match_snr_thresh(contrast, row, pos, snr_thresh=5):
+        snr = star.row_inject_subtract_detect(row, pos, contrast, snr_thresh)[0]
+        return np.abs(snr - snr_thresh)
+    center = int(np.floor(star.stamp_size/2))
+    positions = list(itertools.product(
+        np.arange(star.stamp_size) - center,
+        np.arange(star.stamp_size) - center
+    ))
+    contrast_maps = {}
+    for i, results_row in star.results.iterrows():
+        row_positions = positions.copy()
+        # remove candidates from injection analysis
+        for pos in results_row['snr_candidates']['pixel']:
+            row_positions.pop(row_positions.index(pos))
+        contrast_df = pd.DataFrame(row_positions, columns=['x', 'y'], dtype=int)
+        for sigma in [5, 3, 1]:
+            contrast_df[f'{sigma}'] = contrast_df.apply(
+                lambda contrast_row: optimize.minimize_scalar(
+                    match_snr_thresh, 
+                    bounds=(lb, ub),
+                    args=(star.cat.loc[i], contrast_row[['x','y']].values.astype(int), sigma)
+                ).x,
+                axis=1
+            )
+        contrast_maps[i] = contrast_df
+    return contrast_maps

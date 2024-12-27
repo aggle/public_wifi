@@ -2,99 +2,85 @@
 Holder for plots that you make repeatedly
 """
 
+import numpy as np
+import pandas as pd
 import matplotlib as mpl
 from matplotlib import pyplot as plt
 import seaborn as sns
 
-from . import table_utils
-from . import shared_utils
-from . import plot_utils
-from . import db_manager
+from public_wifi import misc
 
 
-
-
-def plot_detector_with_grid(ax=None, dbm=None):
+def _contrast_list2map(
+        contrast_df : pd.DataFrame,
+        stamp_shape : int,
+        thresh_col : str = '5'
+):
     """
-    Plot the grid (as defined in the table grid_sector_definitions) overlaid
-    with the point source detections, all with pretty colors
-
+    Put the contrast dataframe in a 2-D image
+    
     Parameters
     ----------
-    ax : matplotlib axis (None)
-      axis to draw on
-    dbm : database manager instance (None)
-      the database to use for plotting
-
-    Output
-    ------
-    fig : the parent figure
-
+    contrast_df : pd.DataFrame
+      a dataframe with a column for the pixel coordinates and the contrast at a
+      particular threshold
+    stamp_shape : int
+      length of the side of the stamp
+    thresh : int = '5'
+      which threshold column to display
     """
-    if ax == None:
-        fig, ax = plt.subplots(1, 1, figsize=(10,10))
-    else:
-        fig = ax.get_figure()
+    center = misc.get_stamp_center(stamp_shape)
+    contrast_map = np.zeros((stamp_shape, stamp_shape), dtype=float) * np.nan
+    for i, row in contrast_df.iterrows():
+        x, y = int(row['x']+center[0]), int(row['y']+center[1])
+        contrast_map[y, x] = row[thresh_col]
+    return contrast_map
 
-    if dbm == None:
-        dbm = db_manager.DBManager() # use the default file
+def plot_contrast(star):
+    """
+    Plot the contrast curves for a star.
+    Reads the star.contrast_maps attribute
+    """
+    contrast_maps = star.contrast_maps
+    n_maps = len(contrast_maps)
+    ncols = n_maps
+    nrows = 2
 
-    plot_args = {'ls':'-', 'lw':1, 'c':'k'}
-    for i, row in dbm.grid_defs_tab.iterrows():
-        # bottom
-        ax.plot(row[['x_llim', 'x_ulim']], row[['y_llim','y_llim']], **plot_args)
-        # top
-        ax.plot(row[['x_llim', 'x_ulim']], row[['y_ulim','y_ulim']], **plot_args)
-        # left
-        ax.plot(row[['x_llim', 'x_llim']], row[['y_llim','y_ulim']], **plot_args)
-        # right
-        ax.plot(row[['x_ulim', 'x_ulim']], row[['y_llim','y_ulim']], **plot_args)
-        # label
-        text_x = row[['x_llim','x_ulim']].mean()
-        text_y = row[['y_llim','y_ulim']].mean()
-        ax.text(text_x, text_y, f"{row['sector_id']}",
-                color='k', fontsize='xx-large', fontweight='demibold',
-                horizontalalignment='center', verticalalignment='center')
-    xmin, ymin = dbm.grid_defs_tab[['x_llim', 'y_llim']].min()
-    xmax, ymax = dbm.grid_defs_tab[['x_ulim', 'y_ulim']].max()
-    ax.set_xlim(xmin, xmax)
-    ax.set_ylim(ymin, ymax)
+    fig, axes = plt.subplots(
+        ncols=ncols,
+        nrows=nrows,
+        figsize = (4*ncols, 4*nrows),
+        layout='constrained',
+        sharey='row', sharex='row',
+        squeeze=False,
+    )
+    fig.suptitle(f"{star.star_id}\nContrast plots")
 
-    # draw point sources
-    ps_sec_tab = dbm.ps_tab.merge(dbm.lookup_dict['lookup_point_source_sectors'], on='ps_id')
-    sector_colors = mpl.cm.rainbow_r(dbm.grid_defs_tab.index/dbm.grid_defs_tab.index.size)
-    for i, group in enumerate(ps_sec_tab.groupby('sector_id').groups.items()):
-        ps_sector = ps_sec_tab.loc[group[1]]
-        sector_color = sector_colors[i]
-        ax.scatter(ps_sector['ps_x_exp'], ps_sector['ps_y_exp'], marker='.',
-                   s=50, c=[sector_color])
-    ax.set_aspect('equal')
+    for ax_col, contrast_df in zip(axes.T, contrast_maps.items()):
+        map_id, contrast_df = contrast_df
+        map_name = ' '.join(star.cat.loc[map_id, star.match_by].values)
+
+        ax_col[0].set_title(map_name)
+        # make the map
+        ax = ax_col[0]
+        contrast_map = _contrast_list2map(contrast_df, star.stamp_size, '5')
+        # compute the radial contrast
+        imax = ax.imshow(contrast_map, origin='lower', vmax=1)
+        fig.colorbar(imax, ax=ax)
+
+        ax = ax_col[1]
+        contrast_df['rad'] = contrast_df.apply(
+            lambda row: np.linalg.norm(row[['x','y']]),
+            axis=1
+        )
+        contrast_rad = contrast_df.drop(columns=['x','y']).groupby("rad").mean()
+        for sigma_thresh in contrast_rad.columns:
+            ax.plot(
+                contrast_rad.index,
+                contrast_rad[sigma_thresh],
+                label=sigma_thresh
+            )
+        ax.legend(title='Sigma threshold')
+        # print(map_name, contrast_df)
+        ax.set_yscale("log")
     return fig
-
-def plot_correlation_matrix(subtr_man, which='mse', ax=None):
-    """
-    Plot the correlation matrix. Takes asubtraction manager object with the correlation
-    matrices already computed
-
-    Parameters
-    ----------
-    subtr_man : a SubtrManager instance
-    which : str ['mse']
-      which matrix to plot. options: mse, pcc, ssim
-    ax : matplotlib axis [None]
-      axis object to plot on
-
-    Output
-    ------
-    fig : parent figure object
-
-    """
-    if ax == None:
-        fig, ax = plt.subplots(1, 1)
-    else:
-        fig = ax.get_figure()
-
-
-
-    return fig
- 
