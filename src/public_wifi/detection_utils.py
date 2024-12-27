@@ -32,8 +32,10 @@ def make_normalized_psf(
     norm_psf *= scale
     return norm_psf
 
-def make_matched_filter(stamp, width : int | None = None):
+def make_matched_filter(stamp, width : int | None = 7):
     # take in an arbitrary PSF stamp and turn it into a matched filter
+    if width > min(stamp.shape):
+        width = min(stamp.shape)
     stamp = stamp.copy()
     normalized_stamp = make_normalized_psf(stamp, width)
     normalized_stamp -= np.nanmean(normalized_stamp)
@@ -42,6 +44,7 @@ def make_matched_filter(stamp, width : int | None = None):
 def apply_matched_filter(
         target_stamp : np.ndarray,
         psf_model : np.ndarray,
+        mf_width : int = 7,
         correlate_mode='same',
         throughput_correction : bool = False,
         kl_basis : np.ndarray | pd.Series | None = None,
@@ -61,7 +64,7 @@ def apply_matched_filter(
       If provided, include the KLIP basis in the throughput correction
       It must be only the KLIP basis up to the Kklip of the PSF model
     """
-    matched_filter = make_matched_filter(psf_model)
+    matched_filter = make_matched_filter(psf_model, width=mf_width)
     detmap = correlate(
         target_stamp,
         matched_filter,
@@ -69,12 +72,23 @@ def apply_matched_filter(
         mode=correlate_mode)
     if throughput_correction:
         throughput = compute_throughput(matched_filter, klmodes=kl_basis)
+        if isinstance(throughput, pd.Series):
+            throughput = throughput.iloc[-1]
+        elif isinstance(throughput, np.ndarray):
+            throughput = throughput[-1]
+        else:
+            pass
         detmap = detmap / throughput
     return detmap
 
-def compute_throughput(mf, klmodes=None) -> float | np.ndarray[float]:
+def compute_throughput(
+        mf : np.ndarray,
+        klmodes : None | pd.Series | np.ndarray = None
+) -> float | pd.Series:
     """
-    Make a throughput map for flux calibration
+    Make a throughput map for flux calibration. The MF is usually derived from
+    the Nth mode of the KLIP PSF model. The klmodes array should include all
+    the basis vectors up to the Nth mode.
 
     Parameters
     ----------
@@ -86,12 +100,19 @@ def compute_throughput(mf, klmodes=None) -> float | np.ndarray[float]:
 
     Output
     ------
-    throughput_map : np.ndarray
-      A 2-D array, the same shape as the image, containing the throughput
-      correction to correct the detection map into PSF fluxes
+    throughput_map : float | pd.Series
+      If no KLIP basis is provided, returns a single number that is the norm^2
+      of the matched filter. If a KLIP basis *is* provided, it returns the
+      throughput corresponding to each mode in the basis as a pandas Series
+      indexed by Kklip where each entry is the throughput for the corresponding
+      Kklip
     """
     # the first term in the throughput is the amplitude of the MF
-    throughput = apply_matched_filter(mf, mf, correlate_mode='valid')[0, 0]
+    throughput = apply_matched_filter(
+        mf, mf,
+        throughput_correction=False,
+        correlate_mode='valid'
+    )[0,0]
     # the second term is the amount of the MF captured by the KL basis at each
     # position
     if klmodes is not None:
@@ -106,8 +127,8 @@ def compute_throughput(mf, klmodes=None) -> float | np.ndarray[float]:
                 throughput_correction=False
             )**2
         )
-        mf_adjust = mf_adjust.sum()
-        throughput = np.stack(throughput - mf_adjust)
+        mf_adjust = mf_adjust.cumsum()
+        throughput = throughput - mf_adjust
     return throughput
 
 

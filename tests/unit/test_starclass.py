@@ -47,7 +47,7 @@ def test_starclass_get_cutout(star, data_folder):
     print("Getting stamp from " + star.star_id)
     assert(data_folder.exists())
     stamp_size = 15
-    stamps = star.cat.apply(lambda row: star.get_cutout(row, stamp_size), axis=1)
+    stamps = star.cat.apply(lambda row: star._get_cutout(row, stamp_size), axis=1)
     assert(all(stamps.apply(lambda el: el.shape == (stamp_size, stamp_size))))
     assert(all(stamps.apply(lambda el: isinstance(el, sc.Cutout2D))))
     maxes = stamps.apply(lambda s: sc.np.unravel_index(s.data.argmax(), s.data.shape))
@@ -103,7 +103,7 @@ def test_query_references(all_stars):
 
 
 def test_scale_stamp(star):
-    scaled_stamps = star.cat['stamp'].apply(star.scale_stamp)
+    scaled_stamps = star.cat['stamp'].apply(sc.misc.scale_stamp)
     for stamp in scaled_stamps:
         assert(sc.np.nanmin(stamp) < 1e-10)
         assert(sc.np.abs(sc.np.nanmax(stamp) - 1) < 1e-10)

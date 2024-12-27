@@ -351,7 +351,12 @@ class Star:
         ).squeeze()
         return detmaps
 
-    def _row_convolve_psf(self, row, contrast=True, throughput_correction=False):
+    def _row_convolve_psf(
+            self,
+			row,
+			throughput_correction=False,
+			contrast=True,
+    ) -> pd.Series:
         """
         Convolve a matched filter against a residual
 
@@ -359,16 +364,27 @@ class Star:
           If true, convolve the model with the stamp and divide bu the flux
         """
         df = pd.DataFrame(row[['klip_model', 'klip_sub', 'klip_basis']].to_dict())
-        # df['klip_basis'] = df['klip_basis'].cumsum()
+        # convolve each Kklip PSF model against the corresponding residual
         detmaps = df.apply(
             lambda dfrow : dutils.apply_matched_filter(
                 dfrow['klip_sub'],
                 dfrow['klip_model'],
-                throughput_correction=throughput_correction,
-                kl_basis=dfrow['klip_basis'].loc[:dfrow.name]
+                mf_width = 7,
+                throughput_correction=False,
             ),
             axis=1
         )
+        # compute the throughput correction for each Kklip
+        if throughput_correction:
+            thpt = df.apply(
+                lambda dfrow : dutils.compute_throughput(
+                    dutils.make_matched_filter(dfrow['klip_model'], 7),
+                    # index by Kklip
+                    df.loc[:dfrow.name, 'klip_basis']
+                ).iloc[-1],
+                axis=1
+            )
+            detmaps = detmaps/thpt
         if contrast:
             center = int(np.floor(self.stamp_size/2))
             primary_fluxes = df.apply(

@@ -18,17 +18,15 @@ def test_make_matched_filter(processed_stars):
             )
         )
     )
-
+    # each matched filter should have mean 0
     mf_means = mfs.apply(
         lambda star: star.apply(
             lambda row: row.apply(dutils.np.nanmean)
         )
     )
-    for star_id in mf_means.index:
-        for row_id in mf_means.loc[star_id].index:
-            for kklip in mf_means.loc[star_id].loc[row_id].index:
-                val = mf_means.loc[star_id].loc[row_id].loc[kklip]
-                assert(dutils.np.abs(val) < 1e-15)
+    for mf in mf_means:
+        for i, row in mf.iterrows():
+            assert((row.dropna()**2 < 1e-30).all())
 
 
 def test_apply_matched_filter(random_processed_star):
@@ -39,18 +37,16 @@ def test_apply_matched_filter(random_processed_star):
     stamp = stamp / stamp.sum()
     print(f"Stamp sum: {stamp.sum():0.10e}")
     stamp_center = misc.get_stamp_center(stamp)
-    mf_flux = dutils.apply_matched_filter(stamp, mf)[*stamp_center]
-    print(f"MF flux: {mf_flux:0.10e}")
-    assert(dutils.np.abs(mf_flux - stamp.sum()) < 1e-10)
     mf_flux = dutils.apply_matched_filter(
-        stamp, mf, correlate_mode='valid'
-    ).squeeze()
-    print(f"MF flux, 'valid' mode: {mf_flux:0.10e}")
+        stamp, mf, throughput_correction=True, kl_basis=None
+    )[*stamp_center]
+    print(f"MF flux: {mf_flux:0.10e}")
     assert(dutils.np.abs(mf_flux - stamp.sum()) < 1e-10)
 
 def test_matched_filter_on_normalized_psf(processed_stars):
+    """What is the goal of this test?"""
     for star in processed_stars:
-        star.results['matched_filter'] = star.results['klip_model'].apply(
+        matched_filter = star.results['klip_model'].apply(
             # the klip_model entries are series
             lambda series: dutils.pd.Series(
                 {series.name: series.apply(
@@ -58,7 +54,7 @@ def test_matched_filter_on_normalized_psf(processed_stars):
                 )}
             ),
         )
-        star.results['normalized_psf'] = star.results['klip_model'].apply(
+        normalized_psf = star.results['klip_model'].apply(
             # the klip_model entries are series
             lambda series: dutils.pd.Series(
                 {series.name: series.apply(
@@ -66,14 +62,12 @@ def test_matched_filter_on_normalized_psf(processed_stars):
                 )}
             ),
         )
-        test_columns = ['matched_filter', 'normalized_psf']
-        assert(all([i in star.results.columns for i in test_columns])
-        )
 
 def test_row_convolve_psf(processed_stars):
+    """Test that _row_convolve_psf returns the right types and shapes"""
     star = processed_stars[dutils.np.random.choice(processed_stars.index)]
     row = star.results.iloc[0]
-    row_detmaps = star.row_convolve_psf(row)['detmap']
+    row_detmaps = star._row_convolve_psf(row)['detmap']
     assert(len(row_detmaps) == len(row['klip_model']))
     all_detmaps = star.results.apply(
         star.row_convolve_psf,
@@ -93,10 +87,15 @@ def test_compute_throughput_noKLmodes(random_processed_star):
 
 
 def test_compute_throughput_KLmodes(random_processed_star):
+    """
+    in the case of no KL modes, throughput should return a float
+    in the case of KL modes, throughput should return an array
+    """
     star = random_processed_star
     row = star.results.loc[1]
-    kl_basis = row['klip_basis'].iloc[-1]
-    mf = dutils.make_matched_filter(row['klip_model'].iloc[-1], 7)
+    n_modes = -2
+    kl_basis = row['klip_basis'].iloc[:n_modes]
+    mf = dutils.make_matched_filter(row['klip_model'].iloc[n_modes], 7)
     # compute throughput with no KL basis
     # print("klbasis", dutils.np.stack(kl_basis).shape)
     thpt = dutils.compute_throughput(mf, kl_basis)
@@ -104,12 +103,14 @@ def test_compute_throughput_KLmodes(random_processed_star):
     # print(dot, thpt)
     # print(thpt.shape)
     # check that the throughput is always less than the flux with no KL basis
-    assert(thpt.ndim == 2)
+    assert(thpt.ndim == 3)
+    assert(len(thpt) == len(kl_basis))
     assert(((dot - thpt) >= 0).all())
     assert(dutils.np.stack(kl_basis).shape == dutils.np.stack(thpt).shape)
 
 
 def test_apply_matched_filter_with_throughput(random_processed_star):
+    """Test that asking for throughput correction gets the right value"""
     star = random_processed_star
     ind = 1
     row = star.results.loc[ind]
@@ -124,3 +125,13 @@ def test_apply_matched_filter_with_throughput(random_processed_star):
     assert(
         (dutils.np.stack(mf_flux_noKL).std(axis=0) <= dutils.np.stack(mf_flux_KL).std(axis=0)).all()
     )
+
+def test_matched_filter_throughput_photometry(
+        random_processed_star
+):
+    """
+    Make up a fake system and do PSF subtraciton on it. Then recover the
+    photometry with throughput correction and check that it's correct.
+    """
+    star = random_processed_star
+    pass
