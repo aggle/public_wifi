@@ -100,14 +100,15 @@ def compute_throughput(mf, klmodes=None) -> float | np.ndarray[float]:
         if not isinstance(klmodes, pd.Series):
             klmodes = pd.Series({i+1: mode for i, mode in enumerate(klmodes)})
         mf_adjust = klmodes.apply(
-            lambda mode: apply_matched_filter(
+            lambda klmode: apply_matched_filter(
+                klmode,
                 mf,
-                mode,
+                correlate_mode='same',
                 throughput_correction=False
             )**2
         )
-        mf_adjust = np.sum(np.stack(mf_adjust), axis=0)
-        throughput = throughput - mf_adjust
+        mf_adjust = mf_adjust.cumsum()
+        throughput = np.stack(throughput - mf_adjust)
     return throughput
 
 

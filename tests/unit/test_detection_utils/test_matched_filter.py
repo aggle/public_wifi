@@ -92,17 +92,35 @@ def test_compute_throughput_noKLmodes(random_processed_star):
     assert(dutils.np.abs(thpt - dot) <= 1e-15)
 
 
-def test_compute_throughput_KLmodes(nonrandom_processed_star):
-    star = nonrandom_processed_star
+def test_compute_throughput_KLmodes(random_processed_star):
+    star = random_processed_star
     row = star.results.loc[1]
     kl_basis = row['klip_basis']
     mf = dutils.make_matched_filter(row['klip_model'].iloc[-1], 7)
     # compute throughput with no KL basis
+    # print("klbasis", dutils.np.stack(kl_basis).shape)
     thpt = dutils.compute_throughput(mf, kl_basis)
     dot = dutils.np.dot(mf.ravel(), mf.ravel())
     # print(dot, thpt)
+    # print(thpt.shape)
     # check that the throughput is always less than the flux with no KL basis
     assert(thpt.ndim == 3)
     assert(((dot - thpt) >= 0).all())
     assert(dutils.np.stack(kl_basis).shape == dutils.np.stack(thpt).shape)
 
+
+def test_apply_matched_filter_with_throughput(random_processed_star):
+    star = random_processed_star
+    row = star.results.loc[1]
+    kl_basis = row['klip_basis']
+    stamp = star.cat.loc[row.name, 'stamp']
+    mf = dutils.make_matched_filter(row['klip_model'].iloc[-1], 7)
+    print("Testing matched filter throughput on ", star.star_id)
+    mf_flux = dutils.apply_matched_filter(
+        stamp,
+	    mf,
+	    'same',
+	    throughput_correction=True,
+        kl_basis=kl_basis
+    )
+    print(mf_flux.shape)
