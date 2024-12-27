@@ -23,6 +23,8 @@ def test_starclass_init(star):
     assert(isinstance(star, sc.Star))
     assert(hasattr(star, 'star_id'))
     assert(hasattr(star, 'cat'))
+    assert(hasattr(star, 'subtr_args'))
+    assert(hasattr(star, 'det_args'))
     assert(isinstance(star.cat, sc.pd.DataFrame))
     assert(isinstance(star.cat.iloc[0]['x'], float))
     assert('cat_id' in star.cat.columns)
@@ -123,7 +125,8 @@ def test_klip_subtract(all_stars):
     print("KLIP subtraction tested on ", star_id)
     star = all_stars.loc[star_id]
     star.set_references(all_stars, compute_similarity=True)
-    star.subtraction = star.cat.apply(star.row_klip_subtract, axis=1)
+    # run with default parameters
+    star.subtraction = star.run_klip_subtraction()
     # the RMS should be monotonically declining
     rms_descent = star.subtraction['klip_sub'].apply(
         lambda sub: all(sc.np.diff(sub.apply(sc.np.nanstd)) < 0)
@@ -133,11 +136,7 @@ def test_klip_subtract(all_stars):
 def test_jackknife_subtraction(star_with_candidates):
     star = star_with_candidates
     ref = sc.np.random.choice(star.references.index)[0]
-    klsub = star.cat.apply(
-        star.row_klip_subtract,
-        jackknife_reference=ref,
-        axis=1
-    )['klip_basis']
+    klsub = star.run_klip_subtraction(jackknife_reference=ref)['klip_sub']
     # get the number of jackknife reductions
     n_jackknife = klsub.apply(len).sum()
     # get the number of references
@@ -145,15 +144,67 @@ def test_jackknife_subtraction(star_with_candidates):
     # Kklip_max = n_refs - 1, and jackknife removes another reference
     # so there should be 2 fewer references for each reduction
     assert((n_refs - n_jackknife) == 2*len(star.cat))
+    # star_jackknife = star.jackknife_analysis()
 
 def test_row_snr_map(random_processed_star):
     star = random_processed_star
     assert(hasattr(star, 'results'))
-    assert(hasattr(star, 'row_make_snr_map'))
+    assert(hasattr(star, '_row_make_snr_map'))
     assert('snrmap' in star.results.columns)
     # try one row
     row = star.results.iloc[0]
-    snr_map = star.row_make_snr_map(row)
+    snr_map = star._row_make_snr_map(row)
     assert(len(snr_map['snrmap'])==len(row['klip_sub']))
-    snr_maps = star.results.apply(star.row_make_snr_map, axis=1)
+    snr_maps = star.results.apply(star._row_make_snr_map, axis=1)
     assert(isinstance(snr_maps, sc.pd.DataFrame))
+
+def test_run_make_snr_maps(random_processed_star):
+    """
+    Make sure self.run_make_snr_maps() properly assigns the SNR maps to the
+    results dataframe
+    """
+    star = random_processed_star
+    assert(hasattr(star, 'results'))
+    assert(hasattr(star, 'run_make_snr_maps'))
+    star.run_make_snr_maps()
+    assert('snrmap' in star.results.columns)
+
+@pytest.mark.parametrize('scale', list(range(1, 21)))
+def test_row_inject_psf(nonrandom_processed_star, scale):
+    star = nonrandom_processed_star
+    row = star.cat.iloc[1]
+    # scale = 10
+    # inj_row = cutils.row_inject_psf(row, star, (0, 0), scale, -1)
+    inj_row = star.row_inject_psf(row, (0, 0), scale, -1)
+    # fig, axes = plt.subplots(nrows=1, ncols=2, figsize=(10, 5))
+    # axes[0].imshow(row['stamp'])
+    # axes[1].imshow(inj_row['stamp'])
+    # plt.show()
+    inj_flux = sc.cutils.measure_primary_flux(inj_row['stamp'], row['stamp'])
+    stamp_flux = sc.cutils.measure_primary_flux(row['stamp'], row['stamp'])
+    flux_ratio = inj_flux/stamp_flux
+    print(inj_flux, stamp_flux, scale, flux_ratio)
+    # let's give ourselves a 5% margin
+    assert(sc.np.abs(flux_ratio/(scale+1) - 1) <= 0.05)
+
+@pytest.mark.parametrize('scale', list(range(1, 21)))
+def test_inject_subtract_detect(nonrandom_processed_star, scale):
+    star = nonrandom_processed_star
+    print("Testing injections on ", star.star_id)
+    center = sc.cutils.misc.get_stamp_center(star.cat.iloc[0]['stamp'])
+    pos = sc.np.array((-2, -1))
+    row = star.cat.iloc[1]
+    results = star.row_inject_subtract_detect(
+        row,
+        pos,
+        contrast=scale,
+    )
+    snr, is_detected = results
+    if (snr >= star.det_args['snr_thresh']):
+        assert(is_detected)
+    elif (snr < star.det_args['snr_thresh']):
+        assert(not is_detected)
+
+def test_set_subtr_parameters(nonrandom_processed_star):
+    star = nonrandom_processed_star
+    assert(hasattr(star, 'subtr_args'))

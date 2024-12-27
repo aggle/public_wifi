@@ -30,7 +30,6 @@ def test_catalog_initialization(catalog, data_folder):
         data_folder=data_folder,
         stamp_size=15,
         bad_references=bad_reference,
-        min_nrefs = 10,
     )
     unique_stars = catalog['target'].unique()
     assert(len(stars) == len(unique_stars))
@@ -52,7 +51,6 @@ def test_catalog_subtraction(catalog, data_folder):
         data_folder=data_folder,
         stamp_size=15,
         bad_references=bad_reference,
-        min_nrefs = 10,
     )
 
     sim_thresh = -1
@@ -83,7 +81,6 @@ def test_catalog_detection(catalog, data_folder):
         data_folder=data_folder,
         stamp_size=15,
         bad_references=bad_reference,
-        min_nrefs = 10,
     )
     sim_thresh = -1
     min_nref = 1
@@ -97,6 +94,7 @@ def test_catalog_detection(catalog, data_folder):
     catproc.catalog_detection(stars, snr_thresh, n_modes)
     # check that the columns were added
     det_cols = ['detmap', 'snrmap', 'snr_candidates']
+    print(stars.iloc[0].results.columns)
     for star in stars:
         assert(all([ c in star.results.columns for c in det_cols]))
 

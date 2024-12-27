@@ -52,6 +52,7 @@ def process_catalog(
         stamp_size : int = 11,
         bad_references : list = [],
         scale_stamps : bool = False,
+        center_stamps : bool = False,
         # psf subtraction args
         min_nref : int = 2,
         sim_thresh : float = 0.5,
@@ -83,30 +84,41 @@ def process_catalog(
 
     snr_thresh = 5.
     n_modes = 3,
+
     Output
     ------
     stars : pd.Series
       A series where each entry is a Star object with the data and analysis results
 
     """
+    subtr_args = dict(min_nref=min_nref, sim_thresh=sim_thresh)
+    det_args = dict(snr_thresh=snr_thresh, n_modes=n_modes)
     # initialize the catalog
     stars = catalog_initialization(
         input_catalog,
-        star_id_column,
-        match_references_on,
-        data_folder,
-        stamp_size,
-        bad_references,
-        scale_stamps,
+        star_id_column=star_id_column,
+        match_references_on=match_references_on,
+        data_folder=data_folder,
+        stamp_size=stamp_size,
+        bad_references=bad_references,
+        scale_stamps=scale_stamps,
+        center_stamps=center_stamps,
     )
     # perform PSF subtraction
     catalog_subtraction(
         stars,
-        sim_thresh=sim_thresh,
-        min_nref=min_nref
+        **subtr_args,
     )
     # perform the detection analysis
-    catalog_detection(stars, snr_thresh, n_modes)
+    catalog_detection(
+        stars, **det_args
+    )
+
+    # perform the candidate checking
+    catalog_candidate_validation(
+        stars,
+        **subtr_args,
+    )
     return stars
 
 
@@ -118,6 +130,7 @@ def catalog_initialization(
         stamp_size : int = 15,
         bad_references : str | list[str] = [],
         scale_stamps : bool = False,
+        center_stamps : bool = False,
 ) -> pd.Series :
     """
     initialize the Star objects as a series. This includes creating the
@@ -161,6 +174,7 @@ def catalog_initialization(
             stamp_size = stamp_size,
             match_by = match_references_on,
             scale_stamps=scale_stamps,
+            center_stamps=center_stamps,
         ),
         include_groups=False
     )
@@ -197,19 +211,8 @@ def catalog_subtraction(
         star.set_references(stars, compute_similarity=True)
 
     for star in stars:
-        # gather subtraction results
-        star.subtraction = star.cat.apply(
-            star.row_klip_subtract,
-            sim_thresh=sim_thresh,
-            min_nref=min_nref,
-            axis=1
-        )
-        star.results = star.cat.join(star.subtraction)
-        # jackknife
-        jackknife = star.jackknife_analysis(sim_thresh=sim_thresh, min_nref=min_nref)
-        jackknife_name = jackknife.name
-        jackknife = star.cat.apply(lambda row: pd.Series({jackknife.name: jackknife.loc[row.name]}), axis=1)
-        star.results[jackknife_name] = jackknife
+        # KLIP
+        star.results = star.run_klip_subtraction(sim_thresh=sim_thresh, min_nref=min_nref)
     return
 
 
@@ -224,24 +227,39 @@ def catalog_detection(
     Parameters
     ----------
     all_stars : pd.Series
-      pandas Series where each entry is a starclass.Star object, and the index is the star identifier
+      pandas Series where each entry is a starclass.Star object, and the index
+      is the star identifier
+
+    Output
+    ------
+    updates star.results dataframe in-place. Adds columns for SNR maps,
+    detection maps, and candidates
     """
+    det_args = dict(snr_thresh=snr_thresh, n_modes=n_modes)
     for star in all_stars:
-        snrmaps = star.results.apply(
-            star.row_make_snr_map,
-            axis=1
-        ).squeeze()
-        star.results[snrmaps.name] = snrmaps
+        star.det_args.update(det_args)
+        # PSF Convolution
         detmaps = star.results.apply(
-                star.row_convolve_psf,
+                star._row_convolve_psf,
                 axis=1
         ).squeeze()
+        detmaps = star.apply_matched_filter()
         star.results[detmaps.name] = detmaps
+        # SNR
+        snrmaps = star.run_make_snr_maps()
+        star.results[snrmaps.name] = snrmaps
+        # Candidate identification
         candidates = star.results.apply(
             star.row_detect_snrmap_candidates,
-            snr_thresh=snr_thresh,
-            n_modes=n_modes,
             axis=1
         ).squeeze()
         star.results[candidates.name] = candidates
     return
+
+def catalog_candidate_validation(stars : pd.Series, sim_thresh, min_nref):
+    for star in stars:
+        jackknife = star.jackknife_analysis(
+            sim_thresh=sim_thresh,
+            min_nref=min_nref
+        )
+        star.results['klip_jackknife'] = jackknife
