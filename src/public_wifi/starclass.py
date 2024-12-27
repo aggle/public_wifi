@@ -342,15 +342,16 @@ class Star:
         snr_maps = dutils.make_series_snrmaps(row['klip_sub'])
         return pd.Series({'snrmap': snr_maps})
 
-    def apply_matched_filter(self, contrast=True):
+    def apply_matched_filter(self, contrast=True, throughput_correction=False):
         detmaps = self.results.apply(
             self._row_convolve_psf,
             contrast=contrast,
+            throughput_correction=throughput_correction,
             axis=1
         ).squeeze()
         return detmaps
 
-    def _row_convolve_psf(self, row, contrast=True):
+    def _row_convolve_psf(self, row, contrast=True, throughput_correction=False):
         """
         Convolve a matched filter against a residual
 
@@ -358,12 +359,13 @@ class Star:
           If true, convolve the model with the stamp and divide bu the flux
         """
         df = pd.DataFrame(row[['klip_model', 'klip_sub', 'klip_basis']].to_dict())
+        # df['klip_basis'] = df['klip_basis'].cumsum()
         detmaps = df.apply(
             lambda dfrow : dutils.apply_matched_filter(
                 dfrow['klip_sub'],
                 dfrow['klip_model'],
-                # throughput_correction=True,
-                # kl_basis=dfrow['klip_basis']
+                throughput_correction=throughput_correction,
+                kl_basis=dfrow['klip_basis'].loc[:dfrow.name]
             ),
             axis=1
         )
