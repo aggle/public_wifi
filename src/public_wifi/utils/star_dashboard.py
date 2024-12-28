@@ -792,13 +792,13 @@ def all_stars_dashboard(
                 ),
             ]),
         )
-        tab3 = bkmdls.TabPanel(
-            title='NMF results (tbd)',
-            child= bklyts.layout([
-                bklyts.column()
-            ])
-        )
-        tabs = bkmdls.Tabs(tabs=[tab1, tab2, tab3])
+        # tab3 = bkmdls.TabPanel(
+        #     title='NMF results (tbd)',
+        #     child= bklyts.layout([
+        #         bklyts.column()
+        #     ])
+        # )
+        tabs = bkmdls.Tabs(tabs=[tab1, tab2])#, tab3])
 
         lyt = bklyts.layout(
             [
