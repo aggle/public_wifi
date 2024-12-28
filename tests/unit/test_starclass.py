@@ -208,3 +208,28 @@ def test_inject_subtract_detect(nonrandom_processed_star, scale):
 def test_set_subtr_parameters(nonrandom_processed_star):
     star = nonrandom_processed_star
     assert(hasattr(star, 'subtr_args'))
+
+def test_row_make_mf_flux_map(nonrandom_processed_star):
+    star = nonrandom_processed_star
+    row = star.results.loc[1]
+    fluxmap = star._row_make_mf_flux_map(
+        row,
+        contrast=False,
+    )
+    # print(fluxmap)
+    numbasis = row['klip_basis'].index.size
+    assert(isinstance(fluxmap, sc.pd.Series))
+    assert(fluxmap.index[0] == 'fluxmap')
+    assert(fluxmap['fluxmap'].index.name == 'numbasis')
+    assert(fluxmap['fluxmap'].index.size == numbasis)
+    # print(type(fluxmap['fluxmap']))
+    # print(fluxmap['fluxmap'])
+    assert(isinstance(fluxmap['fluxmap'], sc.pd.Series))
+
+def test_run_make_mf_flux_map(nonrandom_processed_star):
+    star = nonrandom_processed_star
+    fluxmaps = star.run_make_mf_flux_maps(contrast=True)
+    assert(isinstance(fluxmaps, sc.pd.Series))
+    assert(fluxmaps.name == 'fluxmap')
+    assert(len(fluxmaps) == len(star.results))
+    assert(all([isinstance(row, sc.pd.Series) for row in fluxmaps]))

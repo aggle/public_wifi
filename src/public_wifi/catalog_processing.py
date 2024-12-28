@@ -254,6 +254,9 @@ def catalog_detection(
             axis=1
         ).squeeze()
         star.results[candidates.name] = candidates
+        # flux maps
+        fluxmaps = star.run_make_mf_flux_maps()
+        star.results[fluxmaps.name] = fluxmaps
     return
 
 def catalog_candidate_validation(stars : pd.Series, sim_thresh, min_nref):

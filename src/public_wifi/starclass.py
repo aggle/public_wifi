@@ -95,10 +95,10 @@ class Star:
             axis=1
         )
         # stamp manipulation
-        if scale_stamps:
-            self.cat['stamp'] = self.cat['stamp'].apply(misc.scale_stamp)
         if center_stamps:
             self.cat['stamp'] = self.cat['stamp'].apply(misc.center_stamp)
+        if scale_stamps:
+            self.cat['stamp'] = self.cat['stamp'].apply(misc.scale_stamp)
 
         # this will hold the analysis results
         self.results = pd.DataFrame()
@@ -364,8 +364,9 @@ class Star:
             lambda dfrow : dutils.apply_matched_filter(
                 dfrow['klip_sub'],
                 dfrow['klip_model'],
-                throughput_correction=throughput_correction,
-                kl_basis=None,#dfrow['klip_basis'].loc[:dfrow.name]
+                mf_width = min(7, self.stamp_size),
+                throughput_correction = throughput_correction,
+                kl_basis = None,
             ),
             axis=1
         )
@@ -381,6 +382,71 @@ class Star:
             )
             detmaps = detmaps/primary_fluxes
         return pd.Series({'detmap': detmaps})
+
+    def run_make_mf_flux_maps(self, contrast=True):
+        "Wrapper for _row_make_mf_flux_map on self.results"
+        fluxmaps = self.results.apply(
+            self._row_make_mf_flux_map,
+            contrast=contrast,
+            axis=1
+        ).squeeze()
+        return fluxmaps
+
+    def _row_make_mf_flux_map(
+            self, row, contrast=True,
+    ) -> pd.Series:
+        """
+        Apply a matched filter to the PSF subtraction residuals and correct for
+        the PSF subtraction throughput
+
+        Parameters
+        ----------
+        row : pd.Series
+          A row of the self.results DataFrame
+        contrast : bool = True
+          If True, apply the MF to the primary star, and divide the flux map by the result.
+
+        Output
+        ------
+        flux_map : pd.Series
+          Residual maps in units of flux or contrast, indexed by mode
+
+        """
+        df = pd.DataFrame(row[['klip_model', 'klip_sub', 'klip_basis']].to_dict())
+        df['matched_filter'] = df['klip_model'].apply(
+            dutils.make_matched_filter,
+            width=7,
+        )
+        detmaps = df.apply(
+            lambda dfrow : dutils.apply_matched_filter(
+                dfrow['klip_sub'],
+                dfrow['klip_model'],
+                mf_width = min(7, self.stamp_size),
+                throughput_correction = False,
+                kl_basis = None,
+            ),
+            axis=1
+        )
+        thpt = df.apply(
+            lambda dfrow: dutils.compute_throughput(
+                dfrow['matched_filter'],
+                df['klip_basis'][:dfrow.name],
+            ).iloc[-1],
+            axis=1
+        )
+        fluxmaps = detmaps/thpt
+        if contrast:
+            center = int(np.floor(self.stamp_size/2))
+            primary_fluxes = df.apply(
+                lambda dfrow : dutils.apply_matched_filter(
+                    row['stamp'],
+                    dfrow['klip_model'],
+                    correlate_mode='same',
+                )[center, center],
+                axis=1
+            )
+            fluxmaps = fluxmaps/primary_fluxes
+        return pd.Series({'fluxmap': fluxmaps})
 
     def row_detect_snrmap_candidates(
             self,
