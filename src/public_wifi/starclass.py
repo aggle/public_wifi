@@ -189,7 +189,10 @@ class Star:
         sep_map = np.linalg.norm(np.mgrid[:stamp_size, :stamp_size] - center, axis=0)
         bgnd_mask = sep_map < bgnd_rad
         bgnd = bgnd_stamps.apply(
-            lambda stamp: (np.nanmean(stamp.data[bgnd_mask]), np.nanstd(stamp.data[bgnd_mask]))
+            lambda stamp: (
+                np.nanmean(stamp.data[bgnd_mask]),
+                np.nanstd(stamp.data[bgnd_mask])
+            )
         )
         return bgnd
 
@@ -241,12 +244,15 @@ class Star:
     def _row_get_references(self, row, sim_thresh=0.0, min_nref=2):
         """Get the references associated with a row entry"""
         query = self.generate_match_query(row)
-        reference_rows = self.references.query(query).sort_values(by='sim', ascending=False)
+        reference_rows = self.references.query(query).sort_values(
+            by='sim', ascending=False
+        )
         # select the refs above threshold, or at least the top 5
         nrefs = len(reference_rows.query(f"sim >= {sim_thresh}"))
         # update nrefs if it is too small
         if nrefs <= min_nref:
-            # print(f"Warning: {self.star_id} has fewer than {min_nref} references above threshold!")
+            # print(f"Warning: {self.star_id} has fewer than {min_nref}
+            # references above threshold!")
             nrefs = min_nref
         reference_rows = reference_rows[:nrefs]
         return reference_rows
@@ -340,7 +346,9 @@ class Star:
         )
         # return each as an entry in a series. this allows it to be
         # automatically merged with self.cat
-        return pd.Series({s.name: s for s in [klip_basis_img, klip_model_img, klip_sub_img]})
+        return pd.Series(
+            {s.name: s for s in [klip_basis_img, klip_model_img, klip_sub_img]}
+        )
 
     def run_make_snr_maps(self):
         """
@@ -355,15 +363,6 @@ class Star:
     def _row_make_snr_map(self, row):
         snr_maps = dutils.make_series_snrmaps(row['klip_sub'])
         return pd.Series({'snrmap': snr_maps})
-
-    def apply_matched_filter(self, contrast=True, throughput_correction=False):
-        detmaps = self.results.apply(
-            self._row_convolve_psf,
-            contrast=contrast,
-            throughput_correction=throughput_correction,
-            axis=1
-        ).squeeze()
-        return detmaps
 
     def _row_convolve_psf(self, row, contrast=True, throughput_correction=False):
         """
@@ -397,14 +396,14 @@ class Star:
             detmaps = detmaps/primary_fluxes
         return pd.Series({'detmap': detmaps})
 
-    def run_make_mf_flux_maps(self, contrast=True):
-        "Wrapper for _row_make_mf_flux_map on self.results"
-        fluxmaps = self.results.apply(
-            self._row_make_mf_flux_map,
+    def apply_matched_filter(self, contrast=True, throughput_correction=False):
+        detmaps = self.results.apply(
+            self._row_convolve_psf,
             contrast=contrast,
+            throughput_correction=throughput_correction,
             axis=1
         ).squeeze()
-        return fluxmaps
+        return detmaps
 
     def _row_make_mf_flux_map(
             self, row, contrast=True,
@@ -461,6 +460,15 @@ class Star:
             )
             fluxmaps = fluxmaps/primary_fluxes
         return pd.Series({'fluxmap': fluxmaps})
+
+    def run_make_mf_flux_maps(self, contrast=True):
+        "Wrapper for _row_make_mf_flux_map on self.results"
+        fluxmaps = self.results.apply(
+            self._row_make_mf_flux_map,
+            contrast=contrast,
+            axis=1
+        ).squeeze()
+        return fluxmaps
 
     def row_detect_snrmap_candidates(
             self,
