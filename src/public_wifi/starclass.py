@@ -177,16 +177,16 @@ class Star:
 
         return stamp
 
-    def measure_bgnd(self, stamp_size=51, bgnd_rad=20):
+    def measure_bgnd(self, stamp_size=51, bgnd_rad=20) -> float:
         """
         stamp_size = 51
           the size of the stamp to use for measureing the background
         bgnd_rad : 20
             pixels further from the center than this are used to measure the bgnd 
         """
-        bgnd_stamps = self.cat.apply(self._get_cutout, stamp_size=self.stamp_size, axis=1)
+        bgnd_stamps = self.cat.apply(self._get_cutout, stamp_size=stamp_size, axis=1)
         center = int(np.floor(self.stamp_size/2))
-        sep_map = np.linalg.norm(np.mgrid[:self.stamp_size, :self.stamp_size] - center, axis=0)
+        sep_map = np.linalg.norm(np.mgrid[:stamp_size, :stamp_size] - center, axis=0)
         bgnd_mask = sep_map < bgnd_rad
         bgnd = bgnd_stamps.apply(
             lambda stamp: (np.nanmean(stamp.data[bgnd_mask]), np.nanstd(stamp.data[bgnd_mask]))
@@ -238,7 +238,7 @@ class Star:
             )
             self.references.loc[sim.index, 'sim'] = sim
 
-    def row_get_references(self, row, sim_thresh=0.0, min_nref=2):
+    def _row_get_references(self, row, sim_thresh=0.0, min_nref=2):
         """Get the references associated with a row entry"""
         query = self.generate_match_query(row)
         reference_rows = self.references.query(query).sort_values(by='sim', ascending=False)
@@ -263,31 +263,48 @@ class Star:
         """
         Flag the reference rows in the index provided as used; flag all others as false
         """
-        self.row_get_references(row, -1)['used'] = False
+        self._row_get_references(row, -1)['used'] = False
         self.references.loc[used_reference_rows.index, 'used'] = True
         # update self.nrefs, the number of refs for each set
         self.update_nrefs()
 
     def run_klip_subtraction(
             self,
-            sim_thresh : float | None = 0.0,
-            min_nref : int | None = 2,
+            sim_thresh : float | None = None,
+            min_nref : int | None = None,
             jackknife_reference : str = ''
     ):
+        if sim_thresh is None:
+            sim_thresh = self.subtr_args['sim_thresh']
+        else:
+            self.subtr_args.update({'sim_thresh': sim_thresh})
+        if min_nref is None:
+            min_nref = self.subtr_args['min_nref']
+        else:
+            self.subtr_args.update({'min_nref': min_nref})
+
         self.subtr_args.update(dict(
             sim_thresh=sim_thresh,
             min_nref=min_nref,
         ))
+        # if the subtraction parameters are not provided, read them from the class attr
+        sim_thresh = self.subtr_args['sim_thresh']
+        min_nref = self.subtr_args['min_nref']
         self.subtraction = self.cat.apply(
             self._row_klip_subtract,
+            sim_thresh = sim_thresh,
+            min_nref = min_nref,
             jackknife_reference = jackknife_reference,
             axis=1
         )
         results = self.cat.join(self.subtraction)
         return results
+
     def _row_klip_subtract(
             self,
             row,
+            sim_thresh,
+            min_nref,
             jackknife_reference : str = ''
     ):
         """
@@ -302,13 +319,10 @@ class Star:
         jackknife_reference : str = ''
           during jackknife testing, exclude this reference
         """
-        # if the subtraction parameters are not provided, read them from the class attr
-        sim_thresh = self.subtr_args['sim_thresh']
-        min_nref = self.subtr_args['min_nref']
 
         target_stamp = row['stamp']
         # select the references
-        reference_rows = self.row_get_references(row, sim_thresh, min_nref)
+        reference_rows = self._row_get_references(row, sim_thresh, min_nref)
         # reset the list of used references, and then flag the references that
         # are selected. reset the references that match the query
         self.row_set_reference_status(row, reference_rows)

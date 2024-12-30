@@ -62,13 +62,13 @@ def test_scale_stamp(star):
         assert(sc.np.abs(sc.np.nanmax(stamp) - 1) < 1e-10)
 
 
-def test_klip_subtract(all_stars):
+def test_run_klip_subtraction(all_stars):
     star_id = sc.np.random.choice(all_stars.index)
     print("KLIP subtraction tested on ", star_id)
     star = all_stars.loc[star_id]
     star.set_references(all_stars, compute_similarity=True)
     # run with default parameters
-    subtraction = star.run_klip_subtraction()
+    subtraction = star.run_klip_subtraction(sim_thresh = 0.5, min_nref = 5)
     assert(isinstance(subtraction, sc.pd.DataFrame))
     columns = ['klip_model', 'klip_basis', 'klip_sub']
     assert(all([(c in subtraction.columns) for c in columns]))
@@ -79,10 +79,11 @@ def test_row_klip_subtract(all_stars):
     star = all_stars.loc[star_id]
     star.set_references(all_stars, compute_similarity=True)
     row = star.cat.iloc[0]
-    subtraction = star._row_klip_subtract(row)
+    subtraction = star._row_klip_subtract(row, 0.5, 5)
     assert(isinstance(subtraction, sc.pd.Series))
     columns = ['klip_model', 'klip_basis', 'klip_sub']
     assert(all([(c in subtraction.index) for c in columns]))
+
 
 
 def test_jackknife_subtraction(star_with_candidates):
@@ -98,7 +99,7 @@ def test_jackknife_subtraction(star_with_candidates):
     assert((n_refs - n_jackknife) == 2*len(star.cat))
     # star_jackknife = star.jackknife_analysis()
 
-def test_row_snr_map(random_processed_star):
+def test_row_make_snr_map(random_processed_star):
     star = random_processed_star
     assert(hasattr(star, 'results'))
     assert(hasattr(star, '_row_make_snr_map'))
@@ -118,8 +119,10 @@ def test_run_make_snr_maps(random_processed_star):
     star = random_processed_star
     assert(hasattr(star, 'results'))
     assert(hasattr(star, 'run_make_snr_maps'))
-    star.run_make_snr_maps()
-    assert('snrmap' in star.results.columns)
+    snrmaps = star.run_make_snr_maps()
+    # assert('snrmap' in star.results.columns)
+    assert(isinstance(snrmaps, sc.pd.Series))
+    assert(snrmaps.name == 'snrmap')
 
 @pytest.mark.parametrize('scale', list(range(1, 21)))
 def test_row_inject_psf(nonrandom_processed_star, scale):
@@ -185,3 +188,7 @@ def test_run_make_mf_flux_map(nonrandom_processed_star):
     assert(fluxmaps.name == 'fluxmap')
     assert(len(fluxmaps) == len(star.results))
     assert(all([isinstance(row, sc.pd.Series) for row in fluxmaps]))
+
+def test_apply_matched_filter(all_stars):
+    star = sc.np.random.choice(all_stars)
+    assert(False)
