@@ -128,8 +128,9 @@ def test_row_result_func(random_processed_star, func_name, result_name):
     assert(result[result_name].index.name == 'numbasis')
 
 ### Functions that aggregate row operations
+### not implemented
 
-@pytest.mark.skip()
+@pytest.mark.xfail
 def test_jackknife_subtraction(star_with_candidates):
     star = star_with_candidates
     ref = sc.np.random.choice(star.references.index)[0]
