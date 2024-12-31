@@ -491,22 +491,19 @@ class Star:
             candidates = pd.DataFrame(None, columns=['cand_id', 'pixel'])
         return pd.Series({'snr_candidates': candidates})
 
-    def jackknife_analysis(self, sim_thresh, min_nref):
-        """Perform jackknife analysis"""
-        # if self.candidates.empty:
-        #     # provide an empty series
-        #     jackknife = self.cat.apply(
-        #         lambda row: pd.Series({
-        #             'klip_jackknife': pd.Series(
-        #                 [np.ones((self.stamp_size, self.stamp_size))*np.nan],
-        #                 index=[1])
-        #         }),
-        #         axis=1
-        #     )
+    def jackknife_analysis(
+           self,
+            sim_thresh : float | None = None,
+            min_nref : int | None = None,
+    ) -> pd.Series:
+        """
+        Perform jackknife analysis
+        returns a cube of the jackknife analysis
+        """
         if sim_thresh is None:
-            sim_thresh = self.subtr_args.get('sim_thresh', 5.0)
+            sim_thresh = self.subtr_args.get('sim_thresh')
         if min_nref is None:
-            min_nref = self.subtr_args.get('min_nref', 3)
+            min_nref = self.subtr_args.get('min_nref')
         jackknife = dutils.jackknife_analysis(self, sim_thresh, min_nref)
         jackknife_name = jackknife.name
         jackknife = self.cat.apply(

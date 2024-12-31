@@ -4,6 +4,7 @@ expect; they do not check that the algorithms are correct
 Only methods that return something are tested here
 """
 import pytest
+import numpy as np
 from public_wifi import starclass as sc
 
 DEBUG = False # use to turn on debug printing
@@ -130,10 +131,15 @@ def test_row_result_func(random_processed_star, func_name, result_name):
 ### Functions that aggregate row operations
 ### not implemented
 
-@pytest.mark.xfail
-def test_jackknife_subtraction(star_with_candidates):
-    star = star_with_candidates
-    ref = sc.np.random.choice(star.references.index)[0]
+# @pytest.mark.xfail
+def test_jackknife_drop_ref(all_stars):
+    star = np.random.choice(all_stars)
+    star.set_references(all_stars)
+    star.subtr_args=dict(sim_thresh=0.8, min_nref=5)
+    # toss the reference with the highest sim score to ensure it will have the
+    # "used" flag
+    ref = star.references.groupby("target")['sim'].sum().idxmax()
+    # for one reference, do the jackknife test
     klsub = star.run_klip_subtraction(jackknife_reference=ref)['klip_sub']
     # get the number of jackknife reductions
     n_jackknife = klsub.apply(len).sum()
@@ -143,6 +149,17 @@ def test_jackknife_subtraction(star_with_candidates):
     # so there should be 2 fewer references for each reduction
     assert((n_refs - n_jackknife) == 2*len(star.cat))
     # star_jackknife = star.jackknife_analysis()
+
+def test_jackknife_analysis(all_stars):
+    star = np.random.choice(all_stars)
+    star.set_references(all_stars)
+    star.subtr_args=dict(sim_thresh=0.8, min_nref=10)
+    # before doing jackknife, you have to do subtraction first
+    # really the purpose is to set the "used" flag on the references
+    star.results = star.results.join(star.run_klip_subtraction())
+    jackknife = star.jackknife_analysis()
+    print(jackknife.loc[1])
+    assert(isinstance(jackknife, sc.pd.Series))
 
 # @pytest.mark.parametrize('scale', list(range(1, 21)))
 # def test_row_inject_psf(nonrandom_processed_star, scale):

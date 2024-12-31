@@ -235,6 +235,17 @@ def group_nearest_candidate_pixels(candidates):
     candidates['cand_id'] = groups
     return candidates
 
+def make_jackknife_iterator(references):
+    """
+    Make an interator for jackknife analysis
+    Returns a dict whose key is the reference that has been excluded, and whose
+    entries are the other references
+    """
+    used_refs = references.query("used == True")
+    ref_targets = used_refs.index.get_level_values("target")
+    ref_iterator = {i: list(ref_targets[ref_targets != i]) for i in ref_targets}
+    return ref_iterator
+
 def jackknife_analysis(
         star,
         sim_thresh = 0.5,
@@ -254,9 +265,10 @@ def jackknife_analysis(
       a series with a hierarchical index of (target_name, kklip) that stores the subtracted array
 
     """
-    references = star.references.query("used == True")
-    ref_targets = references.index.get_level_values("target")
-    ref_iterator = {i: list(ref_targets[ref_targets != i]) for i in ref_targets}
+    # references = star.references.query("used == True")
+    # ref_targets = references.index.get_level_values("target")
+    # ref_iterator = {i: list(ref_targets[ref_targets != i]) for i in ref_targets}
+    ref_iterator = make_jackknife_iterator(star.references)
     results = {}
     for r, refs in ref_iterator.items():
         results[r] = star.run_klip_subtraction(
