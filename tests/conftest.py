@@ -92,7 +92,8 @@ def random_processed_star(processed_stars):
 @pytest.fixture(scope='session')
 def nonrandom_processed_star(processed_stars):
     """Get a star with subtraction and detection results attached"""
-    return processed_stars.iloc[2]
+    # return processed_stars.iloc[2]
+    return processed_stars['J042930.88+264433.3']
 @pytest.fixture(scope='session')
 def star_with_candidates(processed_stars):
     return processed_stars.loc["J041947.39+281534.6"]
