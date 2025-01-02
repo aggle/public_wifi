@@ -70,6 +70,8 @@ def apply_matched_filter(
         mode=correlate_mode)
     if throughput_correction:
         throughput = compute_throughput(matched_filter, klmodes=kl_basis)
+        if isinstance(throughput, pd.Series):
+            throughput = throughput.iloc[-1]
         detmap = detmap / throughput
     return detmap
 
