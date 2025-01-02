@@ -84,14 +84,19 @@ def inject_psf(
     return injected_stamp
 
 
-
-def row_inject_psf(row, star, pos, scale, kklip : int = -1) -> np.ndarray:
+def row_inject_psf(row, star, pos, contrast, kklip : int = -1) -> np.ndarray:
     """
-    inject a PSF 
+    inject a PSF
+    row : the row of star.cat
+    star : the star object with a results dataframe
+    pos : the position in x, y relative to center
+    contrast : the contrast at which to scale the injection
+    kklip : int = -1
+      The mode number to use. Use -1 for the largest Kklip
     """
     result_row = star.results.loc[row.name]
     stamp = row['stamp']
-    # kklip is actually an index, not a mode number, so subtract 1 
+    # kklip is actually used as an index, not a mode number, so subtract 1 
     if kklip != -1:
         kklip -= 1
     psf_model = dutils.make_normalized_psf(
@@ -101,7 +106,7 @@ def row_inject_psf(row, star, pos, scale, kklip : int = -1) -> np.ndarray:
     )
     star_flux = measure_primary_flux(stamp, psf_model)
     # compute the companion flux at the given contrast
-    inj_flux = star_flux * scale
+    inj_flux = contrast * star_flux
     inj_stamp = inject_psf(stamp, psf_model * inj_flux, pos)
 
     inj_row = row.copy()
@@ -139,10 +144,10 @@ def row_inject_subtract_detect(
     ------
     True if injection is above SNR threshold, false if not
     """
-    inj_row = row_inject_psf(row, star=star, pos=pos, scale=contrast, kklip=-1)
+    inj_row = row_inject_psf(row, star=star, pos=pos, contrast=contrast, kklip=-1)
     results = star._row_klip_subtract(
         inj_row,
-        **star.det_args,
+        **star.subtr_args,
         # sim_thresh=sim_thresh,
         # min_nref=min_nref,
     )
