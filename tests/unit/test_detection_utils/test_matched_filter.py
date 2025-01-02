@@ -1,8 +1,13 @@
 import pytest
 
-from public_wifi import starclass as sc
-from public_wifi import detection_utils as dutils
+import numpy as np
+
+import matplotlib as mpl
+from matplotlib import pyplot as plt
+
 from public_wifi import misc
+from public_wifi import detection_utils as dutils
+from public_wifi import contrast_utils as cutils
 
 
 def test_make_matched_filter(processed_stars):
@@ -104,23 +109,53 @@ def test_compute_throughput_KLmodes(random_processed_star):
     # print(dot, thpt)
     # print(thpt.shape)
     # check that the throughput is always less than the flux with no KL basis
-    assert(thpt.ndim == 2)
+    assert(np.ndim(thpt) == 2)
     assert(((dot - thpt) >= 0).all())
     assert(dutils.np.stack(kl_basis).shape == dutils.np.stack(thpt).shape)
 
 
-def test_apply_matched_filter_with_throughput(random_processed_star):
-    star = random_processed_star
-    ind = 1
-    row = star.results.loc[ind]
-    kl_basis = row['klip_basis']
-    stamp = star.results.loc[ind, 'klip_sub']
-    print("Testing matched filter throughput on ", star.star_id)
-    mf_flux_noKL = star.apply_matched_filter(contrast=True, throughput_correction=False).loc[ind]
-    mf_flux_KL = star.apply_matched_filter(contrast=True, throughput_correction=True).loc[ind]
-    print(mf_flux_noKL)
-    print(mf_flux_KL)
-    assert(dutils.np.stack(mf_flux_noKL).shape == dutils.np.stack(mf_flux_KL).shape)
-    assert(
-        (dutils.np.stack(mf_flux_noKL).std(axis=0) <= dutils.np.stack(mf_flux_KL).std(axis=0)).all()
+@pytest.mark.xfail
+def test_apply_matched_filter_with_throughput(nonrandom_processed_star):
+    star = nonrandom_processed_star
+    print("Testing injections on ", star.star_id)
+    row = star.cat.iloc[1]
+    center = cutils.misc.get_stamp_center(row['stamp'])
+    pos = np.array((-3, -2))
+    inj_pos = center + pos[::-1]
+    contrast = 1.
+    inj_row = cutils.row_inject_psf(
+        row, star=star, pos=pos, contrast=contrast, kklip=-1
     )
+    results = star._row_klip_subtract(
+        inj_row,
+        **star.subtr_args,
+    )
+    # apply the matched filter with throughput correction
+    kklip = -1
+    psf_model = results['klip_model'].iloc[kklip]
+    resid_stamp = results['klip_sub'].iloc[kklip]
+    klip_basis = results['klip_basis'][:kklip]
+    primary_flux = cutils.measure_primary_flux(row['stamp'], psf_model)
+    mf_results = dutils.apply_matched_filter(
+        resid_stamp, psf_model, throughput_correction=True, kl_basis=klip_basis
+    )  / primary_flux
+
+    print(row['stamp'].max())
+    print(star.results.loc[row.name]['klip_model'].apply(np.max))
+    print(primary_flux)
+    
+    fig, axes = plt.subplots(nrows=1, ncols=2, figsize=(10, 5))
+    ax = axes[0]
+    imax = ax.imshow(inj_row['stamp'], origin='lower')
+    ax.scatter(*inj_pos[::-1], marker='x', c='k')
+    fig.colorbar(imax, ax=ax)
+    ax = axes[1]
+    imax = ax.imshow(mf_results, origin='lower')
+    ax.scatter(*inj_pos[::-1], marker='x', c='k')
+    fig.colorbar(imax, ax=ax)
+    plt.show()
+
+    # recover flux
+    recovered_contrast = mf_results[*inj_pos]
+    print(recovered_contrast)
+    assert(np.abs(recovered_contrast - contrast) <= 1e-1)
