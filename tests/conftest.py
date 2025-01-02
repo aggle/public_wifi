@@ -64,6 +64,18 @@ def all_stars(catalog, data_folder):
 @pytest.fixture(scope='session')
 def stars_with_references(all_stars):
     all_stars.apply(lambda star: star.set_references(compute_similarity=True))
+    return all_stars
+
+@pytest.fixture(scope='session')
+def stars_with_subtraction(all_stars):
+    # perform PSF subtraction
+    stars = catproc.catalog_subtraction(
+        all_stars,
+        # psf subtraction args
+        min_nref = 8,
+        sim_thresh = 0.9,
+    )
+    return stars
 
 @pytest.fixture(scope='session')
 def processed_stars(catalog, data_folder):
