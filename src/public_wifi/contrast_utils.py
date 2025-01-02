@@ -28,9 +28,12 @@ def measure_primary_flux(
     """
     mf = dutils.make_matched_filter(model_psf)
     star_flux = dutils.apply_matched_filter(
-        stamp, mf, correlate_mode='valid'
-    ).max()
-    return star_flux
+        stamp, mf,
+        correlate_mode='valid',
+        throughput_correction=True,
+    )
+    center = misc.get_stamp_center(star_flux)
+    return star_flux[*center[::-1]]
 
 
 def inject_psf(

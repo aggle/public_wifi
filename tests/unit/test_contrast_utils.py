@@ -2,8 +2,25 @@ import pytest
 import numpy as np
 from matplotlib import pyplot as plt
 
-from public_wifi import contrast_utils as cutils, detection_utils
+from public_wifi import contrast_utils as cutils
+from public_wifi import detection_utils as dutils
 
+
+def test_measure_primary_flux(random_processed_star):
+    """Check that you are measuring the correct flux of a star"""
+    # construct a PSF with known flux
+    star = random_processed_star
+    print("Testing injections on ", star.star_id)
+    row = star.cat.loc[0]
+    stamp = row['stamp']
+    input_flux = 10
+    psf = dutils.make_normalized_psf(stamp, width=7, scale=input_flux)
+    # make sure the psf was set correctly
+    assert(np.abs(input_flux - psf.sum()) <= 1e-5)
+    # measure the flux
+    meas_flux = cutils.measure_primary_flux(psf, psf.copy())
+    print("measured:", meas_flux)
+    assert(np.abs(meas_flux - input_flux) <= 1e-5)
 
 def test_inject_psf(random_processed_star):
     star = random_processed_star
