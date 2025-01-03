@@ -239,10 +239,10 @@ def catalog_detection(
     for star in all_stars:
         star.det_args.update(det_args)
         # PSF Convolution
-        detmaps = star.results.apply(
-                star._row_convolve_psf,
-                axis=1
-        ).squeeze()
+        # detmaps = star.results.apply(
+        #         star._row_apply_matched_filter,
+        #         axis=1
+        # ).squeeze()
         detmaps = star.apply_matched_filter()
         star.results[detmaps.name] = detmaps
         # SNR
