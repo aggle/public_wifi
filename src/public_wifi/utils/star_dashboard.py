@@ -311,7 +311,7 @@ def make_row_cds(row, star, cds_dict={}, jackknife_kklip : int = 1):
     cds = cds_dict.get("stamp", None)
     cds_dict['stamp'] = img_to_CDS(row['stamp'], cds=cds)
     # cube of references
-    refs = star.row_get_references(row).query("used == True").copy()
+    refs = star._row_get_references(row).query("used == True").copy()
     refs = refs.sort_values(by='sim', ascending=False)
     refcube = refs['stamp']#.apply(getattr, args=['data'])
     refcube_index = refs.reset_index().apply(
