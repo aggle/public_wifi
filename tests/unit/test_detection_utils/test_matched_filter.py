@@ -75,7 +75,7 @@ def test_matched_filter_on_normalized_psf(processed_stars):
         assert(all([i in star.results.columns for i in test_columns])
         )
 
-def test_row_convolve_psf(processed_stars):
+def test_row_apply_matched_filter(processed_stars):
     star = processed_stars[dutils.np.random.choice(processed_stars.index)]
     row = star.results.iloc[0]
     row_detmaps = star.row_convolve_psf(row)['detmap']
@@ -115,14 +115,22 @@ def test_compute_throughput_KLmodes(random_processed_star):
 
 
 @pytest.mark.xfail
-def test_apply_matched_filter_with_throughput(nonrandom_processed_star):
-    star = nonrandom_processed_star
+@pytest.mark.parametrize(
+    "pos,contrast",
+    [((-3, -2), 0.1), ((1, 1), 0.5)]
+)
+def test_apply_matched_filter_with_throughput(
+        random_subtracted_star,
+        pos, contrast,
+):
+    star = random_subtracted_star
     print("Testing injections on ", star.star_id)
+    pos = np.array(pos)
+    contrast = float(contrast)
+
     row = star.cat.iloc[1]
     center = cutils.misc.get_stamp_center(row['stamp'])
-    pos = np.array((-3, -2))
     inj_pos = center + pos[::-1]
-    contrast = 1.
     inj_row = cutils.row_inject_psf(
         row, star=star, pos=pos, contrast=contrast, kklip=-1
     )
@@ -140,22 +148,24 @@ def test_apply_matched_filter_with_throughput(nonrandom_processed_star):
         resid_stamp, psf_model, throughput_correction=True, kl_basis=klip_basis
     )  / primary_flux
 
-    print(row['stamp'].max())
-    print(star.results.loc[row.name]['klip_model'].apply(np.max))
-    print(primary_flux)
+    # recover flux
+    recovered_contrast = mf_results[*inj_pos]
+    print(f"Input contrast: {contrast:0.2e}")
+    print(f"Recovered contrast: {recovered_contrast:0.3e}")
     
     fig, axes = plt.subplots(nrows=1, ncols=2, figsize=(10, 5))
+    fig.suptitle(f"Injection: {tuple(pos)} @ {contrast:0.2e}")
     ax = axes[0]
+    ax.set_title("Unsubtracted injection")
     imax = ax.imshow(inj_row['stamp'], origin='lower')
     ax.scatter(*inj_pos[::-1], marker='x', c='k')
     fig.colorbar(imax, ax=ax)
     ax = axes[1]
+    ax.set_title("Matched filter result (contrast)")
     imax = ax.imshow(mf_results, origin='lower')
     ax.scatter(*inj_pos[::-1], marker='x', c='k')
     fig.colorbar(imax, ax=ax)
     plt.show()
 
-    # recover flux
-    recovered_contrast = mf_results[*inj_pos]
-    print(recovered_contrast)
-    assert(np.abs(recovered_contrast - contrast) <= 1e-1)
+    # test if you're within 20% of the injected flux
+    assert(np.abs(recovered_contrast / contrast - 1) <= 2e-1)

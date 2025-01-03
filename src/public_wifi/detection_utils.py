@@ -93,7 +93,12 @@ def compute_throughput(mf, klmodes=None) -> float | pd.Series:
       A series of 2-D array throughput maps, indexed by KLIP mode
     """
     # the first term in the throughput is the amplitude of the MF
-    throughput = apply_matched_filter(mf, mf, correlate_mode='valid')[0, 0]
+    throughput = apply_matched_filter(
+        mf, mf,
+        correlate_mode='valid',
+        throughput_correction=False,
+        kl_basis=None
+    )[0, 0] # this indexing works because correlate_mode is 'valid'
     # the second term is the amount of the MF captured by the KL basis at each
     # position
     if klmodes is not None:
