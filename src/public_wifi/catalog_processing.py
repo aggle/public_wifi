@@ -243,7 +243,7 @@ def catalog_detection(
         #         star._row_apply_matched_filter,
         #         axis=1
         # ).squeeze()
-        detmaps = star.apply_matched_filter()
+        detmaps = star.apply_matched_filter(contrast=True, throughput_correction=True)
         star.results[detmaps.name] = detmaps
         # SNR
         snrmaps = star.run_make_snr_maps()
@@ -259,10 +259,11 @@ def catalog_detection(
         star.results[fluxmaps.name] = fluxmaps
     return
 
-def catalog_candidate_validation(stars : pd.Series, sim_thresh, min_nref):
+def catalog_candidate_validation(stars : pd.Series, sim_thresh, min_nref) -> None:
     for star in stars:
         jackknife = star.jackknife_analysis(
             sim_thresh=sim_thresh,
             min_nref=min_nref
         )
         star.results['klip_jackknife'] = jackknife
+    return

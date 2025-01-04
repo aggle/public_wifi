@@ -31,6 +31,7 @@ def measure_primary_flux(
         stamp, mf,
         correlate_mode='valid',
         throughput_correction=True,
+        kl_basis=None,
     )
     center = misc.get_stamp_center(star_flux)
     return star_flux[*center[::-1]]

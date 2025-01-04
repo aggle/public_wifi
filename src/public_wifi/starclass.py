@@ -389,11 +389,10 @@ class Star:
         if contrast:
             center = int(np.floor(self.stamp_size/2))
             primary_fluxes = df.apply(
-                lambda dfrow : dutils.apply_matched_filter(
-                    row['stamp'],
+                lambda dfrow: cutils.measure_primary_flux(
+                    self.cat.loc[row.name, 'stamp'],
                     dfrow['klip_model'],
-                    correlate_mode='same',
-                )[center, center],
+                ),
                 axis=1
             )
             detmaps = detmaps/primary_fluxes
