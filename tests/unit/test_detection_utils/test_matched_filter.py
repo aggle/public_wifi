@@ -100,7 +100,7 @@ def test_compute_throughput_noKLmodes(random_processed_star):
 def test_compute_throughput_KLmodes(random_processed_star):
     star = random_processed_star
     row = star.results.loc[1]
-    kl_basis = row['klip_basis'].iloc[-1]
+    kl_basis = row['klip_basis']
     mf = dutils.make_matched_filter(row['klip_model'].iloc[-1], 7)
     # compute throughput with no KL basis
     # print("klbasis", dutils.np.stack(kl_basis).shape)
@@ -109,21 +109,24 @@ def test_compute_throughput_KLmodes(random_processed_star):
     # print(dot, thpt)
     # print(thpt.shape)
     # check that the throughput is always less than the flux with no KL basis
-    assert(np.ndim(thpt) == 2)
-    assert(((dot - thpt) >= 0).all())
-    assert(dutils.np.stack(kl_basis).shape == dutils.np.stack(thpt).shape)
+    assert(np.stack(kl_basis).shape == np.stack(thpt).shape)
+    assert(np.ndim(np.stack(thpt)) == 3)
+    assert(((dot - thpt).apply(lambda el: (el >= 0).all())).all())
 
 
 @pytest.mark.xfail
 @pytest.mark.parametrize(
     "pos,contrast",
-    [((-3, -2), 0.1), ((1, 1), 0.5)]
+    [
+        # ((-3, -2), 0.1), ((1, -1), 0.5)
+        ((-1, -1), 1),((-1, -1), 0.1),((-1, -1), 0.01),((-1, -1), 0.001),
+    ]
 )
 def test_apply_matched_filter_with_throughput(
-        random_subtracted_star,
+        star_with_candidates,
         pos, contrast,
 ):
-    star = random_subtracted_star
+    star = star_with_candidates
     print("Testing injections on ", star.star_id)
     pos = np.array(pos)
     contrast = float(contrast)
@@ -151,7 +154,8 @@ def test_apply_matched_filter_with_throughput(
     # recover flux
     recovered_contrast = mf_results[*inj_pos]
     print(f"Input contrast: {contrast:0.2e}")
-    print(f"Recovered contrast: {recovered_contrast:0.3e}")
+    print(f"Recovered contrast: {recovered_contrast:0.2e}")
+    print(f"Error: {(np.abs(contrast-recovered_contrast)/contrast)*100:0.2f} %")
     
     fig, axes = plt.subplots(nrows=1, ncols=2, figsize=(10, 5))
     fig.suptitle(f"Injection: {tuple(pos)} @ {contrast:0.2e}")
