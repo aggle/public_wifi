@@ -382,7 +382,7 @@ class Star:
                 dfrow['klip_model'],
                 mf_width = min(7, self.stamp_size),
                 throughput_correction = throughput_correction,
-                kl_basis = df.loc[:dfrow.name, 'klip_basis'],
+                kl_basis = None,#df.loc[:dfrow.name, 'klip_basis'],
             ),
             axis=1
         )
