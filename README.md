@@ -1,7 +1,7 @@
 PUBLIC WIFI USER GUIDE
 ======================
 
-A warning to the user: this is Not A Good README
+A warning to the user: this is Not A Good README. It is very much a work in progress.
 
 
 Table of Contents
@@ -38,7 +38,7 @@ the methods required to perform PSF subtraction on itself.
 Installation
 ------------
 
-A conda environment that is compatible with this version of PUBLIC WIFI
+A conda environment that should be compatible with this version of PUBLIC WIFI
 is provided in ``docs/conda-public_wifi.yml`` (it has more packages than
 are strictly necessary). You can create the environment from a terminal
 with the command ``conda env create -f conda-public_wifi.yml``. You can
@@ -49,10 +49,14 @@ Some packages might need to be installed manually by the user.
 USAGE
 -----
 
-The user must provide PUBLIC WIFI with an input point source catalog in the form of a pandas DataFrame. This is a catalog of all the point source detections relevant to the self-referencing survey. Targets may have more than one detection. Each row corresponds to one detection, so a target that is rpresent in multiple exposures will have more than one row.
+The user must provide PUBLIC WIFI with an input point source catalog in the form of a pandas DataFrame. This is a catalog of all the point source detections relevant to the self-referencing survey. Targets may have more than one detection. Each row corresponds to one detection, so a target that is rpresent in multiple exposures will have more than one row. This catalog is provided to the `catalog_procesisng::process_catalog()` method, which will return a pandas Series with a `starclass::Star` object in each entry. The interactive visualizer can be started with the script provided at `public_wifi/src/star_dashboard_script.py`. Users will want to make a copy of this script for their own purposes, and write their own implementation of `catproc.load_catalog()`.
+ 
+### Input catalog ###
 
+As stated above
 
 Components
 ----------
+
 
 
