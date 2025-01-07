@@ -10,30 +10,26 @@ from public_wifi import detection_utils as dutils
 from public_wifi import contrast_utils as cutils
 
 
-def test_make_matched_filter(processed_stars):
+def test_make_matched_filter(subtracted_stars):
     """Test the matched filtering"""
-    mfs = processed_stars.apply(
-        # apply to each star
-        lambda star: star.results['klip_model'].apply(
-            # apply to each row of the results dataframe
-            lambda klip_model: klip_model.apply(
-                # the klip_model entries are series
-                dutils.make_matched_filter,
-                width=5
-            )
-        )
-    )
+    # compute literally all the matched filters
+    mfs = np.concatenate(subtracted_stars.apply(
+            lambda star: np.concatenate(star.results['klip_model'].apply(
+                lambda klip_model: np.stack(klip_model.apply(
+                    # the klip_model entries are series
+                    dutils.make_matched_filter,
+                    width=7
+                ).values)
+            ).values)
+    ).values)
 
-    mf_means = mfs.apply(
-        lambda star: star.apply(
-            lambda row: row.apply(dutils.np.nanmean)
-        )
-    )
-    for star_id in mf_means.index:
-        for row_id in mf_means.loc[star_id].index:
-            for kklip in mf_means.loc[star_id].loc[row_id].index:
-                val = mf_means.loc[star_id].loc[row_id].loc[kklip]
-                assert(dutils.np.abs(val) < 1e-15)
+
+    # check that they have no nans
+    assert(~np.isnan(mfs).any())
+    # check that they have mean 0
+    mf_means = np.mean(mfs, axis=(-1, -2))
+    assert((np.abs(mf_means) <= 1e-15).all())
+
 
 
 def test_apply_matched_filter(random_processed_star):
