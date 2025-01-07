@@ -40,8 +40,6 @@ def standalone(func):
         return app
     return appwrap
 
-# standalone cube scroller
-make_cube_scroller = standalone(generate_cube_scroller_widget)
 
 
 ### Helper functions for standardizing data input ###
@@ -295,3 +293,6 @@ def generate_cube_scroller_widget(
 
     layout = bklyts.column(plot, slider)
     return layout
+
+# standalone cube scroller
+make_cube_scroller = standalone(generate_cube_scroller_widget)
