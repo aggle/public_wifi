@@ -24,7 +24,7 @@ from public_wifi import catalog_processing as catproc
 
 
 
-def make_row_cds(row, star, cds_dict={}, jackknife_kklip : int = 1):
+def make_row_cds(row, star, cds_dict={}, jackknife_kklip : int = 10):
     """
     Make CDSs with the row data, updating the existing CDSs if they are provided
 
@@ -37,7 +37,7 @@ def make_row_cds(row, star, cds_dict={}, jackknife_kklip : int = 1):
     cds_dict : dict = {}
       A dictionary of pre-existing CDSs. If if the CDSs exist, they will be
       updated with the new information. If not, CDSs will be created.
-    jackknife_kklip : int = 1
+    jackknife_kklip : int = 10
       select this jackknife mode
 
     """
@@ -365,8 +365,8 @@ def all_stars_dashboard(
                 cds_dicts[i] = make_row_cds(
                     row,
                     stars.loc[star_selector.value],
-                    cds_dicts[i],
-                    jackknife_mode_selector.value,
+                    cds_dict=cds_dicts[i],
+                    jackknife_kklip=jackknife_mode_selector.value,
                 )
 
         def update_cube_scrollers():
@@ -382,7 +382,7 @@ def all_stars_dashboard(
                     row_plot[k].children[1].update(
                         value = 1,
                         end = source.data['nimgs'][0],
-                        title = source.data['i'][0],
+                        title=f"{len(source.data['index'][0])} / {source.data['i'][0]}"
                     )
 
         # link all Kklip scrollers together:
@@ -446,7 +446,12 @@ def all_stars_dashboard(
             title="Jackknife Kklip",
             low=1, value=1, high=len(stars), step=1, width=80,
         )
-        jackknife_mode_selector.on_change('value', lambda attr, old, new: update_cds_dicts)
+        def jackknife_update():
+            update_cds_dicts() 
+            update_cube_scrollers()
+        jackknife_mode_selector.on_change(
+            'value', lambda attr, old, new: jackknife_update
+        )
 
         subtraction_button = bkmdls.Button(
             label='Re-run subtraction', button_type='primary',

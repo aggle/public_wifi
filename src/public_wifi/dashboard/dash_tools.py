@@ -271,7 +271,7 @@ def generate_cube_scroller_widget(
     slider = bkmdls.Slider(
         start=1, end=source.data['nimgs'][0],
         value=1, step=1,
-        title = str(source.data['i'][0]),
+        title = f"{len(source.data['index'][0])} / {source.data['i'][0]}",
         name='slider',
     )
     def slider_change(attr, old, new):
@@ -280,7 +280,9 @@ def generate_cube_scroller_widget(
         # update which slice of the data
         source.data['img'] = [source.data['cube'][0][new-1]]
         # update the slider title
-        slider.update(title=str(source.data['i'][0]))
+        slider.update(
+            title=f"{len(source.data['index'][0])} / {source.data['i'][0]}"
+         )
         # low, high = np.nanquantile(source.data['img'][0], cmap_range)
         color_mapper.update(
             # low=np.nanmin(source.data['img'][0]),
