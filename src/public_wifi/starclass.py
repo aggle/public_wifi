@@ -97,7 +97,7 @@ class Star:
         )
         # stamp manipulation
         if center_stamps:
-            self.cat['stamp'] = self.cat['stamp'].apply(misc.center_stamp)
+            self.cat['stamp'] = self.cat['stamp'].apply(misc.shift_stamp_to_center)
         if scale_stamps:
             self.cat['stamp'] = self.cat['stamp'].apply(misc.scale_stamp)
 

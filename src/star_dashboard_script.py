@@ -10,7 +10,7 @@ from bokeh.server.server import Server
 catalog_file = sc.Path("~/Projects/Research/hst17167-ffp/catalogs/targets_drc.csv")
 data_folder = sc.Path("~/Projects/Research/hst17167-ffp/data/HST/")
 
-catalog = catproc.load_catalog(catalog_file, 50)
+catalog = catproc.load_catalog(catalog_file, 100)
 
 # reduce catalog for quicker testing
 targets = list(catalog['target'].unique())

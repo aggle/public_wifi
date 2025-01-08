@@ -36,10 +36,17 @@ def compute_psf_center(stamp):
     psf_center = centroid_func(fit_stamp) + ll
     return psf_center
 
-def center_stamp(stamp):
+def shift_stamp_to_center(stamp, pad=3):
     center = get_stamp_center(stamp)
+    # assume the center is already in the correct pixel and we want only a subpixel shift
+    # cut out a small region around the center to avoid affects from possible nearby companions
     psf_center = compute_psf_center(stamp)
     shift = -(psf_center-center)[::-1]
+    # psf_center = compute_psf_center(
+    #     stamp[center[1]-pad:center[1]+pad+1, center[0]-pad:center[0]+pad+1]
+    # )
+    # # shift = -psf_center[::-1]
+    # shift = -(psf_center - center)
     shifted_img = ndimage.shift(stamp, shift, mode='reflect')
     return shifted_img
 
