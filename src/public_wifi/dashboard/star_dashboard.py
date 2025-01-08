@@ -366,7 +366,7 @@ def all_stars_dashboard(
                     row,
                     stars.loc[star_selector.value],
                     cds_dict=cds_dicts[i],
-                    jackknife_kklip=jackknife_mode_selector.value,
+                    jackknife_kklip=jackknife_klmode_selector.value,
                 )
 
         def update_cube_scrollers():
@@ -442,15 +442,16 @@ def all_stars_dashboard(
         nmodes_thresh_spinner = bkmdls.Spinner(
             title='# modes thresh', low=1, high=len(stars), step=1, value=3, width=80
         )
-        jackknife_mode_selector = bkmdls.Spinner(
+        jackknife_klmode_selector = bkmdls.Spinner(
             title="Jackknife Kklip",
-            low=1, value=1, high=len(stars), step=1, width=80,
+            low=1, value=1, high=len(stars), step=1,
+            width=80,
         )
-        def jackknife_update():
+        def update_jackknife_plot():
             update_cds_dicts() 
             update_cube_scrollers()
-        jackknife_mode_selector.on_change(
-            'value', lambda attr, old, new: jackknife_update
+        jackknife_klmode_selector.on_change(
+            'value', lambda attr, old, new: update_jackknife_plot()
         )
 
         subtraction_button = bkmdls.Button(
@@ -500,7 +501,7 @@ def all_stars_dashboard(
             bklyts.column(
                 ssim_spinner, min_nref_spinner,
                 snr_thresh_spinner, nmodes_thresh_spinner,
-                jackknife_mode_selector,
+                jackknife_klmode_selector,
             ),
         )
 
