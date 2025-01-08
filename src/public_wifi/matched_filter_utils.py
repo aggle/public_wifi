@@ -91,26 +91,71 @@ def compute_throughput(mf, klmodes=None) -> float | pd.Series:
       A series of 2-D array throughput maps, indexed by KLIP mode
     """
     # the first term in the throughput is the amplitude of the MF
-    throughput = apply_matched_filter(
-        mf, mf,
-        correlate_mode='valid',
-        throughput_correction=False,
-        kl_basis=None
-    )[0, 0] # this indexing works because correlate_mode is 'valid'
+    # throughput = apply_matched_filter(
+    #     mf, mf,
+    #     correlate_mode='valid',
+    #     throughput_correction=False,
+    #     kl_basis=None
+    # )[0, 0] # this indexing works because correlate_mode is 'valid'
+    norm = compute_mf_norm(mf)
     # the second term is the amount of the MF captured by the KL basis at each
     # position
+    bias = 0
     if klmodes is not None:
         # format kl modes as a series
-        if not isinstance(klmodes, pd.Series):
-            klmodes = pd.Series({i+1: mode for i, mode in enumerate(klmodes)})
-        mf_adjust = klmodes.apply(
-            lambda klmode: apply_matched_filter(
-                klmode,
-                mf,
-                correlate_mode='same',
-                throughput_correction=False
-            )**2
-        )
-        mf_adjust = mf_adjust.cumsum()
-        throughput = throughput - mf_adjust
+        bias = compute_pca_bias(mf, klmodes)
+    throughput = norm - bias
     return throughput
+
+def compute_mf_norm(
+        mf
+) -> float :
+    """
+    Compute the norm of the matched filter
+
+    Parameters
+    ----------
+    mf : np.ndarray
+      the matched filter
+
+    Output
+    ------
+    norm : float
+      The 2-norm of the matched filter
+
+    """
+    norm = np.dot(mf.ravel(), mf.ravel())
+    return norm
+
+def compute_pca_bias(
+        mf : np.ndarray,
+        klip_modes : np.ndarray | pd.Series,
+) -> np.ndarray :
+    """
+    Compute the bias introduced by sub-optimal PSF modeling
+
+    Parameters
+    ----------
+    mf : np.ndarray
+      A matched filter in the shape of the PSF
+    klip_modes : np.ndarray | pd.Series
+      The KLIP modes used to construct the model PSF
+
+    Output
+    ------
+    bias : pd.Series
+      A pixel map of the bias, as a cumulative sum
+
+    """
+    if not isinstance(klip_modes, pd.Series):
+        klip_modes = pd.Series({i+1: mode for i, mode in enumerate(klip_modes)})
+    bias = klip_modes.apply(
+        lambda klmode: apply_matched_filter(
+            klmode,
+            mf,
+            correlate_mode='same',
+            throughput_correction=False
+        )**2
+    )
+    bias = bias.cumsum()
+    return bias
