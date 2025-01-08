@@ -1,70 +1,42 @@
 import numpy as np
 import pandas as pd
 
-from scipy.signal import correlate
-from astropy.convolution import convolve
+from astropy.stats import sigma_clipped_stats
 
-from astropy.nddata import Cutout2D
+from public_wifi import misc
 
-
-def make_normalized_psf(
-        psf_stamp : np.ndarray,
-        width : int | None = None,
-        scale : float = 1.,
-):
+def flag_candidate_pixels(
+        maps : np.ndarray | pd.Series,
+        thresh : float,
+        n_modes : int = 3
+) -> np.ndarray[bool]:
     """
-    normalize a PSF to have flux 1
-    width : if given, the PSF will have shape (width, width)
-    scale : float = 1.
-      Scale the PSF so that the total flux has this value
+    Flag pixels in a detection cube as True if they meet the detection
+    criteria, or False if they don't
+
+    Parameters
+    ----------
+    maps : np.array | pd.Series
+      A stack of detection maps, one per Kklip
     """
-    if isinstance(width, int) and (width < min(psf_stamp.shape)):
-        borders = (np.array(psf_stamp.shape) - width)/2
-        borders = borders.astype(int)
-        psf_stamp = psf_stamp[borders[0]:-borders[0], borders[1]:-borders[1]]
+    stack = np.stack(maps)
+    stackmap = (stack >= thresh)
+    mode_detections = np.sum(stackmap.astype(int), axis=0)
+    detections = (mode_detections >= n_modes)
+    return detections
 
-    # set min to 0 and normalized
-    norm_psf = psf_stamp - np.nanmin(psf_stamp)
-    norm_psf /= np.nansum(norm_psf)
-    # scale to arbitrary value
-    norm_psf *= scale
-    return norm_psf
-
-def make_matched_filter(stamp, width : int | None = None):
-    # take in an arbitrary PSF stamp and turn it into a matched filter
-    stamp = stamp.copy()
-    normalized_stamp = make_normalized_psf(stamp, width)
-    normalized_stamp -= np.nanmean(normalized_stamp)
-    return normalized_stamp
-
-def apply_matched_filter(
-        target_stamp : np.ndarray,
-        psf_model : np.ndarray,
-        correlate_mode='same',
-) -> np.ndarray:
-    """
-    Apply the matched filter as a correlation. Normalize by the matched filter norm.
-    target_stamp : np.ndarray
-      the stamp in which you are looking for signal
-    psf_model  : np.ndarray
-      the 2-D psf model
-    correlate_mode : str
-      'same' or 'valid'. use 'same' for searches, and 'valid' if you have an
-      unsubtracted psf and want the flux
-    """
-    matched_filter = make_matched_filter(psf_model)
-    detmap = correlate(
-        target_stamp,
-        matched_filter,
-        method='direct',
-        mode=correlate_mode)
-    detmap = detmap / np.linalg.norm(matched_filter)**2
-    # detmap = convolve(target_stamp, psf_model-psf_model.min(), normalize_kernel=True)
-    return detmap
+def make_series_snrmaps(residuals):
+    """Make SNR maps out of a series of arrays. Compute the sigma-clipped noise of an image and divide through"""
+    std_maps = residuals.apply(lambda img: sigma_clipped_stats(img)[-1])
+    snrmaps = residuals/std_maps
+    return snrmaps
 
 
-
-def detect_snrmap(snrmaps, snr_thresh=5, n_modes=3) -> pd.Series:
+def detect_snrmap(
+        snrmaps,
+        snr_thresh : float = 5,
+        n_modes : int = 3
+) -> pd.DataFrame:
     """
     Detect sources using the SNR maps
     snrmaps : pd.Series
@@ -75,37 +47,37 @@ def detect_snrmap(snrmaps, snr_thresh=5, n_modes=3) -> pd.Series:
       the threshold on the number of modes in which a candidate must be detected
 
     A detection is a pixel that is over the threshold in at least three modes
+
+    Output
+    ------
+    candidates : pd.DataFrame
+      DataFrame with columns 'cand_id', 'pixel' where pixel is a tuple of (x, y)
+
     """
-    stack = np.stack(snrmaps)
-    center_pixel = np.floor(((np.array(stack.shape[-2:])-1)/2)).astype(int)
-    # get all the pixels over threshold
-    initial_candidates = pd.DataFrame(
-        np.where(stack >= snr_thresh),
-        index=['kklip','dy','dx']
-    ).T
-    initial_candidates['dy'] -= center_pixel[1]
-    initial_candidates['dx'] -= center_pixel[0]
+    cand_flags = flag_candidate_pixels(snrmaps, snr_thresh, n_modes)
     # no candidates? Quit early
-    if len(initial_candidates) == 0:
-        return None
-    else:
-        # drop the central pixel
-        central_pixel_filter = initial_candidates[['dy','dx']].apply(
-            lambda row: all(row.values == (0, 0)) == False,
-            axis=1
-        ) 
-        initial_candidates = initial_candidates[central_pixel_filter].copy()
-        # group by row, col and find the ones that appear more than n_modes
-        candidate_filter = initial_candidates.groupby(['dy', 'dx']).size() >= n_modes
-        candidates = candidate_filter[candidate_filter].index.to_frame().reset_index(drop=True)
-        candidates = candidates[['dx','dy']].apply(tuple, axis=1)
-        # return candidates
-        candidates = candidates.reset_index(name='pixel')
-        candidates.rename(columns={"index": "cand_id"}, inplace=True)
-        return group_candidates(candidates)
+    if (cand_flags == False).all():
+        return pd.DataFrame(None, columns=['cand_id', 'pixel'])
+
+    initial_candidate_pixels = pd.DataFrame(
+        np.where(cand_flags),
+        index=['dy','dx']
+    ).T
+
+    center_pixel = misc.get_stamp_center(snrmaps)
+    initial_candidate_pixels['dy'] -= center_pixel[1]
+    initial_candidate_pixels['dx'] -= center_pixel[0]
+
+    initial_candidate_pixels = initial_candidate_pixels[['dx','dy']].apply(tuple, axis=1)
+    # drop the central pixel - assume you can't make a detection there
+    candidate_pixels = initial_candidate_pixels[initial_candidate_pixels != (0, 0)]
+    candidate_pixels = candidate_pixels.reset_index(name='pixel')
+    candidate_pixels.rename(columns={"index": "cand_id"}, inplace=True)
+    candidates = group_nearest_candidate_pixels(candidate_pixels)
+    return candidates
 
 
-def group_candidates(candidates):
+def group_nearest_candidate_pixels(candidates):
     """
     Given a group of candidate positions, group the contiguous pixels together
     """
@@ -156,3 +128,53 @@ def group_candidates(candidates):
     # return candidates
     candidates['cand_id'] = groups
     return candidates
+
+def make_jackknife_iterator(references):
+    """
+    Make an interator for jackknife analysis
+    Returns a dict whose key is the reference that has been excluded, and whose
+    entries are the other references
+    """
+    used_refs = references.query("used == True")
+    ref_targets = used_refs.index.get_level_values("target")
+    ref_iterator = {i: list(ref_targets[ref_targets != i]) for i in ref_targets}
+    return ref_iterator
+
+def jackknife_analysis(
+        star,
+        sim_thresh = 0.5,
+        min_nref = 2,
+) -> pd.Series :
+    """
+    Perform a jackknife test on a star by iteratively doing PSF subtraction, removing one reference each time.
+
+    Parameters
+    ----------
+    star : starclass.Star
+      the star to analyze
+
+    Output
+    ------
+    jackknife_result : pd.Series
+      a series with a hierarchical index of (target_name, kklip) that stores the subtracted array
+
+    """
+    # references = star.references.query("used == True")
+    # ref_targets = references.index.get_level_values("target")
+    # ref_iterator = {i: list(ref_targets[ref_targets != i]) for i in ref_targets}
+    ref_iterator = make_jackknife_iterator(star.references)
+    results = {}
+    for r, refs in ref_iterator.items():
+        results[r] = star.run_klip_subtraction(
+            sim_thresh=sim_thresh,
+            min_nref=min_nref,
+            jackknife_reference=r
+        )['klip_sub']
+    # do two levels of concatenation to turn it onto a proper series
+    jackknife = pd.concat(results, names=['target', 'index']).reorder_levels(['index', 'target'])
+    jackknife = pd.concat(jackknife.to_dict())
+    jackknife.name = 'klip_jackknife'
+    # now make it an SNR map
+    jackknife = make_series_snrmaps(jackknife)
+    return jackknife
+

@@ -1,24 +1,37 @@
 List of TODOs
-* TODO Add a plot of the radial profile to the dashboard
-Direct comparison of the initial stamp's radial profile against the KLIP model
-radial profiles to the info panel on the dashboard.
 
-* TODO Oversample matched filter
-because the drc files are well-sampled combinations of dithers
-
-* TODO Contrast maps
+* TODO [#A] Contrast maps
 Contrast maps : compute the matched filter throughput-corrected array. Then
 apply the matched filter to the initial target stamp and get what the MF thinks
 the flux of the target is. Then, divide the MF throughput-corrected array by the
 MF value of the target stamp. That is a contrast map!
 
-* TODO Generic reference matching function
+* TODO [#B] Define detection definition for convolution with MF
+
+* TODO [#B] Compute KLIP-MF throughput corrections
+
+* TODO [#C] Implement NMF
+Implement Nonnegative Matrix Factorization
+
+* TODO [#C] Add a plot of the radial profile to the dashboard
+Direct comparison of the initial stamp's radial profile against the KLIP model
+radial profiles to the info panel on the dashboard.
+
+* TODO [#C] Oversample matched filter
+because the drc files are well-sampled combinations of dithers
+
+* TODO [#C] Generic reference matching function
 Right now, the user can only specify which catalog columns to use for matching
 references (e.g. match on the same filter). The user should be able to write
 their own function to match references that operates on the catalog and returns
 True or False.
 
-* TODO catalog processing class 
+* TODO [#C] catalog processing class 
 Rewrite the catalog processing as a class that requires the user to implement a
 `load_catalog()` method and a `match_references()` method! Then the class runs
 all the processing steps and shows the dashboard.
+
+* DONE Handle case where no candidates are found
+CLOSED: [2024-12-19 Thu 14:47]
+Stars with no candidates case the dashboard to mess up its state
+
