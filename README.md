@@ -63,10 +63,16 @@ the scope of this README.
  
 ### Input catalog ###
 
-As stated above, ...
+As stated above, the main work of the user is creating the initial catalog. The catalog must have a column for an identifier for the targets, a column with the name of the file containing the exposure, and columns for the x and y position of the target in that exposure. All other data are optional. 
 
-Components
-----------
+### Process the catalog ###
 
+One function will initialize the `Star` objects, organize PSF subtraction, and run the detection routines: `catalog_processing.process_catalog()`. Provide it with the threshold on the similarity score, the minimum number of references to use regardless of score, an SNR detection threshold, and a "# modes" detection threshold.
 
+The `match_references_on` argument is used for listing catalog columns that should have the same value for target and reference - for example, "filter".
 
+This function returns a pd.Series where each entry is a Star object. The analysis results are saved in the `star.results` dataframe. The number of rows in this dataframe corresponds to the number of different matching categories used (for example, if two filters were analyzed separately, there will be two rows).
+
+TODO
+----
+- Move all injection and recovery code out of the Star class

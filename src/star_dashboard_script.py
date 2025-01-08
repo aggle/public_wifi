@@ -41,7 +41,7 @@ dash = sd.all_stars_dashboard(stars, plot_size=350)
 
 
 if __name__ == "__main__":
-    port = 5007
+    port = 5006
     apps = {'/': dash}
     server = Server(apps, port=port)
     print(f'\nOpening Bokeh application on http://localhost:{port}/\n')
