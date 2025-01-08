@@ -13,6 +13,7 @@ from astropy.stats import sigma_clipped_stats
 from public_wifi import misc
 from public_wifi import subtraction_utils as subutils
 from public_wifi import detection_utils as dutils
+from public_wifi import matched_filter_utils as mf_utils
 from public_wifi import contrast_utils as cutils
 
 class Star:
@@ -377,7 +378,7 @@ class Star:
 
         # df['klip_basis'] = df['klip_basis'].cumsum()
         detmaps = df.apply(
-            lambda dfrow : dutils.apply_matched_filter(
+            lambda dfrow : mf_utils.apply_matched_filter(
                 dfrow['klip_sub'],
                 dfrow['klip_model'],
                 mf_width = min(7, self.stamp_size),
@@ -430,11 +431,11 @@ class Star:
         """
         df = pd.DataFrame(row[['klip_model', 'klip_sub', 'klip_basis']].to_dict())
         df['matched_filter'] = df['klip_model'].apply(
-            dutils.make_matched_filter,
+            mf_utils.make_matched_filter,
             width=7,
         )
         detmaps = df.apply(
-            lambda dfrow : dutils.apply_matched_filter(
+            lambda dfrow : mf_utils.apply_matched_filter(
                 dfrow['klip_sub'],
                 dfrow['klip_model'],
                 mf_width = min(7, self.stamp_size),
@@ -444,7 +445,7 @@ class Star:
             axis=1
         )
         thpt = df.apply(
-            lambda dfrow: dutils.compute_throughput(
+            lambda dfrow: mf_utils.compute_throughput(
                 dfrow['matched_filter'],
                 df['klip_basis'][:dfrow.name],
             ).iloc[-1],
@@ -454,7 +455,7 @@ class Star:
         if contrast:
             center = int(np.floor(self.stamp_size/2))
             primary_fluxes = df.apply(
-                lambda dfrow : dutils.apply_matched_filter(
+                lambda dfrow : mf_utils.apply_matched_filter(
                     row['stamp'],
                     dfrow['klip_model'],
                     correlate_mode='same',
@@ -526,7 +527,7 @@ class Star:
         # kklip is actually an index, not a mode number, so subtract 1 
         if kklip != -1:
             kklip -= 1
-        psf_model = dutils.make_normalized_psf(
+        psf_model = mf_utils.make_normalized_psf(
             result_row['klip_model'].iloc[kklip].copy(),
             7, # 7x7 psf, hard-coded
             1.,  # total flux of final PSF

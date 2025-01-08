@@ -1,13 +1,14 @@
 import pytest
 
 import itertools
+import pandas as pd
 import numpy as np
 
 import matplotlib as mpl
 from matplotlib import pyplot as plt
 
 from public_wifi import misc
-from public_wifi import detection_utils as dutils
+from public_wifi import matched_filter_utils as mfutils
 from public_wifi import contrast_utils as cutils
 
 def load_random_star(list_of_stars):
@@ -20,7 +21,7 @@ def test_make_normalized_psf(all_stars, scale):
     """Check that you can normalize a PSF to arbitrary flux"""
     star = load_random_star(all_stars)
     psf = star.cat.loc[0, 'stamp']
-    normed_psf =  dutils.make_normalized_psf(psf, 7, scale=scale)
+    normed_psf =  mfutils.make_normalized_psf(psf, 7, scale=scale)
     assert(np.abs(normed_psf.sum()/scale - 1) <= 1e-5)
 
 
@@ -31,7 +32,7 @@ def test_make_matched_filter(subtracted_stars):
             lambda star: np.concatenate(star.results['klip_model'].apply(
                 lambda klip_model: np.stack(klip_model.apply(
                     # the klip_model entries are series
-                    dutils.make_matched_filter,
+                    mfutils.make_matched_filter,
                     width=7
                 ).values)
             ).values)
@@ -49,35 +50,35 @@ def test_make_matched_filter(subtracted_stars):
 def test_apply_matched_filter(random_processed_star):
     star = random_processed_star
     print("Testing matched filter accuracy on ", star.star_id)
-    mf = dutils.make_matched_filter(star.results.loc[0, 'klip_model'][1], 7)
-    stamp = (mf - mf.min())/dutils.np.ptp(mf)
+    mf = mfutils.make_matched_filter(star.results.loc[0, 'klip_model'][1], 7)
+    stamp = (mf - mf.min())/mfutils.np.ptp(mf)
     stamp = stamp / stamp.sum()
     print(f"Stamp sum: {stamp.sum():0.10e}")
     stamp_center = misc.get_stamp_center(stamp)
-    mf_flux = dutils.apply_matched_filter(stamp, mf)[*stamp_center]
+    mf_flux = mfutils.apply_matched_filter(stamp, mf)[*stamp_center]
     print(f"MF flux: {mf_flux:0.10e}")
-    assert(dutils.np.abs(mf_flux - stamp.sum()) < 1e-10)
-    mf_flux = dutils.apply_matched_filter(
+    assert(mfutils.np.abs(mf_flux - stamp.sum()) < 1e-10)
+    mf_flux = mfutils.apply_matched_filter(
         stamp, mf, correlate_mode='valid'
     ).squeeze()
     print(f"MF flux, 'valid' mode: {mf_flux:0.10e}")
-    assert(dutils.np.abs(mf_flux - stamp.sum()) < 1e-10)
+    assert(mfutils.np.abs(mf_flux - stamp.sum()) < 1e-10)
 
 def test_matched_filter_on_normalized_psf(processed_stars):
     for star in processed_stars:
         star.results['matched_filter'] = star.results['klip_model'].apply(
             # the klip_model entries are series
-            lambda series: dutils.pd.Series(
+            lambda series: mfutils.pd.Series(
                 {series.name: series.apply(
-                    dutils.make_matched_filter
+                    mfutils.make_matched_filter
                 )}
             ),
         )
         star.results['normalized_psf'] = star.results['klip_model'].apply(
             # the klip_model entries are series
-            lambda series: dutils.pd.Series(
+            lambda series: mfutils.pd.Series(
                 {series.name: series.apply(
-                    dutils.make_normalized_psf
+                    mfutils.make_normalized_psf
                 )}
             ),
         )
@@ -86,7 +87,7 @@ def test_matched_filter_on_normalized_psf(processed_stars):
         )
 
 def test_row_apply_matched_filter(processed_stars):
-    star = processed_stars[dutils.np.random.choice(processed_stars.index)]
+    star = processed_stars[mfutils.np.random.choice(processed_stars.index)]
     row = star.results.iloc[0]
     row_detmaps = star.row_convolve_psf(row)['detmap']
     assert(len(row_detmaps) == len(row['klip_model']))
@@ -99,23 +100,23 @@ def test_row_apply_matched_filter(processed_stars):
 def test_compute_throughput_noKLmodes(random_processed_star):
     star = random_processed_star
     row = star.results.loc[1]
-    mf = dutils.make_matched_filter(row['klip_model'].iloc[-1], 7)
+    mf = mfutils.make_matched_filter(row['klip_model'].iloc[-1], 7)
     # compute throughput with no KL basis
-    thpt = dutils.compute_throughput(mf)
-    dot = dutils.np.dot(mf.ravel(), mf.ravel())
+    thpt = mfutils.compute_throughput(mf)
+    dot = mfutils.np.dot(mf.ravel(), mf.ravel())
     # print(thpt, dot)
-    assert(dutils.np.abs(thpt - dot) <= 1e-15)
+    assert(mfutils.np.abs(thpt - dot) <= 1e-15)
 
 
 def test_compute_throughput_KLmodes(random_processed_star):
     star = random_processed_star
     row = star.results.loc[1]
     kl_basis = row['klip_basis']
-    mf = dutils.make_matched_filter(row['klip_model'].iloc[-1], 7)
+    mf = mfutils.make_matched_filter(row['klip_model'].iloc[-1], 7)
     # compute throughput with no KL basis
     # print("klbasis", dutils.np.stack(kl_basis).shape)
-    thpt = dutils.compute_throughput(mf, kl_basis)
-    dot = dutils.np.dot(mf.ravel(), mf.ravel())
+    thpt = mfutils.compute_throughput(mf, kl_basis)
+    dot = mfutils.np.dot(mf.ravel(), mf.ravel())
     # print(dot, thpt)
     # print(thpt.shape)
     # check that the throughput is always less than the flux with no KL basis
@@ -124,54 +125,11 @@ def test_compute_throughput_KLmodes(random_processed_star):
     assert(((dot - thpt).apply(lambda el: (el >= 0).all())).all())
 
 
-# @pytest.mark.xfail
-# @pytest.mark.parametrize(
-#     "pos,contrast",
-#     [
-#         # ((-3, -2), 0.1), ((1, -1), 0.5)
-#         ((-1, -1), 1),((-1, -1), 0.1),((-1, -1), 0.01),((-1, -1), 0.001),
-#     ]
-# )
-# def test_apply_matched_filter_with_throughput(
-#         star_with_candidates,
-#         pos, contrast,
-# ):
-#     star = star_with_candidates
-#     print("Testing injections on ", star.star_id)
-#     pos = np.array(pos)
-#     contrast = float(contrast)
-
-#     row = star.cat.iloc[1]
-#     center = cutils.misc.get_stamp_center(row['stamp'])
-#     inj_pos = center + pos[::-1]
-#     inj_row = cutils.row_inject_psf(
-#         row, star=star, pos=pos, contrast=contrast, kklip=-1
-#     )
-#     results = star._row_klip_subtract(
-#         inj_row,
-#         **star.subtr_args,
-#     )
-#     # apply the matched filter with throughput correction
-#     kklip = -1
-#     psf_model = results['klip_model'].iloc[kklip]
-#     resid_stamp = results['klip_sub'].iloc[kklip]
-#     klip_basis = results['klip_basis'][:kklip]
-#     primary_flux = cutils.measure_primary_flux(row['stamp'], psf_model)
-#     mf_results = dutils.apply_matched_filter(
-#         resid_stamp, psf_model, throughput_correction=True, kl_basis=klip_basis
-#     )  / primary_flux
-
-#     # recover flux
-#     recovered_contrast = mf_results[*inj_pos]
-#     print(f"Input contrast: {contrast:0.2e}")
-#     print(f"Recovered contrast: {recovered_contrast:0.2e}")
-#     print(f"Error: {(np.abs(contrast-recovered_contrast)/contrast)*100:0.2f} %")
-    
 
 positions = [
-    (1, 1), (1, 0), (1, -1),
-    (0, 1), (0, -1),
-    (-1, 1), (-1, 0), (-1, -1)
+    (3, 3), (3, 0), (3, -3),
+    (0, 3), (0, -3),
+    (-3, 3), (-3, 0), (-3, -3)
 ]
 contrasts = [1, 0.01]
 
@@ -182,7 +140,7 @@ contrasts = [1, 0.01]
 def test_apply_matched_filter_with_throughput(
         nonrandom_subtracted_star,
         pos,
-        contrast,
+        contrast
 ):
     """
     Construct a situation where you should be able to correct for the
@@ -198,12 +156,23 @@ def test_apply_matched_filter_with_throughput(
     contrast = float(contrast)
 
     row = star.cat.iloc[1].copy()
-    kklip = -1
-    psf_model = star.results.loc[row.name, 'klip_model'].iloc[kklip].copy()
-    resid_stamp = star.results.loc[row.name, 'klip_sub'].iloc[kklip].copy()
-    klip_basis = star.results.loc[row.name, 'klip_basis'][:kklip].copy()
+
+    # pull out the different KLIP products
+    klip_cols = ['klip_model', 'klip_sub', 'klip_basis']
+    klip_df = pd.concat(
+        star.results.loc[row.name, klip_cols].to_dict(),
+        axis=1
+    )
+
+    # pick a Kklip
+    kklip = klip_df.index[-1]
+    psf_model = klip_df.loc[kklip, 'klip_model']
+    resid_stamp = klip_df.loc[kklip, 'klip_sub']
+    klip_basis = klip_df.loc[:kklip, 'klip_basis']
+    assert(kklip == len(klip_basis))
+
     row['stamp'] = psf_model.copy()
-    center = cutils.misc.get_stamp_center(row['stamp'])
+    center = misc.get_stamp_center(row['stamp'])
     inj_pos = center + pos[::-1]
     inj_row = cutils.row_inject_psf(
         row, star=star, pos=pos, contrast=contrast, kklip=-1
@@ -212,10 +181,10 @@ def test_apply_matched_filter_with_throughput(
     # apply the matched filter with throughput correction
     kklip = -1
     primary_flux = cutils.measure_primary_flux(row['stamp'], psf_model)
-    detmap = dutils.apply_matched_filter(
+    detmap = mfutils.apply_matched_filter(
         resid_stamp, psf_model, throughput_correction=True, kl_basis=None
     )
-    mf_result = dutils.apply_matched_filter(
+    mf_result = mfutils.apply_matched_filter(
         resid_stamp, psf_model, throughput_correction=True, kl_basis=klip_basis
     )  / primary_flux
 
