@@ -274,7 +274,6 @@ def all_stars_dashboard(
     plot_size = 400,
 ):
     # This returns a Bokeh application that takes a doc for displaying
-
     def app(doc):
 
         init_star = stars.index[0]
@@ -562,5 +561,6 @@ def all_stars_dashboard(
             ]
         )
 
+        doc.title = "PUBLIC-WIFI Dashboard"
         doc.add_root(lyt)
     return app
