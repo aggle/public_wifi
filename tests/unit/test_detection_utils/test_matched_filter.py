@@ -9,6 +9,19 @@ from public_wifi import misc
 from public_wifi import detection_utils as dutils
 from public_wifi import contrast_utils as cutils
 
+def load_random_star(list_of_stars):
+    star = np.random.choice(list_of_stars)
+    print(f"Randomly selected star: {star.star_id}")
+    return star
+
+@pytest.mark.parametrize("scale", [0.1, 1, 10])
+def test_make_normalized_psf(all_stars, scale):
+    """Check that you can normalize a PSF to arbitrary flux"""
+    star = load_random_star(all_stars)
+    psf = star.cat.loc[0, 'stamp']
+    normed_psf =  dutils.make_normalized_psf(psf, 7, scale=scale)
+    assert(np.abs(normed_psf.sum()/scale - 1) <= 1e-5)
+
 
 def test_make_matched_filter(subtracted_stars):
     """Test the matched filtering"""
