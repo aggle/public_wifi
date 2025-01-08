@@ -88,11 +88,11 @@ def make_row_cds(row, star, cds_dict={}, jackknife_kklip : int = 1):
         index=list(row['snrmap'].index.astype(str).values)
     )
 
-    cds = cds_dict.get("flux_maps", None)
-    cds_dict['flux_maps'] = dt.series_to_CDS(
-        row['fluxmap'],
+    cds = cds_dict.get("det_maps", None)
+    cds_dict['det_maps'] = dt.series_to_CDS(
+        row['detmap'],
         cds,
-        index=list(row['fluxmap'].index.astype(str).values)
+        index=list(row['detmap'].index.astype(str).values)
     )
 
     # jackknife test maps
@@ -156,12 +156,12 @@ def make_row_plots(row, row_cds, size=400):
     )
 
     # Flux maps
-    cds = row_cds["flux_maps"]
+    cds = row_cds["det_maps"]
     plot_kwargs={
-        "title": f"Matched filter - flux",
+        "title": f"Matched filter - detection",
         "width": size, "height": size
     }
-    plots['flux_maps'] = dt.generate_cube_scroller_widget(
+    plots['det_maps'] = dt.generate_cube_scroller_widget(
         cds, plot_kwargs=plot_kwargs,
         use_diverging_cmap=False,
     )
@@ -372,7 +372,7 @@ def all_stars_dashboard(
         def update_cube_scrollers():
             scroller_keys = [
                 'references', 'klip_model',
-                'klip_residuals', 'klip_mf', 'snr_maps', 'flux_maps',
+                'klip_residuals', 'klip_mf', 'snr_maps', 'det_maps',
                 'klip_jackknife',
             ]
             for i, row_plot in plot_dicts.items():
@@ -387,7 +387,7 @@ def all_stars_dashboard(
 
         # link all Kklip scrollers together:
         link_scrollers = [
-            'klip_residuals', 'klip_mf', 'snr_maps', 'flux_maps',
+            'klip_residuals', 'klip_mf', 'snr_maps', 'det_maps',
         ]
         for kp in plot_dicts.keys():
             for combo in combinations(link_scrollers, 2):
@@ -523,14 +523,14 @@ def all_stars_dashboard(
                     plot_dicts[0]['klip_residuals'],
                     plot_dicts[0]['snr_maps'],
                     # plot_dicts[0]['klip_mf'],
-                    plot_dicts[0]['flux_maps'],
+                    plot_dicts[0]['det_maps'],
                     plot_dicts[0]['klip_jackknife'],
                 ),
                 bklyts.row(
                     plot_dicts[1]['klip_residuals'],
                     plot_dicts[1]['snr_maps'],
                     # plot_dicts[1]['klip_mf'],
-                    plot_dicts[1]['flux_maps'],
+                    plot_dicts[1]['det_maps'],
                     plot_dicts[1]['klip_jackknife'],
                 ),
             ]),
