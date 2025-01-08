@@ -9,9 +9,6 @@ import pandas as pd
 import functools
 from itertools import combinations
 
-from public_wifi.dashboard import dash_tools as dt
-from public_wifi import catalog_processing as catproc
-
 import yaml
 import bokeh
 import bokeh.layouts as bklyts
@@ -21,6 +18,9 @@ import bokeh.models as bkmdls
 #from bokeh.models import ColumnDataSource, Slider, ColorBar, LogColorMapper
 from bokeh.plotting import figure
 from bokeh.themes import Theme
+
+from public_wifi.dashboard import dash_tools as dt
+from public_wifi import catalog_processing as catproc
 
 
 
@@ -44,7 +44,7 @@ def make_row_cds(row, star, cds_dict={}, jackknife_kklip : int = 1):
     filt = row['filter']
     # filter stamp
     cds = cds_dict.get("stamp", None)
-    cds_dict['stamp'] = img_to_CDS(row['stamp'], cds=cds)
+    cds_dict['stamp'] = dt.img_to_CDS(row['stamp'], cds=cds)
     # cube of references
     refs = star._row_get_references(row).query("used == True").copy()
     refs = refs.sort_values(by='sim', ascending=False)
@@ -453,6 +453,7 @@ def all_stars_dashboard(
             sizing_mode='stretch_width',
         )
         def rerun_subtraction_and_update():
+            print("Re-running PSF subtraction with new parameters.")
             catproc.catalog_subtraction(
                 stars, ssim_spinner.value, min_nref_spinner.value
             )
@@ -472,6 +473,7 @@ def all_stars_dashboard(
             sizing_mode='stretch_width',
         )
         def rerun_detection_and_update():
+            print("Re-running source detection with new parameters.")
             catproc.catalog_detection(
                 stars, snr_thresh_spinner.value, nmodes_thresh_spinner.value
             )
