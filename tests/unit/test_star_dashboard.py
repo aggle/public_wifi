@@ -3,7 +3,7 @@ import pytest
 from bokeh.server.server import Server
 
 import pandas as pd
-from public_wifi.utils import star_dashboard as sd
+from public_wifi.dashboard import star_dashboard as sd
 
 # def app(doc):
 #     layout = func(*args, **kwargs)

@@ -1,14 +1,16 @@
 # run with `bokeh serve test_star_dashboard.py --show` from a terminal
 import pandas as pd
+
 from public_wifi import starclass as sc
-from public_wifi.utils import star_dashboard as sd
+from public_wifi.dashboard import star_dashboard as sd
 from public_wifi import catalog_processing as catproc
+
 from bokeh.server.server import Server
 
 catalog_file = sc.Path("~/Projects/Research/hst17167-ffp/catalogs/targets_drc.csv")
 data_folder = sc.Path("~/Projects/Research/hst17167-ffp/data/HST/")
 
-catalog = catproc.load_catalog(catalog_file, 100)
+catalog = catproc.load_catalog(catalog_file, 50)
 
 # reduce catalog for quicker testing
 targets = list(catalog['target'].unique())

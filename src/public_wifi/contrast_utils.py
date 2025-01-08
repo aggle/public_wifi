@@ -4,6 +4,7 @@ import pandas as pd
 from scipy import optimize
 from public_wifi import misc
 from public_wifi import detection_utils as dutils
+from public_wifi import matched_filter_utils as mf_utils
 from public_wifi import catalog_processing as catproc
 
 
@@ -26,11 +27,12 @@ def measure_primary_flux(
     flux : float
       the flux of the primary
     """
-    mf = dutils.make_matched_filter(model_psf)
-    star_flux = dutils.apply_matched_filter(
+    mf = mf_utils.make_matched_filter(model_psf)
+    star_flux = mf_utils.apply_matched_filter(
         stamp, mf,
         correlate_mode='valid',
         throughput_correction=True,
+        kl_basis=None,
     )
     center = misc.get_stamp_center(star_flux)
     return star_flux[*center[::-1]]
@@ -102,7 +104,7 @@ def row_inject_psf(row, star, pos, contrast, kklip : int = -1) -> np.ndarray:
     # kklip is actually used as an index, not a mode number, so subtract 1 
     if kklip != -1:
         kklip -= 1
-    psf_model = dutils.make_normalized_psf(
+    psf_model = mf_utils.make_normalized_psf(
         result_row['klip_model'].iloc[kklip].copy(),
         7, # 7x7 psf, hard-coded
         1.,  # total flux of final PSF

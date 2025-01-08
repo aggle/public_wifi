@@ -30,7 +30,7 @@ def load_catalog(
     init_catalog = pd.read_csv(str(catalog_file), dtype=dtypes)
     init_catalog[['x','y']] = init_catalog[['x','y']]-1
     print(f"Filtering out stars with SNR < {snr_thresh}")
-    all_stars = init_catalog['target'].unique()
+    stars = init_catalog['target'].unique()
     snr_thresh = snr_thresh
     above_thresh = init_catalog.groupby("target").apply(
         lambda group: all(group['snr'] >= snr_thresh),
@@ -195,7 +195,7 @@ def catalog_subtraction(
 
     Parameters
     ----------
-    all_stars : pd.Series
+    stars : pd.Series
       pandas Series where each entry is a starclass.Star object, and the index is the star identifier
     min_nref : int = 2
       Use at least this many reference stamps, regardless of similarity score
@@ -217,7 +217,7 @@ def catalog_subtraction(
 
 
 def catalog_detection(
-        all_stars : pd.Series,
+        stars : pd.Series,
         snr_thresh : float,
         n_modes : int,
 ) -> None:
@@ -226,7 +226,7 @@ def catalog_detection(
 
     Parameters
     ----------
-    all_stars : pd.Series
+    stars : pd.Series
       pandas Series where each entry is a starclass.Star object, and the index
       is the star identifier
 
@@ -236,14 +236,14 @@ def catalog_detection(
     detection maps, and candidates
     """
     det_args = dict(snr_thresh=snr_thresh, n_modes=n_modes)
-    for star in all_stars:
+    for star in stars:
         star.det_args.update(det_args)
         # PSF Convolution
-        detmaps = star.results.apply(
-                star._row_convolve_psf,
-                axis=1
-        ).squeeze()
-        detmaps = star.apply_matched_filter()
+        # detmaps = star.results.apply(
+        #         star._row_apply_matched_filter,
+        #         axis=1
+        # ).squeeze()
+        detmaps = star.apply_matched_filter(contrast=True, throughput_correction=True)
         star.results[detmaps.name] = detmaps
         # SNR
         snrmaps = star.run_make_snr_maps()
@@ -259,10 +259,11 @@ def catalog_detection(
         star.results[fluxmaps.name] = fluxmaps
     return
 
-def catalog_candidate_validation(stars : pd.Series, sim_thresh, min_nref):
+def catalog_candidate_validation(stars : pd.Series, sim_thresh, min_nref) -> None:
     for star in stars:
         jackknife = star.jackknife_analysis(
             sim_thresh=sim_thresh,
             min_nref=min_nref
         )
         star.results['klip_jackknife'] = jackknife
+    return

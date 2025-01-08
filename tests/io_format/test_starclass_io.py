@@ -114,7 +114,7 @@ def test_apply_matched_filter(random_processed_star):
     'func_name,result_name',
     [
         ('_row_make_snr_map', 'snrmap'), # SNR map
-        ('_row_convolve_psf', 'detmap'), # Source detection w PSF convolution
+        ('_row_apply_matched_filter', 'detmap'), # Source det. w PSF convolution
         ('_row_make_mf_flux_map', 'fluxmap'), # MF flux calibration
     ]
 )
@@ -158,7 +158,9 @@ def test_jackknife_analysis(all_stars):
     # really the purpose is to set the "used" flag on the references
     star.results = star.results.join(star.run_klip_subtraction())
     jackknife = star.jackknife_analysis()
-    print(jackknife.loc[1])
+    # this should be a dataframe with a single column
+    jackknife = jackknife.squeeze()
+    # print(jackknife.loc[1])
     assert(isinstance(jackknife, sc.pd.Series))
 
 # @pytest.mark.parametrize('scale', list(range(1, 21)))

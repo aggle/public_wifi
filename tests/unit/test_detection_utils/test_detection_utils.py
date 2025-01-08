@@ -5,30 +5,6 @@ from public_wifi import detection_utils as dutils
 from public_wifi import misc
 
 
-def test_make_normalized_psf(processed_stars):
-
-    psfs = processed_stars.apply(
-        # apply to each star
-        lambda star: star.results['klip_model'].apply(
-            # apply to each row of the results dataframe
-            lambda klip_model: klip_model.apply(
-                # the klip_model entries are series
-                dutils.make_normalized_psf,
-            )
-        )
-    )
-    psf_sums = psfs.apply(
-        lambda star: star.apply(
-            lambda row: row.apply(dutils.np.nansum)
-        )
-    )
-    for star_id in psf_sums.index:
-        for row_id in psf_sums.loc[star_id].index:
-            for kklip in psf_sums.loc[star_id].loc[row_id].index:
-                val = psf_sums.loc[star_id].loc[row_id].loc[kklip]
-                # print(f"{star_id} {row_id} {kklip} {val:0.2e}")
-                assert(val - 1 < 1e-15)
-
 def test_snr_map(random_processed_star):
     star = random_processed_star
     print(f"Randomly chosen star: {star.star_id}")
@@ -61,6 +37,7 @@ def test_detect_snrmap(star_with_candidates):
     assert(all([c in candidates.columns for c in ['cand_id', 'pixel']]))
 
 
+@pytest.mark.skip("Function not implemented")
 @pytest.mark.parametrize('snr_thresh', [100, 5])
 def test_detect_snrmap_dev(star_with_candidates, snr_thresh):
     star = star_with_candidates

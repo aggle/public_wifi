@@ -55,3 +55,10 @@ def row_get_psf_stamp_position(row, stamp_size=0):
         stamp_center = get_stamp_center(stamp_size)
         xy += stamp_center
     return xy
+
+def get_pix_separation_from_center(stamp_size):
+    """Get a map of the separation of each pixel from the center"""
+    center = get_stamp_center(stamp_size)
+    grid = (np.mgrid[:stamp_size, :stamp_size] - center[:, None, None])
+    sep_map = np.linalg.norm(grid, axis=0)
+    return sep_map

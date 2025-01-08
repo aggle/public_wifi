@@ -10,6 +10,14 @@ from pathlib import Path
 from public_wifi import starclass as sc
 from public_wifi import catalog_processing as catproc
 
+
+# default subtraction args
+min_nref = 8
+sim_thresh = 0.9
+# default detection args
+snr_thresh = 5.
+n_modes = 3
+
 @pytest.fixture(scope='session')
 def catalog_file():
     catalog_file = Path("~/Projects/Research/hst17167-ffp/catalogs/targets_drc.csv")
@@ -64,6 +72,26 @@ def all_stars(catalog, data_folder):
 @pytest.fixture(scope='session')
 def stars_with_references(all_stars):
     all_stars.apply(lambda star: star.set_references(compute_similarity=True))
+    return all_stars
+
+@pytest.fixture(scope='session')
+def subtracted_stars(catalog, data_folder):
+    # perform PSF subtraction
+    stars = catproc.catalog_initialization(
+        catalog,
+        star_id_column='target',
+        match_references_on=['filter'],
+        data_folder=data_folder,
+        stamp_size=15,
+        bad_references=[],
+    )
+    catproc.catalog_subtraction(
+        stars,
+        # psf subtraction args
+        min_nref = min_nref,
+        sim_thresh = sim_thresh,
+    )
+    return stars
 
 @pytest.fixture(scope='session')
 def processed_stars(catalog, data_folder):
@@ -76,19 +104,31 @@ def processed_stars(catalog, data_folder):
         bad_references = [],
         scale_stamps = False,
         # psf subtraction args
-        min_nref = 8,
-        sim_thresh = 0.9,
+        min_nref = min_nref,
+        sim_thresh = sim_thresh,
         # detection args
-        snr_thresh = 5.,
-        n_modes = 3,
+        snr_thresh = snr_thresh,
+        n_modes = n_modes,
     )
     return stars
 
 # individual stars
 @pytest.fixture(scope='session')
+def random_subtracted_star(subtracted_stars):
+    """Get a star with subtraction and detection results attached"""
+    return np.random.choice(subtracted_stars)
+
+@pytest.fixture(scope='session')
+def nonrandom_subtracted_star(subtracted_stars):
+    """Get a star with subtraction and detection results attached"""
+    # return subtracted_stars.iloc[2]
+    return subtracted_stars['J042930.88+264433.3']
+
+@pytest.fixture(scope='session')
 def random_processed_star(processed_stars):
     """Get a star with subtraction and detection results attached"""
     return np.random.choice(processed_stars)
+
 @pytest.fixture(scope='session')
 def nonrandom_processed_star(processed_stars):
     """Get a star with subtraction and detection results attached"""
