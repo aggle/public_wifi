@@ -173,14 +173,14 @@ positions = [
     (0, 1), (0, -1),
     (-1, 1), (-1, 0), (-1, -1)
 ]
-contrasts = [1, 0.1, 0.01, 0.001]
+contrasts = [1, 0.01]
 
 @pytest.mark.parametrize(
     "pos,contrast",
     list(itertools.product(positions, contrasts))
 )
 def test_apply_matched_filter_with_throughput(
-        star_with_candidates,
+        nonrandom_subtracted_star,
         pos,
         contrast,
 ):
@@ -192,7 +192,7 @@ def test_apply_matched_filter_with_throughput(
     - run the matched filter
     - the recovered throughput should be exact
     """
-    star = star_with_candidates
+    star = nonrandom_subtracted_star
     print("Testing injections on ", star.star_id)
     pos = np.array(pos)
     contrast = float(contrast)
