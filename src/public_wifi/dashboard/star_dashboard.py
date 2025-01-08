@@ -230,8 +230,8 @@ def make_table_cds(
         dataframe : pd.DataFrame,
         cds=None,
         table=None,
-        plot_scale=60
 ):
+    """Generic method to generate a table display from a dataframe"""
     if cds is None:
         cds = bkmdls.ColumnDataSource()
     cds.data.update(dataframe)
@@ -241,9 +241,7 @@ def make_table_cds(
        table = bkmdls.DataTable(
            source=cds,
            columns=columns,
-           width = plot_scale * (dataframe.shape[1]+1),
-           height = plot_scale * (dataframe.shape[0]+1),
-           # sizing_mode='stretch_height',
+           sizing_mode='stretch_height',
        )
     return cds, table
 
@@ -251,7 +249,6 @@ def make_candidate_cds(
         result_rows,
         cds=None,
         table=None,
-        plot_scale=60,
 ):
     """
     Make the CDS and display table for the candidates
@@ -268,7 +265,7 @@ def make_candidate_cds(
     cand_df = pd.concat(candidates.to_dict(), names=['filter', 'pix_id'])#.reset_index('filter')
     cand_df = cand_df.reset_index().drop(columns="pix_id").sort_values(by=['filter', 'cand_id'])
     # source = bkmdls.ColumnDataSource(cand_df)
-    cds, table = make_table_cds(cand_df, cds=cds, table=table, plot_scale=plot_scale)
+    cds, table = make_table_cds(cand_df, cds=cds, table=table)
     cds.data.update(cand_df)
     return cds, table
 
@@ -289,7 +286,6 @@ def all_stars_dashboard(
         # candidates table
         candidate_cds, candidate_table = make_candidate_cds(
             stars.loc[init_star].results,
-            plot_scale=60,
         )
         candidate_table.update(sizing_mode='stretch_width')
 
@@ -350,7 +346,6 @@ def all_stars_dashboard(
                 stars.loc[star_selector.value].results,
                 cds=candidate_cds,
                 table=candidate_table,
-                plot_scale=plot_size,
             )
         def update_catalog_cds():
            catalog_cds.data.update(
@@ -553,10 +548,14 @@ def all_stars_dashboard(
             [
                 bklyts.row(
                     bklyts.column(star_selector, print_button),
-                    catalog_table
+                    catalog_table,
                 ),
                 bklyts.row(
-                    bklyts.column(reanalysis_lyt, candidate_table, sizing_mode='stretch_height'),
+                    bklyts.column(
+                        reanalysis_lyt,
+                        candidate_table,
+                        # sizing_mode='stretch_height'
+                    ),
                     tabs
                 ),
                 bklyts.row(quit_button),
