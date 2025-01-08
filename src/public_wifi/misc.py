@@ -38,8 +38,9 @@ def compute_psf_center(stamp):
 
 def shift_stamp_to_center(stamp, pad=3):
     center = get_stamp_center(stamp)
-    # assume the center is already in the correct pixel and we want only a subpixel shift
-    # cut out a small region around the center to avoid affects from possible nearby companions
+    # assume the center is already in the correct pixel and we want only a
+    # subpixel shift cut out a small region around the center to avoid affects
+    # from possible nearby companions
     psf_center = compute_psf_center(stamp)
     shift = -(psf_center-center)[::-1]
     # psf_center = compute_psf_center(
@@ -69,3 +70,15 @@ def get_pix_separation_from_center(stamp_size):
     grid = (np.mgrid[:stamp_size, :stamp_size] - center[:, None, None])
     sep_map = np.linalg.norm(grid, axis=0)
     return sep_map
+
+def center_to_ll_coords(stamp_size, pix):
+    """Convert center-origin coordinates to ll-origin coordinates"""
+    center = get_stamp_center(stamp_size)
+    ll_coord = center + np.array(pix)
+    return ll_coord
+
+def ll_to_center_coords(stamp_size, pix):
+    """Convert center-origin coordinates to ll-origin coordinates"""
+    center = get_stamp_center(stamp_size)
+    center_coord = center - np.array(pix)
+    return center_coord
