@@ -212,7 +212,9 @@ def catalog_subtraction(
 
     for star in stars:
         # KLIP
-        star.results = star.run_klip_subtraction(sim_thresh=sim_thresh, min_nref=min_nref)
+        star.results = star.run_klip_subtraction(
+            sim_thresh=sim_thresh, min_nref=min_nref
+        )
     return
 
 

@@ -9,6 +9,11 @@ from scipy import ndimage
 def get_stamp_center(stamp : int | np.ndarray | pd.Series) -> np.ndarray:
     """
     Get the central pixel of a stamp or cube
+
+    Parameters
+    ----------
+    stamp : int | np.ndarray | pd.Series
+      Either the length of one side, a 2-D image, or a Series of 2-D images
     Output
     ------
     center : np.ndarray
@@ -23,15 +28,14 @@ def get_stamp_center(stamp : int | np.ndarray | pd.Series) -> np.ndarray:
     center = np.floor(np.array(shape)/2).astype(int)
     return center
 
-def compute_psf_center(stamp):
+def compute_psf_center(stamp, pad=2):
     """
     Compute the PSF center in a 3x3 box around the nominal center
     return center in (x, y) convention
     """
-    pad=2
     center = get_stamp_center(stamp)
     ll = center - pad # lower left corner
-    rows, cols = (center[1]-pad,center[1]+pad+1), (center[0]-pad,center[1]+pad+1)
+    rows, cols = (center[1]-pad, center[1]+pad+1), (center[0]-pad, center[1]+pad+1)
     fit_stamp = stamp[rows[0]:rows[1], cols[0]:cols[1]]
     psf_center = centroid_func(fit_stamp) + ll
     return psf_center
@@ -43,11 +47,6 @@ def shift_stamp_to_center(stamp, pad=3):
     # from possible nearby companions
     psf_center = compute_psf_center(stamp)
     shift = -(psf_center-center)[::-1]
-    # psf_center = compute_psf_center(
-    #     stamp[center[1]-pad:center[1]+pad+1, center[0]-pad:center[0]+pad+1]
-    # )
-    # # shift = -psf_center[::-1]
-    # shift = -(psf_center - center)
     shifted_img = ndimage.shift(stamp, shift, mode='reflect')
     return shifted_img
 

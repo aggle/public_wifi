@@ -73,30 +73,42 @@ def test_row_inject_psf(nonrandom_processed_star, scale):
     # let's give ourselves a 5% margin
     assert(np.abs(flux_ratio/(scale+1) - 1) <= 0.05)
 
-def test_make_injected_cat(nonrandom_processed_star):
-    star = nonrandom_processed_star
-    # center = np.floor(
-    #     np.array(np.stack(star.cat['stamp']).shape[-2:])/2
-    # ).astype(int)
+def test_cat_inject_psf(nonrandom_subtracted_star):
+    star = nonrandom_subtracted_star
     center = cutils.misc.get_stamp_center(star.cat.iloc[0]['stamp'])
     pos = np.array([ -3, 3 ])
-    scale = 1
-    cat = cutils.make_injected_cat(star, pos, scale, -1)
+    contrast = 1
+    cat = cutils.cat_inject_psf(star, pos, contrast, -1, {'mf_width': star.stamp_size, 'scale': 1.})
     inj_stamps = cat['stamp']
-    # the flux at the injection site should be greater than the central flux
-    # for scale=1
+    # the flux at the injection site should be close to the central flux
+    # for contrast=1
     inj_pos = center + pos[::-1]
+
+    print(inj_stamps.apply(
+        lambda stamp: np.abs(stamp[*inj_pos] / stamp[*center] - 1)
+    ))
     assert(
         inj_stamps.apply(
-            lambda stamp: stamp[*inj_pos] > stamp[*center]
+            lambda stamp: np.abs(stamp[*inj_pos] / stamp[*center] - 1) < 0.05
         ).all()
     )
+    fig, axes = plt.subplots(nrows=1, ncols=len(cat))
+    for ax, (i, row) in zip(axes, cat.iterrows()):
+        ax.imshow(row['stamp'], origin='lower')
+    plt.show()
 
+def test_inject_subtract_detect(nonrandom_subtracted_star):
+    star = nonrandom_subtracted_star
+    results = cutils.inject_subtract_detect(star, (3, -3), 1, -1)
+    fig, ax = plt.subplots()
+    # ax.imshow(star.cat.loc[1, 'old_stamp'], origin='lower')
+    ax.imshow(results.loc[1, 'klip_sub'].iloc[-1], origin='lower')
+    plt.show()
 # @pytest.mark.parametrize(
 #     ['scale', 'is_detectable'],
 #     [(1, True), (1e-10, False)] # one is detectable the other isn't
 # )
-def test_inject_subtract_detect(nonrandom_processed_star, scale=1., is_detectable=True):
+def test_row_inject_subtract_detect(nonrandom_processed_star, scale=1., is_detectable=True):
     star = nonrandom_processed_star
     print("Testing injections on ", star.star_id)
     center = cutils.misc.get_stamp_center(star.cat.iloc[0]['stamp'])
@@ -117,11 +129,5 @@ def test_inject_subtract_detect(nonrandom_processed_star, scale=1., is_detectabl
     # assert(results.all() == is_detectable)
     # print(results.all(), is_detectable)
 
-def test_build_contrast_curve(nonrandom_processed_star):
-    star = nonrandom_processed_star
-    row = star.cat.iloc[-1]
-    result = cutils.build_contrast_curve(star, row, 0.5, 5, 5, 3)
-    # print(result)
-    # print(cutils.pd.concat(result, axis=1))
-    print(result)
-
+def test_make_star_contrast_curves():
+    pass
