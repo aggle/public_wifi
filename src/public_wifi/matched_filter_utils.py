@@ -6,23 +6,24 @@ from astropy.convolution import convolve
 from astropy.stats import sigma_clipped_stats
 from astropy.nddata import Cutout2D
 
+from public_wifi import misc
 
 def make_normalized_psf(
         psf_stamp : np.ndarray,
-        width : int | None = None,
         scale : float = 1.,
-):
+        center : bool = False,
+) -> np.ndarray:
     """
-    normalize a PSF to have flux 1
-    width : if given, the PSF will have shape (width, width)
+    Normalize a PSF to have an arbitrary flux
+    psf_stamp : np.ndarray
+      2-D psf
     scale : float = 1.
       Scale the PSF so that the total flux has this value
+    center : bool = True
+      Shift the PSF to the center of the array. Must be done before flux normalization
     """
-    if isinstance(width, int) and (width < min(psf_stamp.shape)):
-        borders = (np.array(psf_stamp.shape) - width)/2
-        borders = borders.astype(int)
-        psf_stamp = psf_stamp[borders[0]:-borders[0], borders[1]:-borders[1]]
-
+    if center:
+        psf_stamp = misc.shift_stamp_to_center(psf_stamp)
     # set min to 0 and normalized
     norm_psf = psf_stamp - np.nanmin(psf_stamp)
     norm_psf /= np.nansum(norm_psf)
@@ -33,7 +34,12 @@ def make_normalized_psf(
 def make_matched_filter(stamp, width : int | None = None):
     # take in an arbitrary PSF stamp and turn it into a matched filter
     stamp = stamp.copy()
-    normalized_stamp = make_normalized_psf(stamp, width)
+    if isinstance(width, int) and (width < min(stamp.shape)):
+        borders = (np.array(stamp.shape) - width)/2
+        borders = borders.astype(int)
+        stamp = stamp[borders[0]:-borders[0], borders[1]:-borders[1]]
+
+    normalized_stamp = make_normalized_psf(stamp)
     normalized_stamp -= np.nanmean(normalized_stamp)
     return normalized_stamp
 
@@ -60,7 +66,7 @@ def apply_matched_filter(
       If provided, include the KLIP basis in the throughput correction
       It must be only the KLIP basis up to the Kklip of the PSF model
     """
-    matched_filter = make_matched_filter(psf_model, mf_width)
+    matched_filter = make_matched_filter(psf_model, width=mf_width)
     detmap = correlate(
         target_stamp,
         matched_filter,

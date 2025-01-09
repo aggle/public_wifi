@@ -518,7 +518,7 @@ class Star:
 
 
 
-    def row_inject_psf(self, row, pos, scale, kklip : int = -1) -> np.ndarray:
+    def _row_inject_psf(self, row, pos, scale, kklip : int = -1) -> np.ndarray:
         """
         inject a PSF 
         """
@@ -540,7 +540,7 @@ class Star:
         inj_row['stamp'] = inj_stamp
         return inj_row
 
-    def row_inject_subtract_detect(
+    def _row_inject_subtract_detect(
             self,
             row : pd.Series,
             pos : tuple[int],
@@ -558,22 +558,23 @@ class Star:
             snr_thresh = self.det_args['snr_thresh']
         n_modes = self.det_args['n_modes']
 
-        inj_row = self.row_inject_psf(row, pos=pos, scale=contrast, kklip=-1)
+        inj_row = self._row_inject_psf(row, pos=pos, scale=contrast, kklip=-1)
         results = self._row_klip_subtract(
-            inj_row,
+            inj_row, **self.subtr_args,
         )
         snrmaps = self._row_make_snr_map(results).squeeze()
         # recover the SNR at the injected position
-        center = np.tile(np.floor((self.stamp_size-1)/2).astype(int), 2)
-        inj_pos = center + np.array(pos)[::-1]
-        inj_snr = np.median(
-            np.stack(snrmaps.values)[..., inj_pos[0], inj_pos[1]]
-        )
+        center = misc.get_stamp_center(self.stamp_size)
+        inj_pos = center + np.array(pos)
+        inj_snr = np.stack(snrmaps.values)[..., inj_pos[1], inj_pos[0]]
+        # sort the SNR, drop the first 2 Kklips, and take the mean of the
+        # highest values
+        mean_snr = np.sort(inj_snr[3:])[-n_modes:].mean()
         # get the detection flag at the detected positions
         detmap = dutils.flag_candidate_pixels(
             snrmaps,
             thresh = snr_thresh,
             n_modes = n_modes,
         )
-        is_detected = detmap[*inj_pos]
-        return inj_snr, is_detected
+        is_detected = detmap[*inj_pos[::-1]]
+        return mean_snr, is_detected

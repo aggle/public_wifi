@@ -12,9 +12,6 @@ data_folder = sc.Path("~/Projects/Research/hst17167-ffp/data/HST/")
 
 catalog = catproc.load_catalog(catalog_file, 100)
 
-# reduce catalog for quicker testing
-targets = list(catalog['target'].unique())
-catalog = catalog.query(f"target in {targets}")
 
 
 

@@ -11,6 +11,10 @@ from public_wifi import starclass as sc
 from public_wifi import catalog_processing as catproc
 
 
+# default initialization args
+star_id_column='target'
+match_references_on=['filter']
+stamp_size = 11
 # default subtraction args
 min_nref = 8
 sim_thresh = 0.9
@@ -61,10 +65,10 @@ def all_stars(catalog, data_folder):
     # )
     stars = catproc.catalog_initialization(
         catalog,
-        star_id_column='target',
-        match_references_on=['filter'],
+        star_id_column=star_id_column,
+        match_references_on=match_references_on,
         data_folder=data_folder,
-        stamp_size=15,
+        stamp_size=stamp_size,
         bad_references=[],
     )
     return stars
@@ -79,10 +83,10 @@ def subtracted_stars(catalog, data_folder):
     # perform PSF subtraction
     stars = catproc.catalog_initialization(
         catalog,
-        star_id_column='target',
-        match_references_on=['filter'],
+        star_id_column=star_id_column,
+        match_references_on=match_references_on,
         data_folder=data_folder,
-        stamp_size=15,
+        stamp_size=stamp_size,
         bad_references=[],
     )
     catproc.catalog_subtraction(
@@ -97,10 +101,10 @@ def subtracted_stars(catalog, data_folder):
 def processed_stars(catalog, data_folder):
     stars = catproc.process_catalog(
         input_catalog=catalog,
-        star_id_column='target',
-        match_references_on=['filter'],
+        star_id_column=star_id_column,
+        match_references_on=match_references_on,
         data_folder=data_folder,
-        stamp_size=11,
+        stamp_size=stamp_size,
         bad_references = [],
         scale_stamps = False,
         # psf subtraction args
