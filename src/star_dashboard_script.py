@@ -10,7 +10,7 @@ from bokeh.server.server import Server
 catalog_file = sc.Path("~/Projects/Research/hst17167-ffp/catalogs/targets_drc.csv")
 data_folder = sc.Path("~/Projects/Research/hst17167-ffp/data/HST/")
 
-catalog = catproc.load_catalog(catalog_file, 100)
+catalog = catproc.load_catalog(catalog_file, 50)
 
 
 print("processing catalog")
@@ -24,7 +24,7 @@ stars = catproc.process_catalog(
     bad_references = ['J042705.86+261520.3'],
     scale_stamps = False,
     center_stamps = False,
-    min_nref = 5,
+    min_nref = 40,
     sim_thresh = 0.5,
     snr_thresh = 5.,
     n_modes = 5,
