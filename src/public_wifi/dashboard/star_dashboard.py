@@ -22,6 +22,7 @@ from bokeh.themes import Theme
 from public_wifi.dashboard import dash_tools as dt
 from public_wifi import catalog_processing as catproc
 from public_wifi import analysis_manager
+from public_wifi.dashboard import catalog_detection_dashboard as cdd
 
 
 
@@ -274,30 +275,29 @@ def all_stars_dashboard(
     anamgr : analysis_manager.AnalysisManager,
     plot_size = 400,
 ):
-    stars = anamgr.stars
     # This returns a Bokeh application that takes a doc for displaying
     def app(doc):
 
-        init_star = stars.index[0]
+        init_star = anamgr.stars.index[0]
 
         catalog_cds, catalog_table = make_catalog_display(
-            stars.loc[init_star].cat.drop(["cutout", "stamp" ], axis=1),
-            70*len(stars.loc[init_star].cat.columns),
+            anamgr.stars.loc[init_star].cat.drop(["cutout", "stamp" ], axis=1),
+            70*len(anamgr.stars.loc[init_star].cat.columns),
         )
         # candidates table
         candidate_cds, candidate_table = make_candidate_cds(
-            stars.loc[init_star].results,
+            anamgr.stars.loc[init_star].results,
         )
         candidate_table.update(sizing_mode='stretch_width')
 
         # each row of the catalog corresponds to a particular set of plots
-        cds_dicts = stars.loc[init_star].results.apply(
-            lambda row: make_row_cds(row, star=stars.loc[init_star], cds_dict={}),
+        cds_dicts = anamgr.stars.loc[init_star].results.apply(
+            lambda row: make_row_cds(row, star=anamgr.stars.loc[init_star], cds_dict={}),
             axis=1
         )
 
         # pass these ColumnDataSources to the plots that will read from them
-        plot_dicts = stars.loc[init_star].results.apply(
+        plot_dicts = anamgr.stars.loc[init_star].results.apply(
             lambda row: make_row_plots(row, cds_dicts[row.name], size=plot_size),
             axis=1
         )
@@ -313,7 +313,7 @@ def all_stars_dashboard(
         star_selector = bkmdls.Select(
             title="Star",
             value = init_star,
-            options = list(stars.index),
+            options = list(anamgr.stars.index),
         )
         def change_star(attrname, old_id, new_id):
             ## update the data structures and scroller limits
@@ -331,12 +331,12 @@ def all_stars_dashboard(
         print_button.on_click(print_star_name)
 
         def update_reference_switch():
-            status  = stars.loc[star_selector.value].is_good_reference
+            status  = anamgr.stars.loc[star_selector.value].is_good_reference
             button_type = "success" if status else "danger"
             good_reference_switch.update(button_type=button_type)
 
         def update_candidates_switch():
-            status  = stars.loc[star_selector.value].has_candidates
+            status  = anamgr.stars.loc[star_selector.value].has_candidates
             button_type = "success" if status else "danger"
             has_candidates_switch.update(button_type=button_type)
             # also update the reference switch
@@ -344,23 +344,23 @@ def all_stars_dashboard(
 
         def update_candidate_cds():
             make_candidate_cds(
-                stars.loc[star_selector.value].results,
+                anamgr.stars.loc[star_selector.value].results,
                 cds=candidate_cds,
                 table=candidate_table,
             )
         def update_catalog_cds():
            catalog_cds.data.update(
-               stars.loc[star_selector.value].cat.drop(["cutout", "stamp" ], axis=1)
+               anamgr.stars.loc[star_selector.value].cat.drop(["cutout", "stamp" ], axis=1)
            )
 
         def update_cds_dicts():
             """Update the target filter stamp"""
-            for i, row in stars.loc[star_selector.value].results.iterrows():
+            for i, row in anamgr.stars.loc[star_selector.value].results.iterrows():
                 # assign new data to the existing CDSs
-                nrefs = stars.loc[star_selector.value].references.shape[0]//2 - 1
+                nrefs = anamgr.stars.loc[star_selector.value].references.shape[0]//2 - 1
                 cds_dicts[i] = make_row_cds(
                     row,
-                    stars.loc[star_selector.value],
+                    anamgr.stars.loc[star_selector.value],
                     cds_dict=cds_dicts[i],
                     jackknife_kklip=jackknife_klmode_selector.value,
                 )
@@ -398,14 +398,14 @@ def all_stars_dashboard(
         good_reference_switch = bkmdls.Button(
             # label = str(stars[star_selector.value].is_good_reference)
             label = "'Good reference' state",
-            button_type = "success" if stars[star_selector.value].is_good_reference else "danger",
+            button_type = "success" if anamgr.stars[star_selector.value].is_good_reference else "danger",
             sizing_mode='stretch_width',
         )
         def change_reference_status():
-            status = stars[star_selector.value].is_good_reference
+            status = anamgr.stars[star_selector.value].is_good_reference
             new_status = not status
-            stars[star_selector.value].is_good_reference = new_status
-            print(stars[star_selector.value].star_id, f" reference flag set to {new_status}")
+            anamgr.stars[star_selector.value].is_good_reference = new_status
+            print(anamgr.stars[star_selector.value].star_id, f" reference flag set to {new_status}")
             button_type = "success" if new_status else "danger"
             good_reference_switch.update(button_type=button_type)
         good_reference_switch.on_click(change_reference_status)
@@ -413,34 +413,47 @@ def all_stars_dashboard(
         has_candidates_switch = bkmdls.Button(
             # label = str(stars[star_selector.value].is_good_reference)
             label = "'Has candidates' state",
-            button_type = "success" if stars[star_selector.value].has_candidates else "danger",
+            button_type = "success" if anamgr.stars[star_selector.value].has_candidates else "danger",
             sizing_mode='stretch_width',
         )
         def change_candidates_status():
-            status = stars[star_selector.value].has_candidates
+            status = anamgr.stars[star_selector.value].has_candidates
             new_status = not status
-            stars[star_selector.value].has_candidates = new_status
-            print(stars[star_selector.value].star_id, f" candidates flag set to {new_status}")
+            anamgr.stars[star_selector.value].has_candidates = new_status
+            print(anamgr.stars[star_selector.value].star_id, f" candidates flag set to {new_status}")
             button_type = "success" if new_status else "danger"
             has_candidates_switch.update(button_type=button_type)
         has_candidates_switch.on_click(change_candidates_status)
 
         # reprocessing tools
+        stamp_size_spinner = bkmdls.Spinner(
+            title='Stamp size', low=3, high=1023, step=2,
+            value=anamgr.processing_parameters['stamp_size'],
+            width=80
+        )
         ssim_spinner = bkmdls.Spinner(
-            title='SSIM thresh', low=-1.0, high=1.0, step=0.05, value=0.5, width=80
+            title='SSIM thresh', low=-1.0, high=1.0, step=0.05,
+            value=anamgr.processing_parameters['sim_thresh'],
+            width=80
         )
         min_nref_spinner = bkmdls.Spinner(
-            title='Min. refs', low=2, high=len(stars), step=1, value=5, width=80
+            title='Min. refs', low=2, high=len(anamgr.stars), step=1,
+            value=anamgr.processing_parameters['min_nref'],
+            width=80
         )
         snr_thresh_spinner = bkmdls.Spinner(
-            title='SNR thresh', low=0, high=len(stars), step=1, value=5, width=80
+            title='SNR thresh', low=0, high=len(anamgr.stars), step=1,
+            value=anamgr.processing_parameters['snr_thresh'],
+            width=80
         )
-        nmodes_thresh_spinner = bkmdls.Spinner(
-            title='# modes thresh', low=1, high=len(stars), step=1, value=3, width=80
+        n_modes_thresh_spinner = bkmdls.Spinner(
+            title='# modes thresh', low=1, high=len(anamgr.stars), step=1,
+            value=anamgr.processing_parameters['n_modes'],
+            width=80
         )
         jackknife_klmode_selector = bkmdls.Spinner(
             title="Jackknife Kklip",
-            low=1, value=1, high=len(stars), step=1,
+            low=1, value=1, high=len(anamgr.stars), step=1,
             width=80,
         )
         def update_jackknife_plot():
@@ -450,6 +463,24 @@ def all_stars_dashboard(
             'value', lambda attr, old, new: update_jackknife_plot()
         )
 
+        reinitialize_button = bkmdls.Button(
+            label='Re-initialize catalog', button_type='primary',
+            sizing_mode='stretch_width',
+        )
+        def reinitialize_catalog():
+            print("Re-initializing catalog.")
+            anamgr.update_processing_parameters(
+                stamp_size = stamp_size_spinner.value,
+                sim_thresh = ssim_spinner.value,
+                min_nref = min_nref_spinner.value,
+                snr_thresh = snr_thresh_spinner.value,
+                n_modes = n_modes_thresh_spinner.value
+            )
+            change_star('value', None, star_selector.value)
+            print("Finished re-initialization.")
+            return
+        reinitialize_button.on_click(reinitialize_catalog)
+
         subtraction_button = bkmdls.Button(
             label='Re-run subtraction', button_type='primary',
             sizing_mode='stretch_width',
@@ -457,47 +488,67 @@ def all_stars_dashboard(
         def rerun_subtraction_and_update():
             print("Re-running PSF subtraction with new parameters.")
             catproc.catalog_subtraction(
-                stars, ssim_spinner.value, min_nref_spinner.value
+                anamgr.stars, ssim_spinner.value, min_nref_spinner.value
             )
             catproc.catalog_detection(
-                stars, snr_thresh_spinner.value, nmodes_thresh_spinner.value
+                anamgr.stars, snr_thresh_spinner.value, n_modes_thresh_spinner.value
             )
             catproc.catalog_candidate_validation(
-                stars, ssim_spinner.value, min_nref_spinner.value
+                anamgr.stars, ssim_spinner.value, min_nref_spinner.value
             )
             # update stuff as if it were a new star
             change_star('value', None, star_selector.value)
             print("Finished re-running analysis and updating values.")
+            return
         subtraction_button.on_click(rerun_subtraction_and_update)
 
         detection_button = bkmdls.Button(
-            label='Run detection only', button_type='primary',
+            label='Re-run detection only', button_type='primary',
             sizing_mode='stretch_width',
         )
         def rerun_detection_and_update():
             print("Re-running source detection with new parameters.")
             catproc.catalog_detection(
-                stars, snr_thresh_spinner.value, nmodes_thresh_spinner.value
+                anamgr.stars, snr_thresh_spinner.value, n_modes_thresh_spinner.value
             )
             catproc.catalog_candidate_validation(
-                stars, ssim_spinner.value, min_nref_spinner.value
+                anamgr.stars, ssim_spinner.value, min_nref_spinner.value
             )
             # update stuff as if it were a new star
             change_star('value', None, star_selector.value)
             print("Finished re-running analysis and updating values.")
+            return
         detection_button.on_click(rerun_detection_and_update)
 
         reanalysis_lyt = bklyts.row(
             bklyts.column(
+                bkmdls.Div(text='FLAGS'),
                 good_reference_switch,
                 has_candidates_switch,
-                subtraction_button,
-                detection_button,
-            ),
-            bklyts.column(
-                ssim_spinner, min_nref_spinner,
-                snr_thresh_spinner, nmodes_thresh_spinner,
-                jackknife_klmode_selector,
+                bkmdls.Div(text='REPROCESSING'),
+                bklyts.row(
+                    bklyts.column(
+                        # catalog parameters
+                        bklyts.row(
+                            reinitialize_button, stamp_size_spinner
+                        ),
+                        # subtraction parameters
+                        bklyts.row(
+                            subtraction_button,
+                            bklyts.column(
+                                ssim_spinner, min_nref_spinner,
+                            ),
+                        ),
+                        # detection parameters
+                        bklyts.row(
+                            detection_button,
+                            bklyts.column(
+                                snr_thresh_spinner, n_modes_thresh_spinner,
+                                jackknife_klmode_selector,
+                            ),
+                        ),
+                    ),
+                ),
             ),
         )
 
@@ -539,9 +590,9 @@ def all_stars_dashboard(
         )
         tab3 = bkmdls.TabPanel(
             title='Catalog detection maps',
-            child= bklyts.layout([
-                bklyts.column()
-            ])
+            child= cdd.detection_layout(
+                anamgr, plot_size
+            )
         )
         tabs = bkmdls.Tabs(tabs=[tab1, tab2, tab3])
 
