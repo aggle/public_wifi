@@ -8,6 +8,7 @@ import pandas as pd
 # bokeh-related imports
 import yaml
 import bokeh
+import bokeh.io as bkio
 import bokeh.layouts as bklyts
 import bokeh.plotting as bkplt
 import bokeh.models as bkmdls
@@ -210,6 +211,9 @@ def generate_cube_scroller_widget(
       color range
       
     """
+    if isinstance(source, pd.Series):
+        source = series_to_CDS(source)
+
     TOOLS = "box_select,pan,reset"
 
     palette = 'Magma256'
@@ -298,3 +302,15 @@ def generate_cube_scroller_widget(
 
 # standalone cube scroller
 make_cube_scroller = standalone(generate_cube_scroller_widget)
+
+def show_in_notebook(app, url='localhost:99999'):
+    """
+    Convenience, because I keep forgetting the syntax, for showing a Bokeh app in a notebook.
+    Must be proceeded by bkio.output_notebook()
+    """
+    bkio.output_notebook()
+    url='localhost:9999'
+    bkio.show(
+        app,
+        notebook_url=url,
+    )
