@@ -21,6 +21,7 @@ from bokeh.themes import Theme
 
 from public_wifi.dashboard import dash_tools as dt
 from public_wifi import catalog_processing as catproc
+from public_wifi import analysis_manager
 
 
 
@@ -270,9 +271,10 @@ def make_candidate_cds(
     return cds, table
 
 def all_stars_dashboard(
-    stars : pd.Series,
+    anamgr : analysis_manager.AnalysisManager,
     plot_size = 400,
 ):
+    stars = anamgr.stars
     # This returns a Bokeh application that takes a doc for displaying
     def app(doc):
 
@@ -535,13 +537,13 @@ def all_stars_dashboard(
                 ),
             ]),
         )
-        # tab3 = bkmdls.TabPanel(
-        #     title='NMF results (tbd)',
-        #     child= bklyts.layout([
-        #         bklyts.column()
-        #     ])
-        # )
-        tabs = bkmdls.Tabs(tabs=[tab1, tab2])#, tab3])
+        tab3 = bkmdls.TabPanel(
+            title='Catalog detection maps',
+            child= bklyts.layout([
+                bklyts.column()
+            ])
+        )
+        tabs = bkmdls.Tabs(tabs=[tab1, tab2, tab3])
 
         lyt = bklyts.layout(
             [
