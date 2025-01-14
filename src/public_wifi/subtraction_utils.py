@@ -6,8 +6,9 @@ import numpy as np
 import pandas as pd
 
 from pyklip import klip
-from sklearn.decomposition import NMF
-from NonnegMFPy import nmf as NMFPy
+# for future implementation
+# from sklearn.decomposition import NMF
+# from NonnegMFPy import nmf as NMFPy
 
 
 def klip_subtract(
