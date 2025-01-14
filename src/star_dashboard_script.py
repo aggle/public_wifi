@@ -28,7 +28,7 @@ anamgr = AnalysisManager(
     star_id_column = 'target',
     match_references_on = ['filter'],
     data_folder = data_folder,
-    stamp_size = 11,
+    stamp_size = 13,
     bad_references = bad_references,#['J042705.86+261520.3'],
     scale_stamps = False,
     center_stamps = False,
@@ -39,12 +39,12 @@ anamgr = AnalysisManager(
     det_kklip=10,
     mf_width=9
 )
-print("displaying dashboard")
-dash = sd.all_stars_dashboard(anamgr, plot_size=350)
 
 
 
 if __name__ == "__main__":
+    print("Displaying dashboard")
+    dash = sd.all_stars_dashboard(anamgr, plot_size=350)
     port = 5006
     apps = {'/': dash}
     server = Server(apps, port=port)

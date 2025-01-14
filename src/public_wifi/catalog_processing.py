@@ -38,6 +38,7 @@ def load_catalog(
     )
     keep_stars = list(above_thresh[above_thresh].index)
     catalog = init_catalog.query(f"target in {keep_stars}").copy()
+    catalog = catalog.sort_values(by='target').reset_index(drop=True)
     return catalog
 
 
