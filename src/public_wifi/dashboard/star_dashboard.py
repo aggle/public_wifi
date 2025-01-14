@@ -589,8 +589,8 @@ def all_stars_dashboard(
             ]),
         )
         tab3 = bkmdls.TabPanel(
-            title='Catalog detection maps',
-            child= cdd.detection_layout(
+            title = 'Catalog detection maps',
+            child = cdd.detection_layout(
                 anamgr, plot_size
             )
         )

@@ -100,7 +100,7 @@ def detection_layout(
         for i in [0, 1]
     }
     plot_dicts = {
-        i: make_row_plots(anamgr.det, i, cds_dicts[i])
+        i: make_row_plots(anamgr.det, i, cds_dicts[i], size=plot_size)
         for i in [0, 1]
     }
 
