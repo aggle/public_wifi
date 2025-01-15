@@ -279,8 +279,17 @@ class Star:
             self,
             sim_thresh : float | None = None,
             min_nref : int | None = None,
+            stamp_column : str = 'stamp',
             jackknife_reference : str = ''
     ):
+        """
+        sim_thresh : float
+          image similarity score threshold
+        min_nref : int
+          Include at least this many reference PSFs, ordered by similarity
+        stamp_column : str = 'stamp'
+          which column to pull the stamp from
+        """
         if sim_thresh is None:
             sim_thresh = self.subtr_args['sim_thresh']
         else:
@@ -301,6 +310,7 @@ class Star:
             self._row_klip_subtract,
             sim_thresh = sim_thresh,
             min_nref = min_nref,
+            stamp_column = stamp_column,
             jackknife_reference = jackknife_reference,
             axis=1
         )
@@ -312,7 +322,8 @@ class Star:
             row,
             sim_thresh,
             min_nref,
-            jackknife_reference : str = ''
+            stamp_column : str = 'stamp',
+            jackknife_reference : str = '',
     ):
         """
         Wrapper for KLIP that can be applied on each row of star.cat
@@ -323,11 +334,13 @@ class Star:
         min_nref : int | None = 2
           flag at least this many refs as OK to use, in order of similarity score
           If None, read from self.subtr_args
+        stamp_column : str
+          Which cat column to use for the stamp (e.g. with fake injections)
         jackknife_reference : str = ''
           during jackknife testing, exclude this reference
         """
 
-        target_stamp = row['stamp']
+        target_stamp = row[stamp_column]
         # select the references
         reference_rows = self._row_get_references(row, sim_thresh, min_nref)
         # reset the list of used references, and then flag the references that
