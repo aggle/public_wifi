@@ -378,7 +378,7 @@ class Star:
         snr_maps = dutils.make_series_snrmaps(row['klip_sub'])
         return pd.Series({'snrmap': snr_maps})
 
-    def _row_apply_matched_filter(self, row, contrast=True, throughput_correction=True):
+    def _row_apply_matched_filter(self, row, mf_width = 7, contrast=True, throughput_correction=True):
         """
         Convolve a matched filter against a residual stamp for a single row of the results dataframe
 
@@ -394,7 +394,7 @@ class Star:
             lambda dfrow : mf_utils.apply_matched_filter(
                 dfrow['klip_sub'],
                 dfrow['klip_model'],
-                mf_width = min(7, self.stamp_size),
+                mf_width = mf_width,
                 throughput_correction = throughput_correction,
                 kl_basis = None,#df.loc[:dfrow.name, 'klip_basis'],
             ),
@@ -412,10 +412,11 @@ class Star:
             detmaps = detmaps/primary_fluxes
         return pd.Series({'detmap': detmaps})
 
-    def apply_matched_filter(self, contrast=True, throughput_correction=True):
+    def apply_matched_filter(self, mf_width=7, contrast=True, throughput_correction=True):
         """Wrapper for row_apply_matched_filter for the entire results dataframe"""
         detmaps = self.results.apply(
             self._row_apply_matched_filter,
+            mf_width=mf_width,
             contrast=contrast,
             throughput_correction=throughput_correction,
             axis=1
