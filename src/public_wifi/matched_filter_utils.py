@@ -5,6 +5,7 @@ from scipy.signal import correlate
 from astropy.convolution import convolve
 from astropy.stats import sigma_clipped_stats
 from astropy.nddata import Cutout2D
+from astropy.modeling.models import Gaussian2D
 
 from public_wifi import misc
 
@@ -165,3 +166,12 @@ def compute_pca_bias(
     )
     bias = bias.cumsum()
     return bias
+
+def make_gaussian_psf(stamp_size, filt='F850LP'):
+    xy = np.indices((15, 15)) - misc.get_stamp_center(15)[::-1, None, None]
+    fwhm2sig = lambda fwhm: fwhm/(2*np.sqrt(2*np.log(2)))
+    fwhm = 1.9 # pixels
+    sig = fwhm2sig(fwhm)
+    g2d_func = Gaussian2D(1, 0, 0, sig, sig)
+    psf = g2d_func(xy[0], xy[1])
+    return psf
