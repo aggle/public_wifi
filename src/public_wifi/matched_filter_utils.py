@@ -50,6 +50,7 @@ def apply_matched_filter(
         mf_width : int = 7,
         correlate_mode='same',
         throughput_correction : bool = False,
+        correct_pca_throughput : bool = False,
         kl_basis : np.ndarray | pd.Series | None = None,
 ) -> np.ndarray:
     """
@@ -73,11 +74,11 @@ def apply_matched_filter(
         matched_filter,
         method='direct',
         mode=correlate_mode)
-    if throughput_correction:
-        throughput = compute_throughput(matched_filter, klmodes=kl_basis)
-        if isinstance(throughput, pd.Series):
-            throughput = throughput.iloc[-1]
-        detmap = detmap / throughput
+    # if throughput_correction:
+    throughput = compute_throughput(matched_filter, klmodes=kl_basis)
+    if isinstance(throughput, pd.Series):
+        throughput = throughput.iloc[-1]
+    detmap = detmap / throughput
     return detmap
 
 def compute_throughput(mf, klmodes=None) -> float | pd.Series:

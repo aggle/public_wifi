@@ -177,4 +177,3 @@ def jackknife_analysis(
     # now make it an SNR map
     jackknife = make_series_snrmaps(jackknife)
     return jackknife
-
