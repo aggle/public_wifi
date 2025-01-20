@@ -84,17 +84,23 @@ class Star:
         self.subtr_args = subtr_args
         self.det_args = det_args
         # values that are initialized by methods
+        self._cutout_pad = 2
         self.cat['cutout'] = self.cat.apply(
-            lambda row: self._get_cutout(row, stamp_size),
+            lambda row: self._get_cutout(row, stamp_size, self._cutout_pad),
             axis=1,
         )
         # measure the background
         self.cat['bgnd'] = self.measure_bgnd(51, 20)
         # cut out the stamps and subtract the background
-        self.cat['stamp'] = self.cat.apply(
-            lambda row: row['cutout'].data.copy() - row['bgnd'][0],
-            axis=1
+        # self.cat['stamp'] = self.cat.apply(
+        #     lambda row: row['cutout'].data.copy() - row['bgnd'][0],
+        #     axis=1
+        # )
+        self.cat['stamp'] = self.cat['cutout'].apply(
+            self._get_stamp_from_cutout,
+            pad=self._cutout_pad
         )
+        self.cat['stamp'] = self.cat['stamp'] - self.cat['bgnd'].apply(lambda bgnd: bgnd[0])
         # stamp manipulation
         if center_stamps:
             self.cat['stamp'] = self.cat['stamp'].apply(misc.shift_stamp_to_center)
@@ -145,15 +151,22 @@ class Star:
             self,
             row,
             stamp_size : int,
-            ext : int | str = 'SCI'
+            ext : int | str = 'SCI',
+            pad = 2
     ) -> Cutout2D:
         """
         Cut out the stamp from the data
+
+        Parameters
+        ----------
+        pad : int
+          How much padding in each dimension to give the cutout, i.e. if the
+          stamp size is 11x11, a cutout with padding of 2 will be 15x15
         """
         filepath = self.data_folder / row['file']
         img = fits.getdata(str(filepath), ext)
         wcs = WCS(fits.getheader(str(filepath), ext))
-        stamp = Cutout2D(
+        cutout = Cutout2D(
             img,
             (row['x'],row['y']),
             size=stamp_size,
@@ -164,9 +177,9 @@ class Star:
         )
         # recenter on the brightest pixel
         maxpix = np.array(
-            np.unravel_index(np.nanargmax(stamp.data), stamp.shape)[::-1]
-        ) + np.array(stamp.origin_original)
-        stamp = Cutout2D(
+            np.unravel_index(np.nanargmax(cutout.data), cutout.shape)[::-1]
+        ) + np.array(cutout.origin_original)
+        cutout = Cutout2D(
             img,
             tuple(maxpix),
             size=stamp_size,
@@ -176,6 +189,13 @@ class Star:
             copy=True
         )
 
+        return cutout
+    def _get_stamp_from_cutout(self, cutout : Cutout2D, pad=2) -> np.ndarray:
+        data = cutout.data.copy()
+        if pad == 0:
+            stamp = data.copy()
+        else:
+            stamp = data[pad:-pad, pad:-pad].copy()
         return stamp
 
     def measure_bgnd(self, stamp_size=51, bgnd_rad=20) -> float:
