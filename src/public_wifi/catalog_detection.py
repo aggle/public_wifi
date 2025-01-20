@@ -112,7 +112,7 @@ class CatDet:
         # apply a matched filter to each normalized residual stamp
         mf_detect = self.apply_mf()
         # make a detection map against each pixel
-        mf_detect_norm = compute_pixelwise_norm(mf_detect)
+        mf_detect_norm = mf_detect.apply(compute_pixelwise_norm)
         return mf_detect_norm
 
     def generate_contrast_maps(self):
