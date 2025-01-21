@@ -1,5 +1,0 @@
-# Filter definition file
-# read with Instrument.load_filter
-
-# required
-name : FILTER_NAME

@@ -1,3 +1,0 @@
-"""
-Matched filtering tool 
-"""
