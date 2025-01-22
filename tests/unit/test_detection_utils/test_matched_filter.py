@@ -21,7 +21,7 @@ def test_make_normalized_psf(all_stars, scale):
     """Check that you can normalize a PSF to arbitrary flux"""
     star = load_random_star(all_stars)
     psf = star.cat.loc[0, 'stamp']
-    normed_psf =  mfutils.make_normalized_psf(psf, 7, scale=scale)
+    normed_psf =  mfutils.make_normalized_psf(psf, scale=scale)
     assert(np.abs(normed_psf.sum()/scale - 1) <= 1e-5)
 
 
@@ -89,10 +89,10 @@ def test_matched_filter_on_normalized_psf(processed_stars):
 def test_row_apply_matched_filter(processed_stars):
     star = processed_stars[mfutils.np.random.choice(processed_stars.index)]
     row = star.results.iloc[0]
-    row_detmaps = star.row_convolve_psf(row)['detmap']
+    row_detmaps = star._row_apply_matched_filter(row)['detmap']
     assert(len(row_detmaps) == len(row['klip_model']))
     all_detmaps = star.results.apply(
-        star.row_convolve_psf,
+        star._row_apply_matched_filter,
         axis=1
     )
     assert(len(all_detmaps) == len(star.results))

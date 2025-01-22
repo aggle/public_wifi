@@ -34,11 +34,13 @@ def test_starclass_get_cutout(star, data_folder):
     print("Getting stamp from " + star.star_id)
     assert(data_folder.exists())
     stamp_size = 15
-    stamps = star.cat.apply(lambda row: star._get_cutout(row, stamp_size), axis=1)
+    cutouts = star.cat.apply(lambda row: star._get_cutout(row, stamp_size), axis=1)
     # check that it's a cutout object
-    assert(all(stamps.apply(lambda el: isinstance(el, sc.Cutout2D))))
+    assert(all(cutouts.apply(lambda el: isinstance(el, sc.Cutout2D))))
     # check that it has the right shape
-    assert(all(stamps.apply(lambda el: el.shape == (stamp_size, stamp_size))))
+    cutout_size = stamp_size + star._cutout_pad*2
+    print(cutout_size)
+    assert(all(cutouts.apply(lambda el: el.shape == (cutout_size, cutout_size))))
 
 def test_measure_bgnd(star) :
     bgnd = star.measure_bgnd()

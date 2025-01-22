@@ -2,11 +2,12 @@ import pytest
 import numpy as np
 from public_wifi import misc
 
-def test_calc_stamp_center():
-    stamp = np.ones((11, 11), dtype=int)
-    center = misc.calc_stamp_center(stamp)
-    assert(all(center == (5, 5)))
 
-    stamp = np.ones((12, 12), dtype=int)
-    center = misc.calc_stamp_center(stamp)
-    assert(all(center == (6, 6)))
+@pytest.mark.parametrize("stamp", [
+    11,
+    np.ones((11, 11), dtype=float),
+    misc.pd.Series({i: np.ones((11, 11)) for i in range(5)})
+])
+def test_get_stamp_center(stamp):
+    center = misc.get_stamp_center(stamp)
+    assert((center == np.array([5, 5])).all())

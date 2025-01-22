@@ -14,7 +14,7 @@ def test_measure_primary_flux(random_processed_star):
     row = star.cat.loc[0]
     stamp = row['stamp']
     input_flux = 10
-    psf = dutils.make_normalized_psf(stamp, width=7, scale=input_flux)
+    psf = cutils.mf_utils.make_normalized_psf(stamp, scale=input_flux)
     # make sure the psf was set correctly
     assert(np.abs(input_flux - psf.sum()) <= 1e-5)
     # measure the flux
@@ -48,8 +48,8 @@ def test_scale_psf(random_processed_star):
     # stamp = star.cat.loc[0, 'stamp']
     psf = star.results.loc[0, 'klip_model'][1][2:-2, 2:-2].copy()
     scale = 100
-    scaled_psf = cutils.dutils.make_normalized_psf(psf, None, 100)
-    scaled_psf_flux = cutils.dutils.apply_matched_filter(
+    scaled_psf = cutils.mf_utils.make_normalized_psf(psf, scale)
+    scaled_psf_flux = cutils.mf_utils.apply_matched_filter(
         scaled_psf, psf, correlate_mode='valid'
     ).squeeze()
     assert(np.abs(scaled_psf_flux - scale) < 1e-10)

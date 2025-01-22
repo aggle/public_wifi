@@ -22,6 +22,9 @@ def test_make_matched_filter(star):
     assert(isinstance(psf, np.ndarray))
     assert(psf.ndim == 2)
 
+def test_apply_matched_filter():
+    pass
+
 def test_compute_throughput(random_processed_star):
     star = random_processed_star
     row = star.results.iloc[0]
@@ -36,3 +39,28 @@ def test_compute_throughput(random_processed_star):
     assert(isinstance(thpt, mf_utils.pd.Series))
     assert(len(thpt) == len(klip_basis))
 
+def test_compute_mf_norm(random_processed_star):
+    star = random_processed_star
+    row = star.results.iloc[0]
+    kklip = row['klip_basis'].index[-1]
+    psf = row['klip_model'].loc[kklip]
+    klip_basis = row['klip_basis'].loc[:kklip]
+    mf = mf_utils.make_matched_filter(psf, 7)
+    norm = mf_utils.compute_mf_norm(mf)
+    assert(isinstance(norm, float))
+
+def test_compute_pca_bias(random_processed_star):
+    star = random_processed_star
+    row = star.results.iloc[0]
+    kklip = row['klip_basis'].index[-4]
+    psf = row['klip_model'].loc[kklip]
+    klip_basis = row['klip_basis'].loc[:kklip]
+    mf = mf_utils.make_matched_filter(psf, 7)
+    bias = mf_utils.compute_pca_bias(mf, klip_basis)
+    assert(len(bias) == len(klip_basis))
+    assert(isinstance(bias, mf_utils.pd.Series))
+    assert(isinstance(bias.iloc[-1], np.ndarray))
+
+def test_make_gaussian_psf():
+    g2d = mf_utils.make_gaussian_psf(stamp_size=13, filt='F850LP')
+    assert(isinstance(g2d, np.ndarray))

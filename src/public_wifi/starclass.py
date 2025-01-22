@@ -10,7 +10,7 @@ from astropy.nddata import Cutout2D
 from astropy.wcs import WCS
 from astropy.stats import sigma_clipped_stats
 
-from public_wifi import misc
+from public_wifi import misc, centroid
 from public_wifi import subtraction_utils as subutils
 from public_wifi import detection_utils as dutils
 from public_wifi import matched_filter_utils as mf_utils
@@ -86,21 +86,18 @@ class Star:
         # values that are initialized by methods
         self._cutout_pad = 2
         self.cat['cutout'] = self.cat.apply(
-            lambda row: self._get_cutout(row, stamp_size, self._cutout_pad),
+            lambda row: self._get_cutout(row, stamp_size, pad=self._cutout_pad),
             axis=1,
         )
         # measure the background
         self.cat['bgnd'] = self.measure_bgnd(51, 20)
         # cut out the stamps and subtract the background
-        # self.cat['stamp'] = self.cat.apply(
-        #     lambda row: row['cutout'].data.copy() - row['bgnd'][0],
-        #     axis=1
-        # )
         self.cat['stamp'] = self.cat['cutout'].apply(
             self._get_stamp_from_cutout,
             pad=self._cutout_pad
         )
-        self.cat['stamp'] = self.cat['stamp'] - self.cat['bgnd'].apply(lambda bgnd: bgnd[0])
+        bgnds = self.cat['bgnd'].apply(lambda bgnd: bgnd[0])
+        self.cat['stamp'] = self.cat['stamp'] - bgnds
         # stamp manipulation
         if center_stamps:
             self.cat['stamp'] = self.cat['stamp'].apply(misc.shift_stamp_to_center)
@@ -166,23 +163,34 @@ class Star:
         filepath = self.data_folder / row['file']
         img = fits.getdata(str(filepath), ext)
         wcs = WCS(fits.getheader(str(filepath), ext))
+        padded_size = stamp_size + pad*2
         cutout = Cutout2D(
             img,
             (row['x'],row['y']),
-            size=stamp_size,
+            size=padded_size,
             wcs=wcs,
             mode='trim',
             fill_value = np.nan,
             copy=True
         )
         # recenter on the brightest pixel
-        maxpix = np.array(
-            np.unravel_index(np.nanargmax(cutout.data), cutout.shape)[::-1]
+        # maxpix = np.array(
+        #     np.unravel_index(np.nanargmax(cutout.data), cutout.shape)[::-1]
+        # ) + np.array(cutout.origin_original)
+        # actually, recenter on the centroid
+        # maxpix = misc.compute_psf_center(cutout.data, pad=5) +\
+        center = misc.get_stamp_center(cutout.data)
+        maxpix = centroid.compute_centroid(
+            cutout.data,
+            incoord = tuple(center),
+            silent = True,
         ) + np.array(cutout.origin_original)
+        # print(maxpix, tuple(row[['x','y']]))
+
         cutout = Cutout2D(
             img,
             tuple(maxpix),
-            size=stamp_size,
+            size=padded_size,
             wcs=wcs,
             mode='trim',
             fill_value = np.nan,
@@ -205,7 +213,12 @@ class Star:
         bgnd_rad : 20
             pixels further from the center than this are used to measure the bgnd 
         """
-        bgnd_stamps = self.cat.apply(self._get_cutout, stamp_size=stamp_size, axis=1)
+        bgnd_stamps = self.cat.apply(
+            self._get_cutout,
+            stamp_size=stamp_size,
+            pad=0,
+            axis=1
+        )
         center = int(np.floor(self.stamp_size/2))
         sep_map = np.linalg.norm(np.mgrid[:stamp_size, :stamp_size] - center, axis=0)
         bgnd_mask = sep_map < bgnd_rad

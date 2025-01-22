@@ -8,11 +8,11 @@ from public_wifi.analysis_manager import AnalysisManager
 
 from bokeh.server.server import Server
 
-# catalog_file = sc.Path("~/Projects/Research/hst17167-ffp/catalogs/targets_drc.csv")
-# data_folder = sc.Path("~/Projects/Research/hst17167-ffp/data/HST/")
+catalog_file = sc.Path("~/Projects/Research/hst17167-ffp/catalogs/targets_drc.csv")
+data_folder = sc.Path("~/Projects/Research/hst17167-ffp/data/HST/")
 
-catalog_file = sc.Path("/user/jaguilar/hst17167-ffp/drizzled_catalog.csv")
-data_folder = sc.Path("/user/jaguilar/hst17167-ffp/drizzled_data")
+# catalog_file = sc.Path("/user/jaguilar/hst17167-ffp/drizzled_catalog.csv")
+# data_folder = sc.Path("/user/jaguilar/hst17167-ffp/drizzled_data")
 catalog = catproc.load_catalog(catalog_file, 50)
 
 
@@ -34,7 +34,7 @@ anamgr = AnalysisManager(
     bad_references = bad_references,#['J042705.86+261520.3'],
     scale_stamps = False,
     center_stamps = False,
-    min_nref = 30,
+    min_nref = 20,
     sim_thresh = 0.5,
     snr_thresh = 5.,
     n_modes = 5,

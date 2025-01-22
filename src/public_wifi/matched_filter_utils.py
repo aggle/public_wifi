@@ -138,7 +138,7 @@ def compute_mf_norm(
 def compute_pca_bias(
         mf : np.ndarray,
         klip_modes : np.ndarray | pd.Series,
-) -> np.ndarray :
+) -> pd.Series :
     """
     Compute the bias introduced by sub-optimal PSF modeling
 
@@ -168,10 +168,13 @@ def compute_pca_bias(
     bias = bias.cumsum()
     return bias
 
-def make_gaussian_psf(stamp_size, filt='F850LP'):
-    xy = np.indices((15, 15)) - misc.get_stamp_center(15)[::-1, None, None]
+
+def make_gaussian_psf(stamp_size, filt='F850LP') -> np.ndarray:
+    xy = np.indices((stamp_size, stamp_size))
+    xy = xy - misc.get_stamp_center(stamp_size)[::-1, None, None]
     fwhm2sig = lambda fwhm: fwhm/(2*np.sqrt(2*np.log(2)))
-    fwhm = 1.9 # pixels
+    fwhm_dict = {'F814W': 1.9, 'F850LP': 1.9}
+    fwhm = fwhm_dict[filt] # pixels
     sig = fwhm2sig(fwhm)
     g2d_func = Gaussian2D(1, 0, 0, sig, sig)
     psf = g2d_func(xy[0], xy[1])

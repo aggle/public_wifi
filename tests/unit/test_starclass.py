@@ -31,6 +31,10 @@ def test_starclass_init(star):
     assert("stamp" in star.cat.columns)
     assert("cutout" in star.cat.columns)
     assert("bgnd" in star.cat.columns)
+    # check the stamp shape
+    assert(star.cat['stamp'].apply(
+        lambda s: all(sc.np.array(s.shape)==star.stamp_size)
+    ).all())
 
 
 def test_starclass_check_reference(star):
@@ -47,13 +51,18 @@ def test_starclass_get_cutout(star, data_folder):
     print("Getting stamp from " + star.star_id)
     assert(data_folder.exists())
     stamp_size = 15
-    stamps = star.cat.apply(lambda row: star.get_cutout(row, stamp_size), axis=1)
+    stamps = star.cat.apply(
+        lambda row: star._get_cutout(row, stamp_size, pad=0),
+        axis=1
+    )
     assert(all(stamps.apply(lambda el: el.shape == (stamp_size, stamp_size))))
     assert(all(stamps.apply(lambda el: isinstance(el, sc.Cutout2D))))
-    maxes = stamps.apply(lambda s: sc.np.unravel_index(s.data.argmax(), s.data.shape))
-    centers = stamps.apply(lambda s: tuple(int(i) for i in s.center_cutout)[::-1])
-    # print('maxes', maxes.values)
-    # print('centers', centers.values)
+    maxes = stamps.apply(
+        lambda s: sc.np.unravel_index(s.data.argmax(), s.data.shape)
+    )
+    centers = stamps.apply(
+        lambda s: tuple(int(i) for i in s.center_cutout)[::-1]
+    )
     assert(all([m == c for m, c in zip(maxes, centers)]))
 
 def test_set_references(catalog, data_folder):
@@ -175,7 +184,7 @@ def test_row_inject_psf(nonrandom_processed_star, scale):
     row = star.cat.iloc[1]
     # scale = 10
     # inj_row = cutils.row_inject_psf(row, star, (0, 0), scale, -1)
-    inj_row = star.row_inject_psf(row, (0, 0), scale, -1)
+    inj_row = star._row_inject_psf(row, (0, 0), scale, -1)
     # fig, axes = plt.subplots(nrows=1, ncols=2, figsize=(10, 5))
     # axes[0].imshow(row['stamp'])
     # axes[1].imshow(inj_row['stamp'])
@@ -194,7 +203,7 @@ def test_inject_subtract_detect(nonrandom_processed_star, scale):
     center = sc.cutils.misc.get_stamp_center(star.cat.iloc[0]['stamp'])
     pos = sc.np.array((-2, -1))
     row = star.cat.iloc[1]
-    results = star.row_inject_subtract_detect(
+    results = star._row_inject_subtract_detect(
         row,
         pos,
         contrast=scale,

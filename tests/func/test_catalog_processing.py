@@ -12,13 +12,17 @@ def test_load_catalog(catalog, catalog_file):
     assert(all([c in catalog.columns for c in required_columns]))
     # make sure you subtract off the 1 from the original coordinates
     default_catalog = catproc.pd.read_csv(str(catalog_file), dtype=str)
-    # make sure the entries match
-    default_catalog = default_catalog.query(f"target in {list(catalog['target'].unique())}")
+    # match up the entries and compare the coordinates
+    catalog.set_index(['target','filter'], inplace=True)
+    default_catalog.set_index(['target','filter'], inplace=True)
     default_xy = default_catalog[['x','y']].astype(float)
-    # print(default_xy.iloc[0].values, catalog[['x','y']].iloc[0].values)
+    coord_diff = catalog.apply(
+        lambda row: default_xy.loc[row.name, ['x','y']] - row[['x','y']],
+        axis=1
+    )
     thresh = 1e-10
-    coord_diff = (np.array(default_xy) - np.abs(catalog[['x','y']]) - 1)
-    assert(all([all(i < thresh) for i in coord_diff.values]))
+    # coord_diff = (np.array(default_xy) - np.abs(catalog[['x','y']]) - 1)
+    assert(all([all(np.abs(i-1) < thresh) for i in coord_diff.values]))
 
 
 def test_catalog_initialization(catalog, data_folder):
