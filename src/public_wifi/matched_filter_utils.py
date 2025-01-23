@@ -167,7 +167,7 @@ def compute_pca_bias(
             mf,
             correlate_mode='same',
             throughput_correction=False
-        )**2
+        )
     )
     bias = bias.cumsum()
     return bias
