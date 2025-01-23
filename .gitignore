@@ -13,3 +13,4 @@ sphinx/_build/
 /src/public_wifi/utils/.ipynb_checkpoints/
 /src/public_wifi.egg-info/
 /build/
+/.coverage
