@@ -32,7 +32,11 @@ def make_normalized_psf(
     norm_psf *= scale
     return norm_psf
 
-def make_matched_filter(stamp, width : int | None = None):
+def make_matched_filter(
+        stamp : np.ndarray,
+        width : int | None = None,
+        center : bool = False
+):
     # take in an arbitrary PSF stamp and turn it into a matched filter
     stamp = stamp.copy()
     if isinstance(width, int) and (width < min(stamp.shape)):
