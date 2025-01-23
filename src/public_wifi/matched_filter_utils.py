@@ -51,7 +51,7 @@ def make_matched_filter(
 def apply_matched_filter(
         target_stamp : np.ndarray,
         psf_model : np.ndarray,
-        mf_width : int = 7,
+        mf_width : int | None = None,
         correlate_mode='same',
         throughput_correction : bool = False,
         correct_pca_throughput : bool = False,
@@ -103,12 +103,6 @@ def compute_throughput(mf, klmodes=None) -> float | pd.Series:
       A series of 2-D array throughput maps, indexed by KLIP mode
     """
     # the first term in the throughput is the amplitude of the MF
-    # throughput = apply_matched_filter(
-    #     mf, mf,
-    #     correlate_mode='valid',
-    #     throughput_correction=False,
-    #     kl_basis=None
-    # )[0, 0] # this indexing works because correlate_mode is 'valid'
     norm = compute_mf_norm(mf)
     # the second term is the amount of the MF captured by the KL basis at each
     # position
@@ -162,11 +156,9 @@ def compute_pca_bias(
     if not isinstance(klip_modes, pd.Series):
         klip_modes = pd.Series({i+1: mode for i, mode in enumerate(klip_modes)})
     bias = klip_modes.apply(
-        lambda klmode: apply_matched_filter(
-            klmode,
-            mf,
-            correlate_mode='same',
-            throughput_correction=False
+        # compute the correlation with the MF for each KL mode
+        lambda klmode: correlate(
+            klmode, mf, mode='same', method='direct',
         )
     )
     bias = bias.cumsum()
