@@ -11,8 +11,6 @@ from bokeh.server.server import Server
 catalog_file = sc.Path("~/Projects/Research/hst17167-ffp/catalogs/targets_drc.csv")
 data_folder = sc.Path("~/Projects/Research/hst17167-ffp/data/HST/")
 
-# catalog_file = sc.Path("/user/jaguilar/hst17167-ffp/drizzled_catalog.csv")
-# data_folder = sc.Path("/user/jaguilar/hst17167-ffp/drizzled_data")
 catalog = catproc.load_catalog(catalog_file, 50)
 
 
@@ -38,8 +36,8 @@ anamgr = AnalysisManager(
     sim_thresh = 0.5,
     snr_thresh = 5.,
     n_modes = 5,
-    det_kklip=10,
-    mf_width=9
+    cat_det_kklip=10,
+    mf_width=13
 )
 
 

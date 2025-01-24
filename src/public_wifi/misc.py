@@ -71,7 +71,10 @@ def get_pix_separation_from_center(stamp_size):
     return sep_map
 
 def center_to_ll_coords(stamp_size, pix):
-    """Convert center-origin coordinates to ll-origin coordinates"""
+    """
+    Convert center-origin coordinates to ll-origin coordinates
+    returns pix in (x, y) convention
+    """
     center = get_stamp_center(stamp_size)
     ll_coord = center + np.array(pix)
     return ll_coord

@@ -38,7 +38,7 @@ anamgr = AnalysisManager(
     sim_thresh = 0.5,
     snr_thresh = 5.,
     n_modes = 5,
-    det_kklip=10,
+    cat_det_kklip=10,
     mf_width=9
 )
 

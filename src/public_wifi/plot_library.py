@@ -64,7 +64,8 @@ def plot_contrast(star):
         ax = ax_col[0]
         contrast_map = _contrast_list2map(contrast_df, star.stamp_size, '5')
         # compute the radial contrast
-        imax = ax.imshow(contrast_map, origin='lower', vmax=1)
+        norm = mpl.colors.LogNorm(vmax=1)
+        imax = ax.imshow(contrast_map, origin='lower', norm=norm)
         fig.colorbar(imax, ax=ax)
 
         ax = ax_col[1]

@@ -190,19 +190,6 @@ def find_injection(img : np.ndarray, pos : np.ndarray):
                 continue
     return max_pos
 
-def calc_snr_from_series(
-        snr_series : pd.Series, thresh: float = 5., n_modes : int =3
-):
-    snr_series = snr_series.squeeze()
-    # return the median of the top 3 snr values
-    snr = snr_series.sort_values(ascending=False)[:n_modes].min()
-    # above_thresh = snr_series[snr_series >= thresh]
-    # is_detected = len(above_thresh) >= n_modes
-    # if is_detected == False:
-    #     return np.nan
-    # snr = above_thresh.sort_values(ascending=False)[:n_modes].mean()
-    # return above_thresh.median()
-    return snr
 
 def inject_subtract_detect(
         star, pos, contrast, use_kklip, n_modes = 3, snr_thresh=5,
@@ -223,7 +210,7 @@ def inject_subtract_detect(
     )
     # aggregate the SNR values into a single value
     snr = recovered_snr.apply(
-        calc_snr_from_series,
+        dutils.calc_snr_from_series,
         thresh=snr_thresh,
         n_modes=n_modes,
         axis=1
@@ -280,7 +267,8 @@ def make_star_contrast_curves(
         star,
         ub : float = 1.,
         lb : float = 1e-4,
-        thresholds : list[float] = [5, 3, 1],
+        thresholds : list[float] = [5, 3],
+        kklip : int | None = None,
 ) -> pd.DataFrame:
     """
     Generate the contrast curves for a star
@@ -294,17 +282,15 @@ def make_star_contrast_curves(
       Contrast search lower bound
     thresholds : list[float]
       the thresholds at which to report the contrast
+    kklip : int | None
+      If given, use this Kklip residual
     """
-    def match_snr_thresh(contrast, row, pos, snr_thresh=5):
-        snr = star._row_inject_subtract_detect(
-            row, pos, contrast, snr_thresh, n_modes=star.det_args['n_modes']
-        )[0]
-        return np.abs(snr - snr_thresh)
-    center = int(np.floor(star.stamp_size/2))
+    # center = int(np.floor(star.stamp_size/2))
+    center = misc.get_stamp_center(star.stamp_size)
     # iterate over every pixel
     positions = list(itertools.product(
-        np.arange(star.stamp_size) - center,
-        np.arange(star.stamp_size) - center
+        np.arange(star.stamp_size) - center[0],
+        np.arange(star.stamp_size) - center[1]
     ))
     # remove places to not teset
     positions.pop(positions.index((0,0)))
@@ -321,9 +307,9 @@ def make_star_contrast_curves(
         for threshold in thresholds:
             contrast_df[f'{threshold}'] = contrast_df.apply(
                 lambda contrast_row: optimize.minimize_scalar(
-                    match_snr_thresh, 
+                    optimize_snr_vs_thresh,
                     bounds=(lb, ub),
-                    args=(star.cat.loc[i], contrast_row[['x','y']].values.astype(int), threshold)
+                    args=(star, star.cat.loc[i], contrast_row[['x','y']].values.astype(int), threshold, kklip)
                 ).x,
                 axis=1
             )
@@ -366,7 +352,7 @@ def inject_and_recover_snr(
         lambda img: img[*find_injection(img, pos)]
     )
     if kklip is None:
-        snr = calc_snr_from_series(
+        snr = dutils.calc_snr_from_series(
             inj_snr, thresh=5., n_modes=3
         )
     else:

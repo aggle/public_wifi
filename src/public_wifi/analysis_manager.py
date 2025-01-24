@@ -29,7 +29,7 @@ class AnalysisManager:
             snr_thresh = 5.,
             n_modes = 3,
             mf_width = 7,
-            det_kklip = 10,
+            cat_det_kklip = 10,
     ) -> None:
         """
         Given an input catalog, run the analysis.
@@ -52,9 +52,15 @@ class AnalysisManager:
           A stamp's similarity score must be at least this value to be included
           If fewer than `min_nref` reference stamps meet this criteria, use the
           `min_nref` ones with the highest similarity scores    
+        snr_thresh : float = 5.
+          SNR threshold for flagging a candidate
+        n_modes : int = 3
+          Candidates must have SNR>thresh in at least this many modes
+        mf_width : int = 7
+          The size of the matched filter to use when using matched filter detection
+        cat_det_kklip = 10
+          Initial Kklip value for the "Catalog Detection" scroller
 
-        snr_thresh = 5.
-        n_modes = 3,
 
         Output
         ------
@@ -80,7 +86,7 @@ class AnalysisManager:
         )
         self.detection_parameters = dict(
             mf_width = mf_width,
-            kklip = det_kklip,
+            kklip = cat_det_kklip,
         )
 
         self.stars = catproc.process_catalog(

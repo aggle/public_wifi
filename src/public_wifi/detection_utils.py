@@ -8,7 +8,8 @@ from public_wifi import misc
 def flag_candidate_pixels(
         maps : np.ndarray | pd.Series,
         thresh : float,
-        n_modes : int = 3
+        n_modes : int = 3,
+        min_kklip : int = 10,
 ) -> np.ndarray[bool]:
     """
     Flag pixels in a detection cube as True if they meet the detection
@@ -19,7 +20,7 @@ def flag_candidate_pixels(
     maps : np.array | pd.Series
       A stack of detection maps, one per Kklip
     """
-    stack = np.stack(maps)
+    stack = np.stack(maps)[min_kklip:]
     stackmap = (stack >= thresh)
     mode_detections = np.sum(stackmap.astype(int), axis=0)
     detections = (mode_detections >= n_modes)
@@ -31,6 +32,18 @@ def make_series_snrmaps(residuals):
     snrmaps = residuals/std_maps
     return snrmaps
 
+
+def calc_snr_from_series(
+        snr_series : pd.Series,
+        thresh: float = 5.,
+        n_modes : int =3,
+        min_kklip : int = 10,
+):
+    # assume it's indexed by kklip
+    snr_series = snr_series.squeeze()[min_kklip:]
+    # return the median of the top 3 snr values
+    snr = snr_series.sort_values(ascending=False)[:n_modes].median()
+    return snr
 
 def detect_snrmap(
         snrmaps,
@@ -63,6 +76,10 @@ def detect_snrmap(
         np.where(cand_flags),
         index=['dy','dx']
     ).T
+    initial_candidate_pixels['snr'] = initial_candidate_pixels.apply(
+        lambda row: snrmaps.apply(lambda img: img[row['y'], row['x']]),
+        axis=1
+    )
 
     center_pixel = misc.get_stamp_center(snrmaps)
     initial_candidate_pixels['dy'] -= center_pixel[1]
