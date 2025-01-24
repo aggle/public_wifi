@@ -140,39 +140,96 @@ def row_inject_psf(
 
 
 def cat_inject_psf(star, pos, contrast, kklip, mf_args={}):
-    """Apply row_inject_psf to the whole catalog"""
+    """
+    Apply row_inject_psf to a star. You can use this function with the stars
+    pd.Series to inject a fake at the same contrast/position/kklip to all the
+    stars.
+    Adds the column 'inj_stamp' to the star catalog entries
+    """
     inj_cat = star.cat.apply(
         row_inject_psf,
         star=star, pos=pos, contrast=contrast, kklip=kklip, mf_args=mf_args,
         axis=1
     )
-    return inj_cat
+    star.cat['inj_stamp'] = inj_cat['stamp']
+    return 
 
-def replace_attr(obj, name, new_val):
-    try:
-        delattr(obj, name)
-    except AttributeError:
-        pass
-    setattr(obj, name, new_val)
+def find_injection(img : np.ndarray, pos : np.ndarray):
+    """
+    Sometimes the brightest pixel in the residual / detection map is 1 off from
+    the injection site, especially when convolving with the PSF mode. Find it.
+    Parameters
+    ----------
+    img : np.ndarray
+      the 2-D detection map
+    pos : np.ndarray
+      the injection site in center-origin coordinates i.e. (0, 0) is the center
+      of the img.
 
-def inject_subtract_detect(star, pos, contrast, use_kklip):
-    """Inject subtract and measure the SNR for a fake companion"""
+    Output
+    ------
+    recovered_pos : np.ndarray
+      The recovered position of the detection, in lower-left origin coordinates
+    """
+    pos_arr = misc.center_to_ll_coords(img.shape[0], pos)[::-1]
+    # get the search range
+    row_range = np.arange(max(pos_arr[0]-1, 0), min(pos_arr[0]+2, img.shape[0]))
+    col_range = np.arange(max(pos_arr[1]-1, 0), min(pos_arr[1]+2, img.shape[1]))
+    # assume that the recovered site is the injection site for initialization
+    # purposes
+    max_pos = pos_arr.copy()
+    max_flux = img[*max_pos]
+    
+    for r in row_range:
+        for c in col_range:
+            if img[r, c] > max_flux:
+                max_flux = img[r, c]
+                max_pos[0] = r
+                max_pos[1] = c
+            else:
+                continue
+    return max_pos
+
+def calc_snr_from_series(
+        snr_series : pd.Series, thresh: float = 5., n_modes : int =3
+):
+    snr_series = snr_series.squeeze()
+    # return the median of the top 3 snr values
+    snr = snr_series.sort_values(ascending=False)[:n_modes].min()
+    # above_thresh = snr_series[snr_series >= thresh]
+    # is_detected = len(above_thresh) >= n_modes
+    # if is_detected == False:
+    #     return np.nan
+    # snr = above_thresh.sort_values(ascending=False)[:n_modes].mean()
+    # return above_thresh.median()
+    return snr
+
+def inject_subtract_detect(
+        star, pos, contrast, use_kklip, n_modes = 3, snr_thresh=5,
+) -> pd.Series:
+    """
+    Inject subtract and measure the SNR for a fake companion
+    """
     # first, copy the catalog over
-    new_cat = cat_inject_psf(star, pos, contrast, kklip=use_kklip)
-    replace_attr(star, 'old_cat', star.cat)
-    replace_attr(star, 'cat', new_cat)
+    cat_inject_psf(star, pos, contrast, kklip=use_kklip)
 
-    results = star.run_klip_subtraction()
+    results = star.run_klip_subtraction(stamp_column='inj_stamp')
 
-    # replace_attr(star, 'old_results', star.results)
-    # replace_attr(star, 'results', results)
-    # # put the old catalog back
-    # # star.cat['stamp'] = star.cat['old_stamp']
-    # # star.cat.drop(columns='old_stamp', inplace=True)
-    # # put it all back
-    # replace_attr(star, 'cat', star.old_cat)
-    # replace_attr(star, 'results', star.old_results)
-    return results
+    snrmaps = star.run_make_snr_maps(results)
+    recovered_snr = snrmaps.apply(
+        lambda col: pd.Series({'recovered_snr': col.apply(
+            lambda img: img[*find_injection(img, pos)]
+        )})
+    )
+    # aggregate the SNR values into a single value
+    snr = recovered_snr.apply(
+        calc_snr_from_series,
+        thresh=snr_thresh,
+        n_modes=n_modes,
+        axis=1
+
+    )
+    return snr
 
 
 def row_inject_subtract_detect(
@@ -240,7 +297,7 @@ def make_star_contrast_curves(
     """
     def match_snr_thresh(contrast, row, pos, snr_thresh=5):
         snr = star._row_inject_subtract_detect(
-            row, pos, contrast, snr_thresh
+            row, pos, contrast, snr_thresh, n_modes=star.det_args['n_modes']
         )[0]
         return np.abs(snr - snr_thresh)
     center = int(np.floor(star.stamp_size/2))
@@ -282,3 +339,49 @@ def contrast_map_to_radial(contrast_map, stamp_size):
     return contrast_map
 
 
+
+def inject_and_recover_snr(
+        star,
+        row,
+        contrast,
+        pos,
+        snr_thresh=5.,
+        n_modes=3,
+        kklip=None,
+        plot=False
+) -> float:
+    """
+    Inject a PSF into a stamp and recover the SNR, as defined by the residuals
+    of the stamp itself.
+    """
+    inj_row = row_inject_psf(
+        row, star=star, pos=pos, contrast=contrast, kklip=-1
+    )
+    results = star._row_klip_subtract(
+        inj_row,
+        **star.subtr_args,
+    )
+    snrmaps = star._row_make_snr_map(results).squeeze()
+    inj_snr = snrmaps.apply(
+        lambda img: img[*find_injection(img, pos)]
+    )
+    if kklip is None:
+        snr = calc_snr_from_series(
+            inj_snr, thresh=5., n_modes=3
+        )
+    else:
+        snr = inj_snr[kklip]
+
+    return snr
+
+def optimize_snr_vs_thresh(
+    contrast, star, row, pos, snr_thresh=5., n_modes=3, kklip=None
+):
+    """
+    Compute the difference between the snr and the target threshold.
+    Pass this to a minimization function like optimize.minimize_scalar
+    """
+    snr = inject_and_recover_snr(
+        star, row, contrast, pos, snr_thresh, n_modes, kklip
+    )
+    return np.abs(snr - snr_thresh)

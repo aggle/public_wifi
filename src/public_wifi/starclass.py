@@ -397,11 +397,16 @@ class Star:
             {s.name: s for s in [klip_basis_img, klip_model_img, klip_sub_img]}
         )
 
-    def run_make_snr_maps(self):
+    def run_make_snr_maps(self, results=None):
         """
         Divide the residual stamps by their standard deviation
+        results : None
+          You can pass in your own results dataframe. If you don't, it uses the
+          star's.
         """
-        snrmaps = self.results.apply(
+        if results is None:
+            results = self.results
+        snrmaps = results.apply(
             self._row_make_snr_map,
             axis=1
         ).squeeze()
@@ -411,7 +416,9 @@ class Star:
         snr_maps = dutils.make_series_snrmaps(row['klip_sub'])
         return pd.Series({'snrmap': snr_maps})
 
-    def _row_apply_matched_filter(self, row, mf_width = 7, contrast=True, throughput_correction=True):
+    def _row_apply_matched_filter(
+            self, row, mf_width = 7, contrast=True, throughput_correction=True
+    ):
         """
         Convolve a matched filter against a residual stamp for a single row of the results dataframe
 
@@ -445,7 +452,9 @@ class Star:
             detmaps = detmaps/primary_fluxes
         return pd.Series({'detmap': detmaps})
 
-    def apply_matched_filter(self, mf_width=7, contrast=True, throughput_correction=True):
+    def apply_matched_filter(
+            self, mf_width=7, contrast=True, throughput_correction=True
+    ):
         """Wrapper for row_apply_matched_filter for the entire results dataframe"""
         detmaps = self.results.apply(
             self._row_apply_matched_filter,
@@ -592,7 +601,8 @@ class Star:
             row : pd.Series,
             pos : tuple[int],
             contrast : float,
-            snr_thresh : float = np.nan,
+            snr_thresh : float | None = None,
+            n_modes : int | None = None,
     ) -> tuple[float, bool]:
         """
         Inject, subtract, and detect fake PSFs. Uses the attribute argument parameters
@@ -600,10 +610,12 @@ class Star:
           If NaN, uses self.det_args. For contrast curves, provide the
           significance level of the detection you wish to report.
         """
-        if np.isnan(snr_thresh):
-            print("resetting thresh:")
-            snr_thresh = self.det_args['snr_thresh']
-        n_modes = self.det_args['n_modes']
+        if snr_thresh is None:
+            snr_thresh = float(self.det_args['snr_thresh'])
+            print(f"Resetting snr_thresh to {snr_thresh}")
+        if n_modes is None:
+            n_modes = int(self.det_args['n_modes'])
+            print(f"Resetting n_modes to {n_modes}")
 
         inj_row = self._row_inject_psf(row, pos=pos, scale=contrast, kklip=-1)
         results = self._row_klip_subtract(
@@ -612,11 +624,19 @@ class Star:
         snrmaps = self._row_make_snr_map(results).squeeze()
         # recover the SNR at the injected position
         center = misc.get_stamp_center(self.stamp_size)
-        inj_pos = center + np.array(pos)
-        inj_snr = np.stack(snrmaps.values)[..., inj_pos[1], inj_pos[0]]
+        # inj_pos = center + np.array(pos)
+        inj_pos = misc.center_to_ll_coords(center, pos)
+        # inj_snr = np.stack(snrmaps.values)[..., inj_pos[1], inj_pos[0]]
+        # sometimes the recovered position is off from the injection site by 1
+        inj_snr = snrmaps.apply(
+            lambda img: img[*cutils.find_injection(img, pos)]
+        )
+        mean_snr = cutils.calc_snr_from_series(
+            inj_snr, thresh=snr_thresh, n_modes=n_modes
+        )
         # sort the SNR, drop the first 2 Kklips, and take the mean of the
         # highest values
-        mean_snr = np.sort(inj_snr[3:])[-n_modes:].mean()
+        # mean_snr = np.sort(inj_snr[3:])[-n_modes:].mean()
         # get the detection flag at the detected positions
         detmap = dutils.flag_candidate_pixels(
             snrmaps,

@@ -129,5 +129,12 @@ def test_row_inject_subtract_detect(nonrandom_processed_star, scale=1., is_detec
     # assert(results.all() == is_detectable)
     # print(results.all(), is_detectable)
 
-def test_make_star_contrast_curves():
-    pass
+def test_find_injection(random_processed_star):
+    star = random_processed_star
+    print("Testing injections on ", star.star_id)
+    # construct an injection
+    pos = (-1, -1)
+    contrast = 1
+    kklip = 10
+    row = star.cat.loc[1]
+    inj_psf = cutils.row_inject_psf(row, star, pos, contrast, kklip)
