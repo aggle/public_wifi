@@ -4,8 +4,6 @@ import os
 from copy import copy
 from typing import Concatenate
 import numpy as np
-import astropy.io.fits as fits
-import astropy.io.ascii as ascii
 
 def rclip(x, xmin, xmax):
     dum = x
@@ -105,8 +103,6 @@ def fine_centroid(data, cwin, xc, yc):
     
     xc = sumx/sump
     yc = sumy/sump
-    
-    
 
     return xc, yc
 #=====================================================
