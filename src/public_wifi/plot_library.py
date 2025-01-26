@@ -8,6 +8,7 @@ import matplotlib as mpl
 from matplotlib import pyplot as plt
 
 from public_wifi import misc
+from public_wifi import starclass as sc
 
 
 def _contrast_list2map(
@@ -83,4 +84,47 @@ def plot_contrast(star):
         ax.legend(title='Sigma threshold')
         # print(map_name, contrast_df)
         ax.set_yscale("log")
+    return fig
+
+def mf_diagnostic_plots(
+    star : sc.Star,
+	cat_row : pd.Series,
+    pca_df :  pd.DataFrame,
+	mode_num : int,
+    inj_flux : float | None = None,
+	contrast : float | None = None
+):
+    imgs = {'stamp': star.cat.loc[cat_row.name, 'stamp']}
+    # pca_df = pca_results.loc[cat_row.name]
+    pca_row = pca_df.loc[mode_num]
+    img_cols = [
+        'klip_model', 'klip_sub', 'klip_basis', 'mf',
+        'pca_bias', 'mf_map', 'detmap', 'fluxmap'
+    ]
+    imgs.update({col: pca_row[col] for col in img_cols})
+    fig, axes = plt.subplots(nrows=3, ncols=4, figsize=(4*4, 2*4))
+    fig.suptitle(f"{star.star_id}\nKklip = {mode_num}")
+    for ax, (col, img) in zip(axes.flat, imgs.items()):
+        ax.set_title(col)
+        imax = ax.imshow(img)
+        fig.colorbar(imax, ax=ax, orientation='horizontal')
+
+    pca_index = pca_df.index
+    ax = axes[-1, 1]
+    ax.set_title("Recovered flux")
+    ax.set_xlabel("Kklip")
+    if inj_flux is not None:
+        ax.axhline(inj_flux, ls='--', c='k', label='Injected flux')
+    ax.plot(pca_index, pca_df['detmap_posflux'], label='No KL corr')
+    ax.plot(pca_index, pca_df['fluxmap_posflux'], label='With KL corr')
+    ax.legend()
+
+    ax = axes[-1, 2]
+    ax.set_title("Contrast normalized to MF width")
+    ax.set_xlabel("Kklip")
+    if contrast is not None:
+        ax.axhline(contrast, ls='--', c='k', label='Injected contrast')
+    ax.plot(pca_index, pca_df['detmap_posflux']/pca_df['mf_prim_flux'], label='No KL corr')
+    ax.plot(pca_index, pca_df['fluxmap_posflux']/pca_df['mf_prim_flux'], label='With KL corr')
+    ax.legend()
     return fig

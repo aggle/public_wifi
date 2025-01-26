@@ -347,8 +347,11 @@ class Star:
             jackknife_reference = jackknife_reference,
             axis=1
         )
+        self.pca_results = combine_pca_results(self.subtraction)
         results = self.cat.join(self.subtraction)
         return results
+
+
 
     def _row_klip_subtract(
             self,
@@ -417,7 +420,7 @@ class Star:
         return pd.Series({'snrmap': snr_maps})
 
     def _row_apply_matched_filter(
-            self, row, mf_width = 7, contrast=True, throughput_correction=True
+            self, row, mf_width = None, contrast=True, throughput_correction=True
     ):
         """
         Convolve a matched filter against a residual stamp for a single row of the results dataframe
@@ -427,16 +430,18 @@ class Star:
         throughput_correction : bool = True
           If True, correct for the KLIP throughput
         """
+        # this dataframe is indexed by Kklip
         df = pd.concat(row[['klip_model', 'klip_sub', 'klip_basis']].to_dict(), axis=1)
 
-        # df['klip_basis'] = df['klip_basis'].cumsum()
+        kl_basis = df['klip_basis']
         detmaps = df.apply(
-            lambda dfrow : mf_utils.apply_matched_filter(
-                dfrow['klip_sub'],
-                dfrow['klip_model'],
+            # each row is a set of corresponding Kklips
+            lambda kklip_row : mf_utils.apply_matched_filter_to_stamp(
+                kklip_row['klip_sub'],
+                kklip_row['klip_model'],
                 mf_width = mf_width,
-                throughput_correction = throughput_correction,
-                kl_basis = None,#df.loc[:dfrow.name, 'klip_basis'],
+                correlate_mode='same',
+                kl_basis = kl_basis[:kklip_row.name] if throughput_correction else None,
             ),
             axis=1
         )
@@ -453,7 +458,7 @@ class Star:
         return pd.Series({'detmap': detmaps})
 
     def apply_matched_filter(
-            self, mf_width=7, contrast=True, throughput_correction=True
+        self, mf_width=None, contrast=True, throughput_correction=True
     ):
         """Wrapper for row_apply_matched_filter for the entire results dataframe"""
         detmaps = self.results.apply(
@@ -645,3 +650,92 @@ class Star:
         )
         is_detected = detmap[*inj_pos[::-1]]
         return mean_snr, is_detected
+
+
+def apply_mf_to_pca_results(
+        init_pca_results : pd.DataFrame,
+        mf_width : int | None = None,
+        det_pos : tuple[int] | None = None,
+):
+    """
+
+    det_pos : if provided, use this position for recovering the flux
+      useful for fake injection and recovery
+
+    Apply matched filtering to the star.pca_results dataframe
+    Adds the following columns to the dataframe:
+    mf : the matched filter
+    mf_prim_flux : the flux of the primary as measured by that matched filter
+    mf_norm : the mf norm
+    pca_bias : the bias in the MF introduced by the PCA basis vectors
+    mf_map : the MF correlation with the subtracted image
+    detmap : the mf_map divided by the mf_norm
+    fluxmap : the mf_map divided by (mf_norm - pca_bias)
+    contrastmap : the fluxmap dividde by mf_prim_flux
+    detpos : the brightest pixel in the detmap
+    detmap_posflux : the flux of the detpos pixel in the detmap
+    fluxmap_posflux : the flux of the detpos pixel in the fluxmap
+    """
+    pca_results = init_pca_results.copy()
+    pca_results['mf'] = pca_results['klip_model'].apply(
+        mf_utils.make_matched_filter, width=mf_width
+    )
+    # primary star flux as measured by the matched filter
+    pca_results['mf_prim_flux'] = pca_results.apply( 
+        lambda row: cutils.measure_primary_flux(row['klip_model'], row['mf']),
+        axis=1
+    )
+    pca_results['mf_norm'] = pca_results['mf'].apply(
+        mf_utils.compute_throughput, klmodes=None
+    )
+    pca_results['pca_bias'] = pca_results.apply(
+        lambda row: mf_utils.compute_pca_bias(
+            row['mf'],
+            modes=pca_results.loc[:row.name, 'klip_basis']
+        ).iloc[-1],
+        axis=1
+    )
+    pca_results['mf_map'] = pca_results.apply(
+        lambda row:  mf_utils.correlate(
+            row['klip_sub'],
+            row['mf'],
+            mode='same',
+            method='auto'
+        ),
+        axis=1
+    )
+    pca_results['detmap'] = pca_results['mf_map']/pca_results['mf_norm']
+    thpt = (pca_results['mf_norm'] - pca_results['pca_bias'])
+    pca_results['fluxmap'] = pca_results['mf_map']/thpt
+    pca_results['contrastmap'] = pca_results['fluxmap']/pca_results['mf_prim_flux']
+
+    if det_pos is not None:
+        pca_results['detpos'] = pca_results['detmap'].apply(
+            lambda detmap: np.unravel_index(detmap.argmax(), detmap.shape)
+        )
+    else:
+        pca_results['detpos'] = pca_results.apply(lambda row: det_pos)
+
+    pca_results['detmap_posflux'] = pca_results.apply(
+        lambda row: row['detmap'][*row['detpos']],
+        axis=1
+    )
+    pca_results['fluxmap_posflux'] = pca_results.apply(
+        lambda row: row['fluxmap'][*row['detpos']],
+        axis=1
+    )
+    return pca_results
+
+
+def combine_pca_results(subtr_results) -> pd.DataFrame | None:
+    """Combine the results of PSF subtraction into a dataframe indexed by the ordered modes"""
+    if isinstance(subtr_results, pd.DataFrame):
+        pca_results = pd.concat(
+            {k: pd.concat(v, axis=1) for k, v in subtr_results.T.to_dict().items()},
+            axis=0
+        )
+    elif isinstance(subtr_results, pd.Series):
+        pca_results = pd.concat(subtr_results.to_dict(), axis=1)
+    else:
+        pca_results = None
+    return pca_results
