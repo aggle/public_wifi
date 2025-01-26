@@ -15,8 +15,9 @@ catalog = catproc.load_catalog(catalog_file, 50)
 
 
 # load file with list of bad references
-with open("/Users/jaguilar/Projects/Research/hst17167-ffp/ffp_tools/src/ffp_tools/bad_references.txt") as f:
-    bad_references = [i.strip() for i in f.readlines()]
+# with open("/Users/jaguilar/Projects/Research/hst17167-ffp/ffp_tools/src/ffp_tools/bad_references.txt") as f:
+#     bad_references = [i.strip() for i in f.readlines()]
+bad_references = ['J042705.86+261520.3']
 
 
 nobs = len(catalog)
@@ -29,7 +30,7 @@ anamgr = AnalysisManager(
     match_references_on = ['filter'],
     data_folder = data_folder,
     stamp_size = 13,
-    bad_references = bad_references,#['J042705.86+261520.3'],
+    bad_references = bad_references,
     scale_stamps = False,
     center_stamps = False,
     min_nref = 20,
