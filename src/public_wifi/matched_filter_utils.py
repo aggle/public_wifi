@@ -48,17 +48,19 @@ def make_matched_filter(
     normalized_stamp -= np.nanmean(normalized_stamp)
     return normalized_stamp
 
-def apply_matched_filter(
+def apply_matched_filter_to_stamp(
         target_stamp : np.ndarray,
         psf_model : np.ndarray,
         mf_width : int | None = None,
         correlate_mode='same',
-        throughput_correction : bool = False,
-        correct_pca_throughput : bool = False,
         kl_basis : np.ndarray | pd.Series | None = None,
 ) -> np.ndarray:
     """
-    Apply the matched filter as a correlation. Normalize by the matched filter norm.
+    Apply the matched filter to a single stamp. Normalize by the matched filter
+    norm and the Kklip projection, if provided.
+
+    Parameters
+    ----------
     target_stamp : np.ndarray
       the stamp in which you are looking for signal
     psf_model  : np.ndarray
@@ -66,24 +68,26 @@ def apply_matched_filter(
     correlate_mode : str
       'same' or 'valid'. use 'same' for searches, and 'valid' if you have an
       unsubtracted psf and want the flux
-    throughput_correction : bool = False
-      If True, correct for the matched filter response (should always be true)
     kl_basis : np.ndarray | pd.Series | None = None
       If provided, include the KLIP basis in the throughput correction
-      It must be only the KLIP basis up to the Kklip of the PSF model
+      It should be only the KLIP basis up to the Kklip of the PSF model
+
+    Output
+    ------
+    mf_map : the stamp with the matched filter applied
     """
     matched_filter = make_matched_filter(psf_model, width=mf_width)
-    detmap = correlate(
+    mf_map = correlate(
         target_stamp,
         matched_filter,
         method='direct',
         mode=correlate_mode)
-    # if throughput_correction:
+    # this returns the MF norm if kl_basis is None, else a pd.Series
     throughput = compute_throughput(matched_filter, klmodes=kl_basis)
     if isinstance(throughput, pd.Series):
         throughput = throughput.iloc[-1]
-    detmap = detmap / throughput
-    return detmap
+    mf_map = mf_map / throughput
+    return mf_map
 
 def compute_throughput(mf, klmodes=None) -> float | pd.Series:
     """
@@ -135,7 +139,7 @@ def compute_mf_norm(
 
 def compute_pca_bias(
         mf : np.ndarray,
-        klip_modes : np.ndarray | pd.Series,
+        modes : np.ndarray | pd.Series,
 ) -> pd.Series :
     """
     Compute the bias introduced by sub-optimal PSF modeling
@@ -153,13 +157,13 @@ def compute_pca_bias(
       A pixel map of the bias, as a cumulative sum
 
     """
-    if not isinstance(klip_modes, pd.Series):
-        klip_modes = pd.Series({i+1: mode for i, mode in enumerate(klip_modes)})
-    bias = klip_modes.apply(
+    if not isinstance(modes, pd.Series):
+        modes = pd.Series({i+1: mode for i, mode in enumerate(modes)})
+    bias = modes.apply(
         # compute the correlation with the MF for each KL mode
         lambda klmode: correlate(
             klmode, mf, mode='same', method='direct',
-        )
+        )**2
     )
     bias = bias.cumsum()
     return bias
@@ -175,3 +179,4 @@ def make_gaussian_psf(stamp_size, filt='F850LP') -> np.ndarray:
     g2d_func = Gaussian2D(1, 0, 0, sig, sig)
     psf = g2d_func(xy[0], xy[1])
     return psf
+

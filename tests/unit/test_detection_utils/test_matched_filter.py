@@ -55,10 +55,10 @@ def test_apply_matched_filter(random_processed_star):
     stamp = stamp / stamp.sum()
     print(f"Stamp sum: {stamp.sum():0.10e}")
     stamp_center = misc.get_stamp_center(stamp)
-    mf_flux = mfutils.apply_matched_filter(stamp, mf)[*stamp_center]
+    mf_flux = mfutils.apply_matched_filter_to_stamp(stamp, mf)[*stamp_center]
     print(f"MF flux: {mf_flux:0.10e}")
     assert(mfutils.np.abs(mf_flux - stamp.sum()) < 1e-10)
-    mf_flux = mfutils.apply_matched_filter(
+    mf_flux = mfutils.apply_matched_filter_to_stamp(
         stamp, mf, correlate_mode='valid'
     ).squeeze()
     print(f"MF flux, 'valid' mode: {mf_flux:0.10e}")
@@ -181,10 +181,10 @@ def test_apply_matched_filter_with_throughput(
     # apply the matched filter with throughput correction
     kklip = -1
     primary_flux = cutils.measure_primary_flux(row['stamp'], psf_model)
-    detmap = mfutils.apply_matched_filter(
+    detmap = mfutils.apply_matched_filter_to_stamp(
         resid_stamp, psf_model, throughput_correction=True, kl_basis=None
     )
-    mf_result = mfutils.apply_matched_filter(
+    mf_result = mfutils.apply_matched_filter_to_stamp(
         resid_stamp, psf_model, throughput_correction=True, kl_basis=klip_basis
     )  / primary_flux
 

@@ -95,11 +95,10 @@ class CatDet:
         """Apply matched filters to the normalized klip residuals"""
         mf_detect = pd.concat({
             col: self.kklip_resid_norm.apply(
-                lambda row: mf_utils.apply_matched_filter(
+                lambda row: mf_utils.apply_matched_filter_to_stamp(
                     row[col],
                     self.stars[row.name].results.loc[col, 'klip_model'].loc[self.kklip],
                     mf_width=self.mf_width,
-                    throughput_correction=True,
                     kl_basis=None
                 ),
                 axis=1
@@ -128,11 +127,10 @@ class CatDet:
         )
         mf_thpt = pd.concat({
             col: self.kklip_resid.apply(
-                lambda row: mf_utils.apply_matched_filter(
+                lambda row: mf_utils.apply_matched_filter_to_stamp(
                     row[col],
                     self.stars[row.name].results.loc[col, 'klip_model'].loc[self.kklip],
                     mf_width=self.mf_width,
-                    throughput_correction=True,
                     kl_basis=self.stars[row.name].results.loc[col, 'klip_basis'].loc[:self.kklip]
                 ),
                 axis=1

@@ -49,7 +49,7 @@ def test_scale_psf(random_processed_star):
     psf = star.results.loc[0, 'klip_model'][1][2:-2, 2:-2].copy()
     scale = 100
     scaled_psf = cutils.mf_utils.make_normalized_psf(psf, scale)
-    scaled_psf_flux = cutils.mf_utils.apply_matched_filter(
+    scaled_psf_flux = cutils.mf_utils.apply_matched_filter_to_stamp(
         scaled_psf, psf, correlate_mode='valid'
     ).squeeze()
     assert(np.abs(scaled_psf_flux - scale) < 1e-10)

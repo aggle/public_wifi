@@ -23,7 +23,8 @@ def measure_primary_flux(
     psf_model : np.ndarray
       a model of the PSF to use for flux measurement
     mf_args : {}
-      Arguments to pass to mf_utils.apply_matched_filter
+      Arguments to pass to mf_utils.apply_matched_filter_to_stamp
+      Defaults: mf_width=None, correlate_mode='same', and kl_basis=None
 
     Output
     ------
@@ -35,10 +36,9 @@ def measure_primary_flux(
     kwargs = dict(
         mf_width = mf_args.get("mf_width", min(psf_model.shape)),
         correlate_mode=mf_args.get('correlate_mode', 'valid'),
-        throughput_correction=mf_args.get('throughput_correction', True),
         kl_basis=mf_args.get('kl_basis', None),
     )
-    star_flux = mf_utils.apply_matched_filter(
+    star_flux = mf_utils.apply_matched_filter_to_stamp(
         stamp, psf_model,
         **kwargs,
     )

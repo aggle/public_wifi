@@ -491,7 +491,7 @@ class Star:
             width=7,
         )
         detmaps = df.apply(
-            lambda dfrow : mf_utils.apply_matched_filter(
+            lambda dfrow : mf_utils.apply_matched_filter_to_stamp(
                 dfrow['klip_sub'],
                 dfrow['klip_model'],
                 mf_width = min(7, self.stamp_size),
@@ -511,7 +511,7 @@ class Star:
         if contrast:
             center = int(np.floor(self.stamp_size/2))
             primary_fluxes = df.apply(
-                lambda dfrow : mf_utils.apply_matched_filter(
+                lambda dfrow : mf_utils.apply_matched_filter_to_stamp(
                     row['stamp'],
                     dfrow['klip_model'],
                     correlate_mode='same',
