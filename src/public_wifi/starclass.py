@@ -709,7 +709,7 @@ def apply_mf_to_pca_results(
     pca_results['fluxmap'] = pca_results['mf_map']/thpt
     pca_results['contrastmap'] = pca_results['fluxmap']/pca_results['mf_prim_flux']
 
-    if det_pos is not None:
+    if det_pos is None:
         pca_results['detpos'] = pca_results['detmap'].apply(
             lambda detmap: np.unravel_index(detmap.argmax(), detmap.shape)
         )
