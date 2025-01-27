@@ -109,6 +109,7 @@ def mf_diagnostic_plots(
         imax = ax.imshow(img)
         fig.colorbar(imax, ax=ax, orientation='horizontal')
 
+    # make plots vs numbasis
     pca_index = pca_df.index[min_mode:]
     i+=1
     ax = axes.flat[i]
@@ -126,11 +127,16 @@ def mf_diagnostic_plots(
     ax.set_xlabel("Kklip")
     if contrast is not None:
         ax.axhline(contrast, ls='--', c='k', label='Injected contrast')
-
-    ax.plot(pca_index, pca_df.loc[pca_index, 'detmap_posflux']/pca_df['mf_prim_flux'],
-            label='No KL corr')
-    ax.plot(pca_index, pca_df.loc[pca_index, 'fluxmap_posflux']/pca_df['mf_prim_flux'],
-            label='With KL corr')
+    ax.plot(
+        pca_index,
+        pca_df.loc[pca_index, 'detmap_posflux']/pca_df.loc[pca_index, 'mf_prim_flux'],
+        label='No KL corr'
+    )
+    ax.plot(
+        pca_index,
+        pca_df.loc[pca_index, 'fluxmap_posflux']/pca_df.loc[pca_index, 'mf_prim_flux'],
+        label='With KL corr'
+    )
     ax.legend()
 
     print(i)
