@@ -29,16 +29,16 @@ anamgr = AnalysisManager(
     star_id_column = 'target',
     match_references_on = ['filter'],
     data_folder = data_folder,
-    stamp_size = 13,
+    stamp_size = 21,
     bad_references = bad_references,
     scale_stamps = False,
     center_stamps = False,
-    min_nref = 20,
+    min_nref = 40,
     sim_thresh = 0.5,
     snr_thresh = 5.,
     n_modes = 5,
     cat_det_kklip=10,
-    mf_width=13
+    mf_width=15
 )
 
 
