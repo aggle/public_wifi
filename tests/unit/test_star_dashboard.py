@@ -4,31 +4,16 @@ from bokeh.server.server import Server
 
 import pandas as pd
 from public_wifi.dashboard import star_dashboard as sd
-
-# def app(doc):
-#     layout = func(*args, **kwargs)
-
-#     doc.add_root(layout)
-
-#     doc.theme = Theme(json=yaml.load("""
-#         attrs:
-#             figure:
-#                 background_fill_color: white
-#                 outline_line_color: white
-#                 toolbar_location: above
-#             Grid:
-#                 grid_line_dash: [6, 4]
-#                 grid_line_color: white
-#     """, Loader=yaml.FullLoader))
-#     return app
+from public_wifi.dashboard import dash_tools as dt
 
 def show_widget(widget, port=5006):
-    app = sd.standalone(widget)
+    app = dt.standalone(widget)
     apps = {'/': app}
     server = Server(apps, port=port)
     print(f'\nOpening Bokeh application on http://localhost:{port}/\n')
     server.io_loop.add_callback(server.show, "/")
     server.io_loop.start()
+    return
 
 def test_make_cds_table_candidates(star_with_candidates):
     """Display """
@@ -42,11 +27,12 @@ def test_make_cds_table_candidates(star_with_candidates):
     print(df)
     print(table)
     # show_widget(table)
+    return
 
 def test_make_jackknife_cds(star_with_candidates):
     star = star_with_candidates
     jackknife = star.results.loc[1, 'klip_jackknife']
-    cds = sd.series_to_CDS(
+    cds = dt.series_to_CDS(
         jackknife,
         None,
         index = [f"{i[0]} / {i[1]}" for i in jackknife.index],
@@ -57,4 +43,11 @@ def test_make_jackknife_cds(star_with_candidates):
     print(cds.data['img'][0].shape)
     print(cds.data['cube'][0].shape)
     print(len(cds.data['index'][0]))
+    return
+
+def test_make_row_cds(nonrandom_processed_star):
+    star = nonrandom_processed_star
+    print(f"Star: {star.star_id}")
+
+    return
 
