@@ -10,7 +10,8 @@ from astropy.nddata import Cutout2D
 from astropy.wcs import WCS
 from astropy.stats import sigma_clipped_stats
 
-from public_wifi import misc, centroid
+from public_wifi import misc
+from public_wifi import centroid
 from public_wifi import subtraction_utils as subutils
 from public_wifi import detection_utils as dutils
 from public_wifi import matched_filter_utils as mf_utils
@@ -446,7 +447,6 @@ class Star:
             axis=1
         )
         if contrast:
-            center = int(np.floor(self.stamp_size/2))
             primary_fluxes = df.apply(
                 lambda dfrow: cutils.measure_primary_flux(
                     self.cat.loc[row.name, 'stamp'],
@@ -500,7 +500,6 @@ class Star:
                 dfrow['klip_sub'],
                 dfrow['klip_model'],
                 mf_width = min(7, self.stamp_size),
-                throughput_correction = False,
                 kl_basis = None,
             ),
             axis=1
@@ -714,7 +713,7 @@ def apply_mf_to_pca_results(
             lambda detmap: np.unravel_index(detmap.argmax(), detmap.shape)
         )
     else:
-        pca_results['detpos'] = pca_results.apply(lambda row: det_pos)
+        pca_results['detpos'] = pca_results.apply(lambda row: tuple(det_pos), axis=1)
 
     pca_results['detmap_posflux'] = pca_results.apply(
         lambda row: row['detmap'][*row['detpos']],

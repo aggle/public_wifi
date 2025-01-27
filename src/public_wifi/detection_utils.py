@@ -77,7 +77,7 @@ def detect_snrmap(
         index=['dy','dx']
     ).T
     initial_candidate_pixels['snr'] = initial_candidate_pixels.apply(
-        lambda row: snrmaps.apply(lambda img: img[row['y'], row['x']]),
+        lambda row: calc_snr_from_series(snrmaps.apply(lambda img: img[row['dy'], row['dx']])),
         axis=1
     )
 
