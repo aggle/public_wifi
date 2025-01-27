@@ -76,10 +76,6 @@ def detect_snrmap(
         np.where(cand_flags),
         index=['dy','dx']
     ).T
-    initial_candidate_pixels['snr'] = initial_candidate_pixels.apply(
-        lambda row: calc_snr_from_series(snrmaps.apply(lambda img: img[row['dy'], row['dx']])),
-        axis=1
-    )
 
     center_pixel = misc.get_stamp_center(snrmaps)
     initial_candidate_pixels['dy'] -= center_pixel[1]
