@@ -173,9 +173,6 @@ def jackknife_analysis(
       a series with a hierarchical index of (target_name, kklip) that stores the subtracted array
 
     """
-    # references = star.references.query("used == True")
-    # ref_targets = references.index.get_level_values("target")
-    # ref_iterator = {i: list(ref_targets[ref_targets != i]) for i in ref_targets}
     ref_iterator = make_jackknife_iterator(star.references)
     results = {}
     for r, refs in ref_iterator.items():
@@ -184,10 +181,11 @@ def jackknife_analysis(
             min_nref=min_nref,
             jackknife_reference=r
         )['klip_sub']
-    # do two levels of concatenation to turn it onto a proper series
-    jackknife = pd.concat(results, names=['target', 'index']).reorder_levels(['index', 'target'])
-    jackknife = pd.concat(jackknife.to_dict())
-    jackknife.name = 'klip_jackknife'
+    jackknife = pd.concat(results, names=['target', 'cat_row', 'numbasis'])
+    # reorder the index to put the catalog row first
+    jackknife = jackknife.reorder_levels(['cat_row', 'numbasis', 'target'])
+    jackknife.sort_index(level=[0, 1], inplace=True)
     # now make it an SNR map
     jackknife = make_series_snrmaps(jackknife)
+    jackknife.name = 'klip_jackknife'
     return jackknife

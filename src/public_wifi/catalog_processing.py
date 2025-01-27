@@ -122,7 +122,7 @@ def process_catalog(
     # perform the candidate checking
     catalog_candidate_validation(
         stars,
-        **subtr_args,
+        # **subtr_args,
     )
     return stars
 
@@ -269,11 +269,26 @@ def catalog_detection(
         # star.pca_results = sc.apply_mf_to_pca_results(star.pca_results, mf_width=mf_width)
     return
 
-def catalog_candidate_validation(stars : pd.Series, sim_thresh, min_nref) -> None:
+def catalog_candidate_validation(
+        stars : pd.Series,
+        sim_thresh : float | None = None,
+        min_nref : int | None = None
+) -> None:
     for star in stars:
-        jackknife = star.jackknife_analysis(
+        if sim_thresh is None:
+            sim_thresh = star.subtr_args['sim_thresh']
+        else:
+            star.subtr_args.update({'sim_thresh': sim_thresh})
+        if min_nref is None:
+            min_nref = star.subtr_args['min_nref']
+        else:
+            star.subtr_args.update({'min_nref': min_nref})
+
+        # since the jackknife goes to Kklip_max - 1, not Kklip_max,
+        # you can't put it in the star.results dataframe.
+        # put it in its own
+        star.jackknife_results = star.jackknife_analysis(
             sim_thresh=sim_thresh,
             min_nref=min_nref
         )
-        star.results['klip_jackknife'] = jackknife
     return

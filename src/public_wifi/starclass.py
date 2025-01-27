@@ -572,7 +572,7 @@ class Star:
     #     return pd.Series({'snr_candidates': candidates})
 
     def jackknife_analysis(
-           self,
+            self,
             sim_thresh : float | None = None,
             min_nref : int | None = None,
     ) -> pd.Series:
@@ -582,14 +582,14 @@ class Star:
         """
         if sim_thresh is None:
             sim_thresh = self.subtr_args.get('sim_thresh')
+        else:
+            self.subtr_args['sim_thresh'] = sim_thresh
         if min_nref is None:
             min_nref = self.subtr_args.get('min_nref')
+        else:
+            self.subtr_args['min_nref'] = min_nref
         jackknife = dutils.jackknife_analysis(self, sim_thresh, min_nref)
         jackknife_name = jackknife.name
-        jackknife = self.cat.apply(
-            lambda row: pd.Series({jackknife_name: jackknife.loc[row.name]}, name=jackknife_name),
-            axis=1
-        )
         return jackknife
 
 
