@@ -12,7 +12,7 @@ from astropy.stats import sigma_clipped_stats
 
 from public_wifi import misc
 from public_wifi import centroid
-from public_wifi import subtraction_utils as subutils
+from public_wifi import subtraction_utils as subtr_utils
 from public_wifi import detection_utils as dutils
 from public_wifi import matched_filter_utils as mf_utils
 from public_wifi import contrast_utils as cutils
@@ -340,7 +340,7 @@ class Star:
         # if the subtraction parameters are not provided, read them from the class attr
         sim_thresh = self.subtr_args['sim_thresh']
         min_nref = self.subtr_args['min_nref']
-        self.subtraction = self.cat.apply(
+        results = self.cat.apply(
             self._row_klip_subtract,
             sim_thresh = sim_thresh,
             min_nref = min_nref,
@@ -348,8 +348,9 @@ class Star:
             jackknife_reference = jackknife_reference,
             axis=1
         )
-        self.pca_results = combine_pca_results(self.subtraction)
-        results = self.cat.join(self.subtraction)
+        results = pd.concat(results.to_dict(), names=['cat_row', 'numbasis'])
+        # results = combine_pca_results(results)
+        # results = self.cat.join(self.subtraction)
         return results
 
 
@@ -390,16 +391,17 @@ class Star:
         reference_stamps = reference_stamps.apply(lambda ref: ref - ref.min())
         scale = target_stamp.max() / reference_stamps.apply(np.max)
         reference_stamps = reference_stamps * scale#.apply(lambda ref: ref / ref.max())
-        klip_basis_img, klip_sub_img, klip_model_img = subutils.klip_subtract(
+        results = subtr_utils.klip_subtract(
             target_stamp,
             reference_stamps,
             np.arange(1, reference_stamps.size)
         )
         # return each as an entry in a series. this allows it to be
         # automatically merged with self.cat
-        return pd.Series(
-            {s.name: s for s in [klip_basis_img, klip_model_img, klip_sub_img]}
-        )
+        # return pd.Series(
+        #     {s.name: s for s in [klip_basis_img, klip_model_img, klip_sub_img]}
+        # )
+        return results
 
     def run_make_snr_maps(self, results=None):
         """
@@ -410,15 +412,13 @@ class Star:
         """
         if results is None:
             results = self.results
-        snrmaps = results.apply(
-            self._row_make_snr_map,
-            axis=1
-        ).squeeze()
+        # group by the catalog row and compute the SNR map of the residuals
+        gb_cat = self.results.groupby("cat_row", group_keys=False)
+        snrmaps = gb_cat['klip_sub'].apply(
+            dutils.make_series_snrmaps
+        )
+        snrmaps.name = 'snrmap'
         return snrmaps
-
-    def _row_make_snr_map(self, row):
-        snr_maps = dutils.make_series_snrmaps(row['klip_sub'])
-        return pd.Series({'snrmap': snr_maps})
 
     def _row_apply_matched_filter(
             self, row, mf_width = None, contrast=True, throughput_correction=True
@@ -534,26 +534,42 @@ class Star:
         ).squeeze()
         return fluxmaps
 
-    def row_detect_snrmap_candidates(
-            self,
-            row,
-    ):
-        # if the subtraction parameters are not provided, read them from the class attr
+    def detect_snrmap_candidates(self, results):
         try:
             snr_thresh = self.det_args.get('snr_thresh', 5.0)
             n_modes = self.det_args.get('n_modes', 3)
         except KeyError as e:
             print(f"Error: self.det_args probably not set")
             raise e
-
-        candidates = dutils.detect_snrmap(
-            row['snrmap'],
+        gb_cat = self.results.groupby("cat_row", group_keys=False)['snrmap']
+        candidates = gb_cat.apply(
+            dutils.detect_snrmap,
             snr_thresh=snr_thresh,
-            n_modes=n_modes
+            n_modes=n_modes,
         )
-        if candidates is None:
-            candidates = pd.DataFrame(None, columns=['cand_id', 'pixel'])
-        return pd.Series({'snr_candidates': candidates})
+        candidates.name = 'snr_candidates'
+        return candidates
+
+    # def row_detect_snrmap_candidates(
+    #         self,
+    #         row,
+    # ):
+    #     # if the subtraction parameters are not provided, read them from the class attr
+    #     try:
+    #         snr_thresh = self.det_args.get('snr_thresh', 5.0)
+    #         n_modes = self.det_args.get('n_modes', 3)
+    #     except KeyError as e:
+    #         print(f"Error: self.det_args probably not set")
+    #         raise e
+
+    #     candidates = dutils.detect_snrmap(
+    #         row['snrmap'],
+    #         snr_thresh=snr_thresh,
+    #         n_modes=n_modes
+    #     )
+    #     if candidates is None:
+    #         candidates = pd.DataFrame(None, columns=['cand_id', 'pixel'])
+    #     return pd.Series({'snr_candidates': candidates})
 
     def jackknife_analysis(
            self,
@@ -657,10 +673,6 @@ def apply_mf_to_pca_results(
         det_pos : tuple[int] | None = None,
 ):
     """
-
-    det_pos : if provided, use this position for recovering the flux
-      useful for fake injection and recovery
-
     Apply matched filtering to the star.pca_results dataframe
     Adds the following columns to the dataframe:
     mf : the matched filter
@@ -674,6 +686,22 @@ def apply_mf_to_pca_results(
     detpos : the brightest pixel in the detmap
     detmap_posflux : the flux of the detpos pixel in the detmap
     fluxmap_posflux : the flux of the detpos pixel in the fluxmap
+
+    Parameters
+    ----------
+    init_pca_results : pd.DataFrame
+      A dataframe with numbasis as the index containing columns for the basis
+      vector, model, and residual
+    mf_width : int | None = None
+      the width of the matched filter. If None, set equal to the stamp size
+    det_pos : if provided, use this position for recovering the flux
+      useful for fake injection and recovery
+
+    Output
+    ------
+    pca_results : pd.DataFrame
+      a dataframe indexed by Kklip with the above columns added
+
     """
     pca_results = init_pca_results.copy()
     pca_results['mf'] = pca_results['klip_model'].apply(

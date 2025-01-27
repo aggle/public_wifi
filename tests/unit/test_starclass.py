@@ -129,13 +129,15 @@ def test_similarity(all_stars):
     assert(any(star.references['sim'].isna()) == False)
 
 
-def test_klip_subtract(all_stars):
-    star_id = sc.np.random.choice(all_stars.index)
+def test_klip_subtract(stars_with_references):
+    star_id = sc.np.random.choice(stars_with_references.index)
     print("KLIP subtraction tested on ", star_id)
-    star = all_stars.loc[star_id]
-    star.set_references(all_stars, compute_similarity=True)
+    star = stars_with_references.loc[star_id]
+    star.set_references(stars_with_references, compute_similarity=True)
     # run with default parameters
-    star.subtraction = star.run_klip_subtraction()
+    star.subtr_args = dict(sim_thresh=0.5, min_nref=20)
+    results = star.run_klip_subtraction()
+    print(results.columns)
     # the RMS should be monotonically declining
     rms_descent = star.subtraction['klip_sub'].apply(
         lambda sub: all(sc.np.diff(sub.apply(sc.np.nanstd)) < 0)

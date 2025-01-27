@@ -30,6 +30,7 @@ def make_series_snrmaps(residuals):
     """Make SNR maps out of a series of arrays. Compute the sigma-clipped noise of an image and divide through"""
     std_maps = residuals.apply(lambda img: sigma_clipped_stats(img)[-1])
     snrmaps = residuals/std_maps
+    snrmaps.name = 'snrmap'
     return snrmaps
 
 
