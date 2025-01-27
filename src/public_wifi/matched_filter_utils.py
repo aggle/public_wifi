@@ -54,6 +54,7 @@ def apply_matched_filter_to_stamp(
         mf_width : int | None = None,
         correlate_mode='same',
         kl_basis : np.ndarray | pd.Series | None = None,
+        nan_center : bool = True
 ) -> np.ndarray:
     """
     Apply the matched filter to a single stamp. Normalize by the matched filter
@@ -71,6 +72,8 @@ def apply_matched_filter_to_stamp(
     kl_basis : np.ndarray | pd.Series | None = None
       If provided, include the KLIP basis in the throughput correction
       It should be only the KLIP basis up to the Kklip of the PSF model
+    nan_center : bool = True
+      if True, set the center pixel to NaN. Not useful for detection, has wild values.
 
     Output
     ------
@@ -86,6 +89,9 @@ def apply_matched_filter_to_stamp(
     throughput = compute_throughput(matched_filter, klmodes=kl_basis)
     if isinstance(throughput, pd.Series):
         throughput = throughput.iloc[-1]
+        if nan_center:
+            center = misc.get_stamp_center(throughput)[::-1]
+            throughput[*center] = np.nan
     mf_map = mf_map / throughput
     return mf_map
 
