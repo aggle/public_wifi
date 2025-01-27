@@ -49,7 +49,10 @@ def klip_subtract(
     klip_basis_img = klip_basis.apply(lambda img: img.reshape(stamp_shape))
     klip_sub_img = klip_sub.apply(lambda img: img.reshape(stamp_shape))
     klip_model_img = klip_model.apply(lambda img: img.reshape(stamp_shape))
-    return klip_basis_img, klip_sub_img, klip_model_img
+    # return a dataframe indexed by num_basis
+    klip_results = pd.concat([klip_basis_img, klip_sub_img, klip_model_img], axis=1)
+    # return klip_basis_img, klip_sub_img, klip_model_img
+    return klip_results
 
 def nmf_subtract(
         target_stamp : np.ndarray,

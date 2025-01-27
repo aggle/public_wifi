@@ -75,7 +75,10 @@ def all_stars(catalog, data_folder):
 
 @pytest.fixture(scope='session')
 def stars_with_references(all_stars):
-    all_stars.apply(lambda star: star.set_references(compute_similarity=True))
+    all_stars.apply(lambda star: star.set_references(
+        compute_similarity=True,
+        other_stars = all_stars[all_stars.index != star.star_id]
+    ))
     return all_stars
 
 @pytest.fixture(scope='session')
