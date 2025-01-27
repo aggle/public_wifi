@@ -58,8 +58,9 @@ def process_catalog(
         min_nref : int = 2,
         sim_thresh : float = 0.5,
         # detection args
-        snr_thresh = 5.,
-        n_modes = 3,
+        snr_thresh : float = 5.,
+        n_modes : int = 3,
+        mf_width : int | None = None,
 ) -> pd.Series :
     """
     Given an input catalog, run the analysis.
@@ -82,9 +83,12 @@ def process_catalog(
       A stamp's similarity score must be at least this value to be included
       If fewer than `min_nref` reference stamps meet this criteria, use the
       `min_nref` ones with the highest similarity scores    
-
-    snr_thresh = 5.
-    n_modes = 3,
+    snr_thresh : float = 5.
+      SNR threshold for candidate detections
+    n_modes : int = 3
+      The number of modes above threshold required to pass candidate checks
+    mf_width : int | None = None
+      Size of the matched filter. If None, use the stamp size.
 
     Output
     ------
@@ -92,8 +96,6 @@ def process_catalog(
       A series where each entry is a Star object with the data and analysis results
 
     """
-    subtr_args = dict(min_nref=min_nref, sim_thresh=sim_thresh)
-    det_args = dict(snr_thresh=snr_thresh, n_modes=n_modes)
     # initialize the catalog
     stars = catalog_initialization(
         input_catalog,
@@ -106,11 +108,13 @@ def process_catalog(
         center_stamps=center_stamps,
     )
     # perform PSF subtraction
+    subtr_args = dict(min_nref=min_nref, sim_thresh=sim_thresh)
     catalog_subtraction(
         stars,
         **subtr_args,
     )
     # perform the detection analysis
+    det_args = dict(snr_thresh=snr_thresh, n_modes=n_modes, mf_width=mf_width)
     catalog_detection(
         stars, **det_args
     )
@@ -223,6 +227,7 @@ def catalog_detection(
         stars : pd.Series,
         snr_thresh : float,
         n_modes : int,
+        mf_width : int | None = None,
 ) -> None:
     """
     Perform MF detection on all the stars
@@ -238,14 +243,10 @@ def catalog_detection(
     updates star.results dataframe in-place. Adds columns for SNR maps,
     detection maps, and candidates
     """
-    det_args = dict(snr_thresh=snr_thresh, n_modes=n_modes)
+    det_args = dict(snr_thresh=snr_thresh, n_modes=n_modes, mf_width=mf_width)
     for star in stars:
         star.det_args.update(det_args)
         # PSF Convolution
-        # detmaps = star.results.apply(
-        #         star._row_apply_matched_filter,
-        #         axis=1
-        # ).squeeze()
         detmaps = star.apply_matched_filter(contrast=True, throughput_correction=True)
         star.results[detmaps.name] = detmaps
         # SNR
@@ -260,6 +261,9 @@ def catalog_detection(
         # flux maps
         fluxmaps = star.run_make_mf_flux_maps()
         star.results[fluxmaps.name] = fluxmaps
+
+        # PCA Results version!
+        # star.pca_results = sc.apply_mf_to_pca_results(star.pca_results, mf_width=mf_width)
     return
 
 def catalog_candidate_validation(stars : pd.Series, sim_thresh, min_nref) -> None:
