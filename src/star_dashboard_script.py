@@ -11,7 +11,7 @@ from bokeh.server.server import Server
 catalog_file = sc.Path("~/Projects/Research/hst17167-ffp/catalogs/targets_drc.csv")
 data_folder = sc.Path("~/Projects/Research/hst17167-ffp/data/HST/")
 
-catalog = catproc.load_catalog(catalog_file, 50)
+catalog = catproc.load_catalog(catalog_file, 50)[:30]
 
 
 # load file with list of bad references
@@ -33,7 +33,7 @@ anamgr = AnalysisManager(
     bad_references = bad_references,
     scale_stamps = False,
     center_stamps = False,
-    min_nref = 40,
+    min_nref = 20,
     sim_thresh = 0.5,
     snr_thresh = 5.,
     n_modes = 5,

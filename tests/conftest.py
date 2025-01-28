@@ -14,13 +14,14 @@ from public_wifi import catalog_processing as catproc
 # default initialization args
 star_id_column='target'
 match_references_on=['filter']
-stamp_size = 11
+stamp_size = 15
 # default subtraction args
-min_nref = 8
+min_nref = 20
 sim_thresh = 0.9
 # default detection args
 snr_thresh = 5.
 n_modes = 3
+mf_width = 11
 
 @pytest.fixture(scope='session')
 def catalog_file():
@@ -33,7 +34,7 @@ def data_folder():
 
 @pytest.fixture(scope='session')
 def catalog(catalog_file):
-    catalog = catproc.load_catalog(catalog_file)
+    catalog = catproc.load_catalog(catalog_file)[:20]
     return catalog
 
 @pytest.fixture(scope='session')

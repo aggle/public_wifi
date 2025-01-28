@@ -45,9 +45,15 @@ def test_make_jackknife_cds(star_with_candidates):
     print(len(cds.data['index'][0]))
     return
 
-def test_make_row_cds(nonrandom_processed_star):
-    star = nonrandom_processed_star
+def test_make_row_cds(random_processed_star):
+    star = random_processed_star
     print(f"Star: {star.star_id}")
-
+    row_ind = 1
+    cds = sd.make_row_cds(star.cat.loc[row_ind], star)
+    print(cds.keys())
+    for k in ['stamp', 'references', 'klip_model',
+              'klip_residuals', 'klip_mf', 'snr_maps',
+              'det_maps', 'klip_jackknife']:
+        assert(k in cds.keys())
     return
 

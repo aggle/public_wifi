@@ -26,14 +26,14 @@ from public_wifi.dashboard import catalog_detection_dashboard as cdd
 
 
 
-def make_row_cds(row, star, cds_dict={}, jackknife_kklip : int = 10):
+def make_row_cds(cat_row : pd.Series, star, cds_dict={}, jackknife_kklip : int = 10):
     """
     Make CDSs with the row data, updating the existing CDSs if they are provided
 
     Parameters
     ----------
-    row : pd.Series
-      A row with the analysis results
+    row_results : pd.DataFrame
+      The results corresponding to a star.cat row
     star : starclass.Star
       A star object, for selecting references
     cds_dict : dict = {}
@@ -43,12 +43,12 @@ def make_row_cds(row, star, cds_dict={}, jackknife_kklip : int = 10):
       select this jackknife mode
 
     """
-    filt = row['filter']
-    # filter stamp
+    filt = cat_row['filter']
+    # stamp for this filter
     cds = cds_dict.get("stamp", None)
-    cds_dict['stamp'] = dt.img_to_CDS(row['stamp'], cds=cds)
+    cds_dict['stamp'] = dt.img_to_CDS(cat_row['stamp'], cds=cds)
     # cube of references
-    refs = star._row_get_references(row).query("used == True").copy()
+    refs = star._row_get_references(cat_row).query("used == True").copy()
     refs = refs.sort_values(by='sim', ascending=False)
     refcube = refs['stamp']#.apply(getattr, args=['data'])
     refcube_index = refs.reset_index().apply(
@@ -61,50 +61,53 @@ def make_row_cds(row, star, cds_dict={}, jackknife_kklip : int = 10):
         cds,
         index=list(refcube_index.values)
     )
+    # PCA results
+    results_df = star.results.loc[cat_row.name]
     # PSF model
     cds = cds_dict.get("klip_model", None)
     cds_dict['klip_model'] = dt.series_to_CDS(
-        row['klip_model'],
+        results_df['klip_model'],
         cds,
-        index=list(row['klip_model'].index.astype(str).values)
+        index=list(results_df.index.astype(str).values)
     )
     # klip residuals
     cds = cds_dict.get("klip_residuals", None)
     cds_dict['klip_residuals'] = dt.series_to_CDS(
-        row['klip_sub'],
+        results_df['klip_sub'],
         cds,
-        index=list(row['klip_sub'].index.astype(str).values)
+        index=list(results_df.index.astype(str).values)
     )
 
     # detection maps
     cds = cds_dict.get("klip_mf", None)
     cds_dict['klip_mf'] = dt.series_to_CDS(
-        row['detmap'],
+        results_df['detmap'],
         cds,
-        index=list(row['detmap'].index.astype(str).values)
+        index=list(results_df.index.astype(str).values)
     )
     cds = cds_dict.get("snr_maps", None)
     cds_dict['snr_maps'] = dt.series_to_CDS(
-        row['snrmap'],
+        results_df['snrmap'],
         cds,
-        index=list(row['snrmap'].index.astype(str).values)
+        index=list(results_df.index.astype(str).values)
     )
 
     cds = cds_dict.get("det_maps", None)
     cds_dict['det_maps'] = dt.series_to_CDS(
-        row['detmap'],
+        results_df['detmap'],
         cds,
-        index=list(row['detmap'].index.astype(str).values)
+        index=list(results_df.index.astype(str).values)
     )
 
-    # jackknife test maps
+    # # jackknife test maps
     cds = cds_dict.get("klip_jackknife", None)
-    kklip = min([jackknife_kklip, len(row['snrmap'])-1])
-    jackknife_data = pd.DataFrame(row['klip_jackknife']).query(f"numbasis == {kklip}")['klip_jackknife']
+    jk_results_df = star.jackknife_results.loc[1]
+    kklip = min([jackknife_kklip, jk_results_df.index.get_level_values('numbasis').unique()[-1]])
+    jackknife_data = jk_results_df.loc[kklip]
     cds_dict['klip_jackknife'] = dt.series_to_CDS(
         jackknife_data,
         cds,
-        index = [f"{i[0]} / {i[1]}" for i in jackknife_data.index],
+        index = list(jackknife_data.index)
     )
     return cds_dict
 
