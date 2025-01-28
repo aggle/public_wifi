@@ -111,11 +111,10 @@ def make_row_cds(cat_row : pd.Series, star, cds_dict={}, jackknife_kklip : int =
     )
     return cds_dict
 
-def make_row_plots(cat_row, row_cds, size=400):
-    """Make plots that correspond to one row of the star's star.cat dataframe"""
+def make_row_plots(row, row_cds, size=400):
     plots = {}
 
-    filt = cat_row['filter']
+    filt = row['filter']
     plots['stamp'] = dt.make_static_img_plot(row_cds['stamp'], title=filt, size=size)
 
     # References
@@ -252,8 +251,7 @@ def make_table_cds(
     return cds, table
 
 def make_candidate_cds(
-        # result_rows,
-        star,
+        result_rows,
         cds=None,
         table=None,
 ):
@@ -268,20 +266,9 @@ def make_candidate_cds(
       existing Table to update, or None to make a new one
     plot_scale : scale the plot size by this times the dataframe shape
     """
-
-    cand_df = star.candidates.copy()
-    if cand_df.empty:
-        cds, table = make_table_cds(cand_df, cds=cds, table=table)
-        cds.data.update(cand_df)
-        return cds, table
-    cand_df['filter'] = cand_df.apply(
-        lambda row: star.cat.loc[row.name[0], 'filter'],
-        axis=1
-    )
-    cand_df = cand_df.reset_index(names=['cat_row', 'pix_id']).drop("cat_row", axis=1)
-    # candidates = result_rows.set_index("filter")['snr_candidates']
-    # cand_df = pd.concat(candidates.to_dict(), names=['filter', 'pix_id'])#.reset_index('filter')
-    # cand_df = cand_df.reset_index().drop(columns="pix_id").sort_values(by=['filter', 'cand_id'])
+    candidates = result_rows.set_index("filter")['snr_candidates']
+    cand_df = pd.concat(candidates.to_dict(), names=['filter', 'pix_id'])#.reset_index('filter')
+    cand_df = cand_df.reset_index().drop(columns="pix_id").sort_values(by=['filter', 'cand_id'])
     # source = bkmdls.ColumnDataSource(cand_df)
     cds, table = make_table_cds(cand_df, cds=cds, table=table)
     cds.data.update(cand_df)
@@ -302,19 +289,19 @@ def all_stars_dashboard(
         )
         # candidates table
         candidate_cds, candidate_table = make_candidate_cds(
-            anamgr.stars.loc[init_star],
+            anamgr.stars.loc[init_star].results,
         )
         candidate_table.update(sizing_mode='stretch_width')
 
         # each row of the catalog corresponds to a particular set of plots
-        cds_dicts = anamgr.stars.loc[init_star].cat.apply(
+        cds_dicts = anamgr.stars.loc[init_star].results.apply(
             lambda row: make_row_cds(row, star=anamgr.stars.loc[init_star], cds_dict={}),
             axis=1
         )
 
         # pass these ColumnDataSources to the plots that will read from them
-        plot_dicts = anamgr.stars.loc[init_star].cat.apply(
-            lambda cat_row: make_row_plots(cat_row, cds_dicts[cat_row.name], size=plot_size),
+        plot_dicts = anamgr.stars.loc[init_star].results.apply(
+            lambda row: make_row_plots(row, cds_dicts[row.name], size=plot_size),
             axis=1
         )
 
@@ -360,7 +347,7 @@ def all_stars_dashboard(
 
         def update_candidate_cds():
             make_candidate_cds(
-                anamgr.stars.loc[star_selector.value],
+                anamgr.stars.loc[star_selector.value].results,
                 cds=candidate_cds,
                 table=candidate_table,
             )
@@ -371,7 +358,7 @@ def all_stars_dashboard(
 
         def update_cds_dicts():
             """Update the target filter stamp"""
-            for i, row in anamgr.stars.loc[star_selector.value].cat.iterrows():
+            for i, row in anamgr.stars.loc[star_selector.value].results.iterrows():
                 # assign new data to the existing CDSs
                 nrefs = anamgr.stars.loc[star_selector.value].references.shape[0]//2 - 1
                 cds_dicts[i] = make_row_cds(
