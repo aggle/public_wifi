@@ -250,19 +250,23 @@ def catalog_detection(
         snrmaps = star.run_make_snr_maps()
         star.results[snrmaps.name] = snrmaps
         # Candidate identification
-        # candidates = star.results.apply(
-        #     star.detect_snrmap_candidates,
-        #     axis=1
-        # )
-        # candidates = star.detect_snrmap_candidates(star.results)
-        candidates = star.results.groupby("cat_row").apply(
-            lambda group: star.detect_snrmap_candidates(group)
+        candidates = star.results.apply(
+            star.detect_snrmap_candidates,
+            axis=1
         )
         star.candidates = candidates
         # PSF Convolution
         star.results = sc.apply_mf_to_pca_results(
             star.results, mf_width=star.det_args['mf_width'], det_pos=None
         )
+        # detmaps = star.apply_matched_filter(contrast=True, throughput_correction=True)
+        # star.results[detmaps.name] = detmaps
+        # # flux maps
+        # fluxmaps = star.run_make_mf_flux_maps()
+        # star.results[fluxmaps.name] = fluxmaps
+
+        # PCA Results version!
+        # star.pca_results = sc.apply_mf_to_pca_results(star.pca_results, mf_width=mf_width)
     return
 
 def catalog_candidate_validation(

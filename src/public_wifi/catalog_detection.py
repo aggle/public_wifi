@@ -54,10 +54,7 @@ class CatDet:
 
         # load the processing results
         self.stars = stars
-        self.all_results = pd.concat(
-            stars.apply(lambda star: star.results).to_dict(),
-            names=['target', 'cat_row', 'numbasis']
-        ).reorder_levels(['cat_row', 'target', 'numbasis'])
+        self.all_results = pd.concat(stars.apply(lambda star: star.results).to_dict(), names=['target', 'cat_row', 'numbasis'])
         # add the analysis columns
         self.all_results = self.normalize_residuals_and_apply_matched_filter(self.all_results)
         # filter down to just a kklip of interest, for convenience and plotting
@@ -151,10 +148,40 @@ class CatDet:
         snrmap = self.results[results_column].groupby(['cat_row', 'numbasis'], group_keys=False).apply(
             compute_pixelwise_norm
         )
-        # Kklip is redundant so let's remove it from the index
-        snrmap.index = snrmap.index.droplevel("numbasis")
         return snrmap
 
+    # def generate_mf_detection_maps(self):
+    #     # apply a matched filter to each normalized residual stamp
+    #     mf_detect = self.apply_mf()
+    #     # make a detection map against each pixel
+    #     mf_detect_norm = mf_detect.apply(compute_pixelwise_norm)
+    #     return mf_detect_norm
+
+    # def generate_contrast_maps(self):
+    #     primary_flux = self.stars.apply(
+    #         lambda star: star.cat.apply(
+    #             lambda row: cutils.measure_primary_flux(
+    #                 row['stamp'],
+    #                 star.results.loc[row.name, 'klip_model'].loc[self.kklip],
+    #                 dict(mf_width=self.mf_width),
+    #             ),
+    #             axis=1
+    #         )
+    #     )
+    #     mf_thpt = pd.concat({
+    #         col: self.kklip_resid.apply(
+    #             lambda row: mf_utils.apply_matched_filter_to_stamp(
+    #                 row[col],
+    #                 self.stars[row.name].results.loc[col, 'klip_model'].loc[self.kklip],
+    #                 mf_width=self.mf_width,
+    #                 kl_basis=self.stars[row.name].results.loc[col, 'klip_basis'].loc[:self.kklip]
+    #             ),
+    #             axis=1
+    #         )
+    #         for col in self.kklip_resid.to_dict()
+    #     }, axis=1)
+    #     mf_contrast = mf_thpt / primary_flux
+    #     return mf_contrast
 
 
 def snr_vs_catalog(
