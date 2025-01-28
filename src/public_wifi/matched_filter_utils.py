@@ -146,6 +146,7 @@ def compute_mf_norm(
 def compute_pca_bias(
         mf : np.ndarray,
         modes : np.ndarray | pd.Series,
+        nan_center : bool = True
 ) -> pd.Series :
     """
     Compute the bias introduced by sub-optimal PSF modeling
@@ -156,7 +157,8 @@ def compute_pca_bias(
       A matched filter in the shape of the PSF
     klip_modes : np.ndarray | pd.Series
       The KLIP modes used to construct the model PSF
-
+    nan_center : bool = True
+      if True, set the center value to NaN
     Output
     ------
     bias : pd.Series
@@ -165,12 +167,17 @@ def compute_pca_bias(
     """
     if not isinstance(modes, pd.Series):
         modes = pd.Series({i+1: mode for i, mode in enumerate(modes)})
+    center = misc.get_stamp_center(modes)[::-1]
     bias = modes.apply(
         # compute the correlation with the MF for each KL mode
         lambda klmode: correlate(
             klmode, mf, mode='same', method='direct',
         )**2
     )
+    # set the center to nan
+    if nan_center:
+        for b in bias:
+            b[*center] = np.nan
     bias = bias.cumsum()
     return bias
 

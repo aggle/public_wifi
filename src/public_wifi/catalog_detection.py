@@ -57,17 +57,16 @@ class CatDet:
         self.all_results = pd.concat(
             stars.apply(lambda star: star.results).to_dict(),
             names=['target', 'cat_row', 'numbasis']
-        ).reorder_levels(['cat_row', 'target', 'numbasis'])
-        # add the analysis columns
+        ).reorder_levels(
+            ['cat_row', 'target', 'numbasis']
+        ).sort_index()
+
+        # Add the analysis columns
         self.all_results = self.normalize_residuals_and_apply_matched_filter(self.all_results)
         # filter down to just a kklip of interest, for convenience and plotting
         self.results = self.filter_kklip(self.all_results, self.kklip)
-        # the following should all change when you update kklip
-        # self.kklip_resid = self.residuals.map(lambda r: r.loc[self.kklip])
-        # self.kklip_resid = self.filter_kklip(self.results, self.kklip)
-        # self.kklip_resid_norm = self.kklip_resid.map(normalize_array)
-        self.detection_maps = self.generate_pixelwise_snrmap('detmap_norm')
-        self.residual_snr_maps = self.generate_pixelwise_snrmap('klip_sub_norm')
+        # call a function that updates everything you need to update when Kklip or mf_width change
+        self.make_maps()
 
     @property
     def kklip(self):
@@ -84,14 +83,21 @@ class CatDet:
     def mf_width(self, new_val : int):
         self._mf_width = new_val
         self.recompute()
+
+
     def filter_kklip(self, df, kklip):
         return df.query(f"numbasis == {kklip}")
+
+    def make_maps(self):
+        self.detection_maps = self.generate_pixelwise_snrmap('detmap_norm')
+        self.residual_snr_maps = self.generate_pixelwise_snrmap('klip_sub_norm')
+        self.contrast_maps = self.results['contrastmap'].reset_index("numbasis").drop(columns="numbasis").squeeze()
 
     def recompute(self):
         self.results = self.filter_kklip(self.all_results, self.kklip)
         # self.kklip_resid_norm = self.kklip_resid.map(normalize_array)
-        self.detection_maps = self.generate_pixelwise_snrmap('detmap_norm')
-        self.residual_snr_maps = self.generate_pixelwise_snrmap('klip_sub_norm')
+        self.make_maps()
+
 
     def normalize_residuals_and_apply_matched_filter(self, results):
         # normalize the arrays so we can compare them against each other
@@ -111,35 +117,6 @@ class CatDet:
         results['detmap_norm'] = results['mf_map_norm']/results['mf_norm']
         return results
 
-    # def generate_matched_filters(self):
-    #     """Generate matched filters for each residual stamp. Not currently used."""
-    #     matched_filters = pd.concat({
-    #             col: self.kklip_resid_norm.apply(
-    #                 lambda row: mf_utils.make_matched_filter(
-    #                     self.stars[row.name].results.loc[col, 'klip_model'].loc[self.kklip],
-    #                     self.mf_width
-    #                 ),
-    #                 axis=1
-    #             )
-    #             for col in self.kklip_resid_norm.to_dict()
-    #         }, axis=1)
-    #     return matched_filters
-
-    # def apply_mf(self):
-    #     """Apply matched filters to the normalized klip residuals"""
-    #     mf_detect = pd.concat({
-    #         col: self.kklip_resid_norm.apply(
-    #             lambda row: mf_utils.apply_matched_filter_to_stamp(
-    #                 row[col],
-    #                 self.stars[row.name].results.loc[col, 'klip_model'].loc[self.kklip],
-    #                 mf_width=self.mf_width,
-    #                 kl_basis=None
-    #             ),
-    #             axis=1
-    #         )
-    #         for col in self.kklip_resid_norm.to_dict()
-    #     }, axis=1)
-    #     return mf_detect
 
     def generate_pixelwise_snrmap(self, results_column='klip_sub_norm'):
         """

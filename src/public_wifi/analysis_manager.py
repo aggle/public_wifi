@@ -89,12 +89,16 @@ class AnalysisManager:
             kklip = cat_det_kklip,
         )
 
+        print("Processing catalog.")
         self.stars = catproc.process_catalog(
             **self.processing_parameters,
         )
+
+        print("Generating catalog detection map.")
         self.det = catdec.CatDet(
             self.stars, stamp_size, **self.detection_parameters
         )
+        print("Finished generating detection maps.")
         return
 
     def reprocess(self):
@@ -107,6 +111,7 @@ class AnalysisManager:
             stamp_size=self.processing_parameters['stamp_size'],
             **self.detection_parameters,
         )
+        print("Reprocessing complete.")
         return
 
     def reprocess_detection(self):
@@ -116,6 +121,7 @@ class AnalysisManager:
             stamp_size=self.processing_parameters['stamp_size'],
             **self.detection_parameters,
         )
+        print("Reprocessing complete.")
         return
 
     # use these methods to automatically trigger reprocessing when updating
