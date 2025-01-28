@@ -45,9 +45,9 @@ def make_row_cds(
         cds=cds,
     )
 
-    cds = cds_dict.get("contrast", None)
-    cds_dict['contrast'] = dt.series_to_CDS(
-        det_mgr.contrast_maps[index],
+    cds = cds_dict.get("residual_snr", None)
+    cds_dict['residual_snr'] = dt.series_to_CDS(
+        det_mgr.residual_snr_maps[index],
         cds=cds,
     )
     return cds_dict
@@ -64,12 +64,12 @@ def make_row_plots(det_mgr, index, row_cds, size=400):
         cds, plot_kwargs=plot_kwargs,
     )
 
-    cds = row_cds["contrast"]
+    cds = row_cds["residual_snr"]
     plot_kwargs={
-        "title": f"Contrast",
+        "title": f"Residuals SNR",
         "width": size, "height": size
     }
-    plots['contrast'] = dt.generate_cube_scroller_widget(
+    plots['residual_snr'] = dt.generate_cube_scroller_widget(
         cds, plot_kwargs=plot_kwargs,
     )
     return plots
@@ -111,7 +111,7 @@ def detection_layout(
             )
         return
     def update_cube_scrollers():
-        scroller_keys = ['detection', 'contrast']
+        scroller_keys = ['detection', 'residual_snr']
         for i, row_plot in plot_dicts.items():
             for k in scroller_keys:
                 source = cds_dicts[i][k]
@@ -126,7 +126,7 @@ def detection_layout(
 
 
     # link the scrollers together
-    link_scrollers(['detection', 'contrast'], plot_dicts)
+    link_scrollers(['detection', 'residual_snr'], plot_dicts)
 
     # reprocessing tools
     kklip_spinner = bkmdls.Spinner(
@@ -167,11 +167,11 @@ def detection_layout(
                 bklyts.column(
                     bklyts.row(
                         plot_dicts[0]['detection'],
-                        plot_dicts[0]['contrast'],
+                        plot_dicts[0]['residual_snr'],
                     ),
                     bklyts.row(
                         plot_dicts[1]['detection'],
-                        plot_dicts[1]['contrast'],
+                        plot_dicts[1]['residual_snr'],
                     ),
                 ),
             )

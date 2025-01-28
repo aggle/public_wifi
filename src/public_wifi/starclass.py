@@ -541,7 +541,7 @@ class Star:
         except KeyError as e:
             print(f"Error: self.det_args probably not set")
             raise e
-        gb_cat = self.results.groupby("cat_row", group_keys=False)['snrmap']
+        gb_cat = results.groupby("cat_row", group_keys=False)['snrmap']
         candidates = gb_cat.apply(
             dutils.detect_snrmap,
             snr_thresh=snr_thresh,
