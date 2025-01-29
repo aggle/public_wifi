@@ -56,8 +56,9 @@ def test_set_references(all_stars):
 def test_row_get_references(random_processed_star):
     star = random_processed_star
     for i, row in star.cat.iterrows():
-        ref_rows = star._row_get_references(row)
+        ref_rows = star._row_get_references(row, sim_thresh=1, min_nref=8)
         assert(isinstance(ref_rows, sc.pd.DataFrame))
+        print(ref_rows)
 
 # def test_scale_stamp(star):
 #     scaled_stamps = star.cat['stamp'].apply(star.scale_stamp)

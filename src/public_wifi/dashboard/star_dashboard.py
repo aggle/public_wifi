@@ -48,7 +48,7 @@ def make_row_cds(cat_row : pd.Series, star, cds_dict={}, jackknife_kklip : int =
     cds = cds_dict.get("stamp", None)
     cds_dict['stamp'] = dt.img_to_CDS(cat_row['stamp'], cds=cds)
     # cube of references
-    refs = star._row_get_references(cat_row).query("used == True").copy()
+    refs = star.references.loc[cat_row.name].query("used == True").copy()
     refs = refs.sort_values(by='sim', ascending=False)
     refcube = refs['stamp']#.apply(getattr, args=['data'])
     refcube_index = refs.reset_index().apply(

@@ -247,7 +247,8 @@ class Star:
                 pass
             else:
                 references[star.star_id] = star.cat.copy()
-        references = pd.concat(references, names=['target', 'index'])
+        references = pd.concat(references, names=['target', 'cat_row'])
+        references.index = references.index.reorder_levels(['cat_row', 'target'])
         references['used'] = False
         self.references = references
         self.nrefs = self.references.groupby(
@@ -366,10 +367,10 @@ class Star:
         """
         Wrapper for KLIP that can be applied on each row of star.cat
         row : star.cat row
-        sim_thresh : float | None = 0.0
+        sim_thresh : float | None
           minimum similarity score to be included
           If None, read from self.subtr_args
-        min_nref : int | None = 2
+        min_nref : int | None
           flag at least this many refs as OK to use, in order of similarity score
           If None, read from self.subtr_args
         stamp_column : str
