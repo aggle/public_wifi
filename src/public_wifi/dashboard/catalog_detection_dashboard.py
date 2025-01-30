@@ -161,7 +161,7 @@ def detection_layout(
         sizing_mode='stretch_width',
     )
     def rerun_detection_and_update():
-        anamgr.update_detection_parameters(
+        anamgr._update_detection_parameters(
             kklip=kklip_spinner.value,
             mf_width=mf_width_spinner.value
         )

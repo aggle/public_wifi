@@ -444,27 +444,27 @@ def all_stars_dashboard(
         # reprocessing tools
         stamp_size_spinner = bkmdls.Spinner(
             title='Stamp size', low=3, high=1023, step=2,
-            value=anamgr.processing_parameters['stamp_size'],
+            value=anamgr._processing_parameters['stamp_size'],
             width=80
         )
         ssim_spinner = bkmdls.Spinner(
             title='SSIM thresh', low=-1.0, high=1.0, step=0.05,
-            value=anamgr.processing_parameters['sim_thresh'],
+            value=anamgr._processing_parameters['sim_thresh'],
             width=80
         )
         min_nref_spinner = bkmdls.Spinner(
             title='Min. refs', low=2, high=len(anamgr.stars), step=1,
-            value=anamgr.processing_parameters['min_nref'],
+            value=anamgr._processing_parameters['min_nref'],
             width=80
         )
         snr_thresh_spinner = bkmdls.Spinner(
             title='SNR thresh', low=0, high=len(anamgr.stars), step=1,
-            value=anamgr.processing_parameters['snr_thresh'],
+            value=anamgr._processing_parameters['snr_thresh'],
             width=80
         )
         n_modes_thresh_spinner = bkmdls.Spinner(
             title='# modes thresh', low=1, high=len(anamgr.stars), step=1,
-            value=anamgr.processing_parameters['n_modes'],
+            value=anamgr._processing_parameters['n_modes'],
             width=80
         )
         jackknife_klmode_selector = bkmdls.Spinner(
@@ -485,7 +485,7 @@ def all_stars_dashboard(
         )
         def reinitialize_catalog():
             print("Re-initializing catalog.")
-            anamgr.update_processing_parameters(
+            anamgr._update_processing_parameters(
                 stamp_size = stamp_size_spinner.value,
                 sim_thresh = ssim_spinner.value,
                 min_nref = min_nref_spinner.value,

@@ -68,7 +68,7 @@ class AnalysisManager:
           A series where each entry is a Star object with the data and analysis
           results
         """
-        self.processing_parameters = dict(
+        self._processing_parameters = dict(
             input_catalog = input_catalog,
             star_id_column = star_id_column,
             match_references_on = match_references_on,
@@ -84,55 +84,55 @@ class AnalysisManager:
             snr_thresh = snr_thresh,
             n_modes = n_modes,
         )
-        self.detection_parameters = dict(
+        self._detection_parameters = dict(
             mf_width = mf_width,
             kklip = cat_det_kklip,
         )
 
         print("Processing catalog.")
         self.stars = catproc.process_catalog(
-            **self.processing_parameters,
+            **self._processing_parameters,
         )
 
         print("Generating catalog detection map.")
         self.det = catdec.CatDet(
-            self.stars, stamp_size, **self.detection_parameters
+            self.stars, stamp_size, **self._detection_parameters
         )
         print("Finished generating detection maps.")
         return
 
-    def reprocess(self):
+    def _reprocess(self):
         print("Reprocessing with new parameters.")
         self.stars = catproc.process_catalog(
-            **self.processing_parameters,
+            **self._processing_parameters,
         )
         self.det = catdec.CatDet(
             stars=self.stars,
-            stamp_size=self.processing_parameters['stamp_size'],
-            **self.detection_parameters,
+            stamp_size=self._processing_parameters['stamp_size'],
+            **self._detection_parameters,
         )
         print("Reprocessing complete.")
         return
 
-    def reprocess_detection(self):
+    def _reprocess_detection(self):
         print("Rerunning detection with new parameters")
         self.det = catdec.CatDet(
             stars=self.stars,
-            stamp_size=self.processing_parameters['stamp_size'],
-            **self.detection_parameters,
+            stamp_size=self._processing_parameters['stamp_size'],
+            **self._detection_parameters,
         )
         print("Reprocessing complete.")
         return
 
     # use these methods to automatically trigger reprocessing when updating
     # parameters
-    def update_processing_parameters(self, **params):
-        self.processing_parameters.update(**params)
-        self.reprocess()
+    def _update_processing_parameters(self, **params):
+        self._processing_parameters.update(**params)
+        self._reprocess()
         return
 
-    def update_detection_parameters(self, **params):
-        self.detection_parameters.update(**params)
-        self.reprocess_detection()
+    def _update_detection_parameters(self, **params):
+        self._detection_parameters.update(**params)
+        self._reprocess_detection()
         return
 
