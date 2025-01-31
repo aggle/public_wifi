@@ -4,8 +4,10 @@ These tools use the whole catalog to measure detections
 
 import numpy as np
 import pandas as pd
+import warnings
 from scipy.stats import zscore, shapiro
 from astropy.stats import sigma_clipped_stats
+from photutils.segmentation import detect_sources
 
 from public_wifi import starclass
 from public_wifi import contrast_utils as cutils
@@ -125,20 +127,32 @@ class CatDet:
         return results
 
 
-    def generate_pixelwise_snrmap(self, results_column='klip_sub_norm'):
+    def generate_pixelwise_snrmap(self, results_df, results_column='klip_sub_norm'):
         """
         Compute the pixelwise SNR by comparing the pixels at a single coordinate from different stamps,
         then transform back to the stamp for the target.
         In the final image, the value at each pixel represents the pixel's SNR
         in a different distribution from all the other pixels.
         """
-        snrmap = self.results[results_column].groupby(['cat_row', 'numbasis'], group_keys=False).apply(
+        snrmap = results_df[results_column].groupby(['cat_row', 'numbasis'], group_keys=False).apply(
             compute_pixelwise_norm
         )
-        # Kklip is redundant so let's remove it from the index
-        snrmap.index = snrmap.index.droplevel("numbasis")
+        # # Kklip is redundant so let's remove it from the index
+        # snrmap.index = snrmap.index.droplevel("numbasis")
         return snrmap
 
+    def find_sources(self, snrmaps : pd.Series, threshold=3, npixels=1):
+        "Run photutils' source detection algo on some SNR maps"
+        # ignore warnings that get thrown when no sources are detected
+        with warnings.catch_warnings(action="ignore"):
+            sources = snrmaps.apply(
+                lambda detmap: detect_sources(
+                    detmap,
+                    threshold=threshold,
+                    npixels=npixels
+                )
+            );
+        return sources
 
 
 def snr_vs_catalog(
