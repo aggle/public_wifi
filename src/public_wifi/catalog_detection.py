@@ -64,9 +64,12 @@ class CatDet:
         # Add the analysis columns
         self.all_results = self.normalize_residuals_and_apply_matched_filter(self.all_results)
         # filter down to just a kklip of interest, for convenience and plotting
-        self.results = self.filter_kklip(self.all_results, self.kklip)
         # call a function that updates everything you need to update when Kklip or mf_width change
-        self.make_maps()
+        self.all_results['pixelwise_snrmap'] = self.generate_pixelwise_snrmap(self.all_results, 'klip_sub_norm')
+        self.all_results['pixelwise_detmap'] = self.generate_pixelwise_snrmap(self.all_results, 'detmap_norm')
+        self.all_results['candidates'] = self.find_sources(self.all_results['pixelwise_detmap'])
+        self.results = self.filter_kklip(self.all_results, self.kklip)
+        self.filter_maps()
 
     @property
     def kklip(self):
@@ -88,15 +91,19 @@ class CatDet:
     def filter_kklip(self, df, kklip):
         return df.query(f"numbasis == {kklip}")
 
-    def make_maps(self):
-        self.detection_maps = self.generate_pixelwise_snrmap('detmap_norm')
-        self.residual_snr_maps = self.generate_pixelwise_snrmap('klip_sub_norm')
-        self.contrast_maps = self.results['contrastmap'].reset_index("numbasis").drop(columns="numbasis").squeeze()
+    def filter_maps(self):
+        self.results = self.filter_kklip(self.all_results, self.kklip)
+        self.detection_maps = self.results['pixelwise_detmap']
+        self.residual_snr_maps = self.results['pixelwise_snrmap']
+        self.contrast_maps = self.results['contrastmap']#.reset_index("numbasis").drop(columns="numbasis").squeeze()
+        # # Kklip is redundant so let's remove it from the index
+        for df in [self.results, self.detection_maps, self.residual_snr_maps, self.contrast_maps]:
+            df.index = df.index.droplevel("numbasis")
 
     def recompute(self):
-        self.results = self.filter_kklip(self.all_results, self.kklip)
+        # self.results = self.filter_kklip(self.all_results, self.kklip)
         # self.kklip_resid_norm = self.kklip_resid.map(normalize_array)
-        self.make_maps()
+        self.filter_maps()
 
 
     def normalize_residuals_and_apply_matched_filter(self, results):
