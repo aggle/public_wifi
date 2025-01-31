@@ -81,6 +81,7 @@ def series_to_CDS(
         cube : pd.Series,
         cds : bkmdls.ColumnDataSource = None,
         index : None | list | np.ndarray | pd.Series = None,
+        index_val = None,
         properties : dict = {},
 ) -> None:
     """
@@ -93,6 +94,8 @@ def series_to_CDS(
       a ColumnDataSource in which to store the data. Pass one in if you need it
       to be persistent, or leave as None to generate a new one.
     index : [ None ] | list | np.ndarray | pd.Series
+    index_val = None
+      the value to set the index to
     properties : dict = {}
       this argument is used to pass any other entries to the data field that you may want to add
     """
@@ -102,6 +105,8 @@ def series_to_CDS(
         cds = bkmdls.ColumnDataSource()
     if index is None:
         index = list(cube.index.values.astype(str))
+    if index_val is None:
+        index_val = index[0]
     # series metadata
     cds.tags = [cube.name, cube.index.name]
 
@@ -110,7 +115,7 @@ def series_to_CDS(
     data = dict(
         # these are the fields that the plots will inspect
         img=[cube.iloc[0]],
-        i=[index[0]],
+        i=[index_val],
         # these fields store the available values
         cube=[np.stack(cube.values)],
         index=[index],

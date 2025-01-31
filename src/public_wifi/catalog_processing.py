@@ -267,8 +267,11 @@ def catalog_detection(
 def catalog_candidate_validation(
         stars : pd.Series,
         sim_thresh : float | None = None,
-        min_nref : int | None = None
+        min_nref : int | None = None,
+        verbose : bool = True,
 ) -> None:
+    if verbose:
+        print(f"Computing jackknife tests.")
     for star in stars:
         if sim_thresh is None:
             sim_thresh = star.subtr_args['sim_thresh']

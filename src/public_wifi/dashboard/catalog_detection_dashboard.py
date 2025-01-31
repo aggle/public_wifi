@@ -43,17 +43,20 @@ def make_row_cds(
     cds_dict['matched_filter'] = dt.series_to_CDS(
         det_mgr.detection_maps[index],
         cds=cds,
+        index_val = None if cds is None else cds.data['i'][0]
     )
 
     cds = cds_dict.get("residual_snr", None)
     cds_dict['residual_snr'] = dt.series_to_CDS(
         det_mgr.residual_snr_maps[index],
         cds=cds,
+        index_val = None if cds is None else cds.data['i'][0]
     )
     cds = cds_dict.get("contrast", None)
     cds_dict['contrast'] = dt.series_to_CDS(
         det_mgr.contrast_maps[index],
         cds=cds,
+        index_val = None if cds is None else cds.data['i'][0]
     )
     return cds_dict
 
@@ -129,13 +132,24 @@ def detection_layout(
         for i, row_plot in plot_dicts.items():
             for k in scroller_keys:
                 source = cds_dicts[i][k]
+                curr_index = source.data['i'][0]
+                scroller_value = min(
+                    [source.data['nimgs'][0], source.data['index'][0].index(curr_index)+1]
+                )
+                source.data['img'] = [source.data['cube'][0][scroller_value-1]]
                 # update the slider range and options
                 row_plot[k].children[1].update(
                     # this is necessary to keep the scroller in sync with the plot
-                    value = 1,
+                    value = scroller_value,
                     end = source.data['nimgs'][0],
                 title=f"{len(source.data['index'][0])} / {source.data['i'][0]}"
                 )
+        return
+    def update_dashboard():
+        # whenever you update the data in the dashboard, call this function.
+        # all updaters go in here
+        update_cds_dicts()
+        update_cube_scrollers()
         return
 
 
@@ -143,12 +157,22 @@ def detection_layout(
     link_scrollers(['matched_filter', 'residual_snr', 'contrast'], plot_dicts)
 
     # reprocessing tools
+    # when this is changed, you just need to update kklip on
+    # the anamgr.det object, which will re-filter the results. then you can
+    # just update the plots.
     kklip_spinner = bkmdls.Spinner(
         title='Kklip',
         low=1, high=len(anamgr.stars), step=1,
         value=anamgr.det.kklip,
         width=110,
     )
+    def update_kklip(attr, old, new):
+        anamgr.det.kklip = new
+        update_dashboard()
+        return
+    kklip_spinner.on_change('value', update_kklip)
+
+    # when this is changed, update the matched filter width and reprocess
     mf_width_spinner = bkmdls.Spinner(
         title='Matched filter width',
         low=3, high=99,#anamgr.det.stamp_size,
@@ -165,8 +189,7 @@ def detection_layout(
             kklip=kklip_spinner.value,
             mf_width=mf_width_spinner.value
         )
-        update_cds_dicts()
-        update_cube_scrollers()
+        update_dashboard()
         return
     redetect_button.on_click(rerun_detection_and_update)
 

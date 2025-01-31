@@ -1,4 +1,5 @@
 # run with `bokeh serve test_star_dashboard.py --show` from a terminal
+import time
 import pandas as pd
 
 from public_wifi import starclass as sc
@@ -24,6 +25,8 @@ nobs = len(catalog)
 nstars = len(catalog['target'].unique())
 print(f"Processing catalog: {nobs} observations of {nstars} stars...")
 
+
+t0 = time.time()
 anamgr = AnalysisManager(
     input_catalog = catalog,
     star_id_column = 'target',
@@ -33,19 +36,23 @@ anamgr = AnalysisManager(
     bad_references = bad_references,
     scale_stamps = False,
     center_stamps = False,
-    min_nref = 30,
+    min_nref = 20,
     sim_thresh = 0.5,
     snr_thresh = 5.,
     n_modes = 5,
     cat_det_kklip=10,
     mf_width=15
 )
+t1 = time.time()
+print(f"Elapsed time to instantiate AnalysisManager object: {t1-t0:0f} seconds.")
 
 
 
 if __name__ == "__main__":
     print("Displaying dashboard")
     dash = sd.all_stars_dashboard(anamgr, plot_size=350)
+    t2 = time.time()
+    print(f"Elapsed time to create and display dashboard: {t2-t1} seconds.")
     port = 5006
     apps = {'/': dash}
     server = Server(apps, port=port)
