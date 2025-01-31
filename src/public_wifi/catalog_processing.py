@@ -194,6 +194,7 @@ def catalog_subtraction(
         stars : pd.Series,
         sim_thresh : float = 0.5,
         min_nref : int = 2,
+        verbose : bool = True,
 ) -> None:
     """
     Perform PSF subtraction on all the stars, setting attributes in-place
@@ -210,7 +211,8 @@ def catalog_subtraction(
       `min_nref` ones with the highest similarity scores
 
     """
-    print(f"Subtracting with similarity score threshold: sim >= {sim_thresh}")
+    if verbose:
+        print(f"Subtracting with similarity score threshold: sim >= {sim_thresh}")
     # assign references and compute similarity score
     for star in stars:
         star.set_references(stars, compute_similarity=True)
@@ -228,6 +230,7 @@ def catalog_detection(
         snr_thresh : float,
         n_modes : int,
         mf_width : int | None = None,
+        verbose : bool = True,
 ) -> None:
     """
     Perform MF detection on all the stars
@@ -243,18 +246,14 @@ def catalog_detection(
     updates star.results dataframe in-place. Adds columns for SNR maps,
     detection maps, and candidates
     """
+    if verbose:
+        print(f"Generating detection maps with snr >= {snr_thresh} and n_modes >= {n_modes}")
     det_args = dict(snr_thresh=snr_thresh, n_modes=n_modes, mf_width=mf_width)
     for star in stars:
         star.det_args.update(det_args)
         # SNR
         snrmaps = star.run_make_snr_maps()
         star.results[snrmaps.name] = snrmaps
-        # Candidate identification
-        # candidates = star.results.apply(
-        #     star.detect_snrmap_candidates,
-        #     axis=1
-        # )
-        # candidates = star.detect_snrmap_candidates(star.results)
         candidates = star.results.groupby("cat_row").apply(
             lambda group: star.detect_snrmap_candidates(group)
         )
