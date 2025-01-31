@@ -101,7 +101,7 @@ def make_row_cds(cat_row : pd.Series, star, cds_dict={}, jackknife_kklip : int =
 
     # # jackknife test maps
     cds = cds_dict.get("klip_jackknife", None)
-    jk_results_df = star.jackknife_results.loc[1]
+    jk_results_df = star.jackknife_results.loc[cat_row.name]
     kklip = min([jackknife_kklip, jk_results_df.index.get_level_values('numbasis').unique()[-1]])
     jackknife_data = jk_results_df.loc[kklip]
     cds_dict['klip_jackknife'] = dt.series_to_CDS(
