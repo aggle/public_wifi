@@ -144,9 +144,17 @@ def make_static_img_plot(
         title='',
         tools='',
         cmap_class : bokeh.core.has_props.MetaHasProps = bkmdls.LinearColorMapper,
+        show_origin : bool = True
         **kwargs,
 ):
-    """Plot an image that doesn't need to be scrolled through"""
+    """
+    Plot an image that doesn't need to be scrolled through
+    
+    Parameters
+    ----------
+    show_origin : bool = True
+      If True, plot x and y lines through the origin
+    """
     if not isinstance(img, bkmdls.ColumnDataSource):
         img = dt.img_to_CDS(img)
     # update the kwargs with defaults
@@ -176,6 +184,12 @@ def make_static_img_plot(
     # add a color bar to the plot
     color_bar = bkmdls.ColorBar(color_mapper=color_mapper, label_standoff=12)
     plot.add_layout(color_bar, 'right')
+
+    # plot crosshairs across the origin
+    if show_origin: 
+        line_style = dict(line_width=0.5, line_color="white", line_dash='dashed')
+        plot.hspan(y=[0], **line_style)
+        plot.vspan(x=[0], **line_style)
 
     # add hover tool
     hover_tool = bkmdls.HoverTool()
