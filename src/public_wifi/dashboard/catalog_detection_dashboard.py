@@ -187,7 +187,7 @@ def detection_layout(
                     bklyts.row(
                         plot_dicts[1]['matched_filter'],
                         plot_dicts[1]['residual_snr'],
-                        plot_dicts[0]['contrast'],
+                        plot_dicts[1]['contrast'],
                     ),
                 ),
             )
