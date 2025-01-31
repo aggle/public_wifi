@@ -15,6 +15,7 @@ import bokeh.models as bkmdls
 #from bokeh.models import ColumnDataSource, Slider, ColorBar, LogColorMapper
 from bokeh.plotting import figure
 from bokeh.themes import Theme
+from bokeh.server.server import Server
 
 def standalone(func):
     """
@@ -317,14 +318,34 @@ def generate_cube_scroller_widget(
 # standalone cube scroller
 make_cube_scroller = standalone(generate_cube_scroller_widget)
 
-def show_in_notebook(app, url='localhost:99999'):
+def show_in_notebook(app, url='localhost:9999'):
     """
     Convenience, because I keep forgetting the syntax, for showing a Bokeh app in a notebook.
-    Must be proceeded by bkio.output_notebook()
+    Example usage:
+      dash = star_dashboard.all_stars_dashboard(anamgr, plot_size=350)
+      app = dashtools.standalone(dash)
+      dashtools.show_in_notebook(app, url='localhost:9999')
+
     """
     bkio.output_notebook()
-    url='localhost:9999'
     bkio.show(
         app,
         notebook_url=url,
     )
+
+
+def show_in_browser(app, port=5006):
+    """
+    Convenience, because I keep forgetting the syntax, for showing a Bokeh app in a browser.
+    Warning: does not work yet
+    Example usage:
+      dash = star_dashboard.all_stars_dashboard(anamgr, plot_size=350)
+      app = dashtools.standalone(dash)
+      dashtools.show_in_browser(app, port=5006)
+    """
+    apps = {'/': app}
+    server = Server(apps, port=port)
+    # server.start()
+    print(f'\nOpening Bokeh application on http://localhost:{port}/\n')
+    server.io_loop.add_callback(server.show, "/")
+    server.io_loop.start()
