@@ -145,7 +145,7 @@ def make_static_img_plot(
         title='',
         tools='',
         cmap_class : bokeh.core.has_props.MetaHasProps = bkmdls.LinearColorMapper,
-        show_origin : bool = True
+        show_origin : bool = True,
         **kwargs,
 ):
     """
