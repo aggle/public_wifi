@@ -3,7 +3,6 @@ import pandas as pd
 
 from scipy.signal import correlate2d as correlate
 from astropy.convolution import convolve
-from astropy.stats import sigma_clipped_stats
 from astropy.nddata import Cutout2D
 from astropy.modeling.models import Gaussian2D
 

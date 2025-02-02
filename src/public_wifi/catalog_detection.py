@@ -24,7 +24,7 @@ def gaussian_cdf(mu=0, sigma=1, n=1000):
 
 def normalize_array(x):
     """Normalize an array with sigma-clipped stats"""
-    mean, _, std = sigma_clipped_stats(x)
+    mean, _, std = sigma_clipped_stats(x, sigma=1)
     return (x-mean)/std
 
 def compute_pixelwise_norm(stack: pd.Series):
@@ -103,13 +103,14 @@ class CatDet:
             df.index = df.index.droplevel("numbasis")
 
     def recompute(self):
-        # self.results = self.filter_kklip(self.all_results, self.kklip)
-        # self.kklip_resid_norm = self.kklip_resid.map(normalize_array)
         self.filter_maps()
 
 
     def normalize_residuals_and_apply_matched_filter(self, results):
         # normalize the arrays so we can compare them against each other
+        results['klip_sub_std'] = results['klip_sub'].apply(
+            lambda img: sigma_clipped_stats(img, sigma=1)
+        )
         results['klip_sub_norm'] = results['klip_sub'].map(normalize_array)
         # apply the matched filters to the normalized residual stamps
         results['mf_map_norm'] = results.apply(

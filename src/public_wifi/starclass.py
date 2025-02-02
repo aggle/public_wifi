@@ -8,7 +8,6 @@ from skimage.metrics import structural_similarity as ssim
 from astropy.io import fits
 from astropy.nddata import Cutout2D
 from astropy.wcs import WCS
-from astropy.stats import sigma_clipped_stats
 
 from public_wifi import misc
 from public_wifi import centroid
