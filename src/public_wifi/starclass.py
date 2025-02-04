@@ -362,7 +362,7 @@ class Star:
             min_nref,
             stamp_column : str = 'stamp',
             jackknife_reference : str = '',
-    ):
+    ) -> pd.DataFrame:
         """
         Wrapper for KLIP that can be applied on each row of star.cat
         row : star.cat row

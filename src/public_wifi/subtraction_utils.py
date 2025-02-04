@@ -15,7 +15,7 @@ def klip_subtract(
         target_stamp,
         reference_stamps,
         numbasis = None,
-) -> tuple[pd.Series, pd.Series, pd.Series]:
+) -> pd.DataFrame:
     """
     Perform KLIP subtraction on the target stamp.
     Returns the subtracted images, and the PSF models
@@ -49,6 +49,7 @@ def klip_subtract(
     klip_basis_img = klip_basis.apply(lambda img: img.reshape(stamp_shape))
     klip_sub_img = klip_sub.apply(lambda img: img.reshape(stamp_shape))
     klip_model_img = klip_model.apply(lambda img: img.reshape(stamp_shape))
+
     # return a dataframe indexed by num_basis
     klip_results = pd.concat([klip_basis_img, klip_sub_img, klip_model_img], axis=1)
     # return klip_basis_img, klip_sub_img, klip_model_img
