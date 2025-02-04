@@ -249,7 +249,7 @@ def row_inject_subtract_detect(
         # sim_thresh=sim_thresh,
         # min_nref=min_nref,
     )
-    snrmaps = star._row_make_snr_map(results).squeeze()
+    snrmaps = dutils.make_series_snrmaps(results['klip_sub'])
     detmap = dutils.flag_candidate_pixels(
         snrmaps,
         thresh=snr_thresh,
@@ -371,7 +371,7 @@ def inject_and_recover_snr(
       The SNR of of the candidate measured at the injection site
     """
 
-    stamp_shape = row['stamp'].shape
+    stamp_shape = min(row['stamp'].shape)
     inj_row = row_inject_psf(
         row, star=star, pos=pos, contrast=contrast, kklip=-1
     )
@@ -379,7 +379,7 @@ def inject_and_recover_snr(
         inj_row,
         **star.subtr_args,
     )
-    snrmaps = star._row_make_snr_map(results).squeeze()
+    snrmaps = dutils.make_series_snrmaps(results['klip_sub'])
     inj_snr = snrmaps.apply(
         lambda img: img[*find_injection(img, pos)]
     )
@@ -401,14 +401,14 @@ def inject_and_recover_snr(
         ax.scatter(*misc.center_to_ll_coords(stamp_shape, pos), marker='x', c='w', s=50)
 
         ax = axes.flat[1]
-        ax.set_title("Resid (10)")
-        imax = ax.imshow(results['klip_sub'][10])
+        ax.set_title(f"Resid ({kklip})")
+        imax = ax.imshow(results['klip_sub'][kklip])
         fig.colorbar(imax, ax=ax)
         ax.scatter(*misc.center_to_ll_coords(stamp_shape, pos), marker='x', c='w', s=50)
 
         ax = axes.flat[2]
-        ax.set_title("SNR (10)")
-        imax = ax.imshow(snrmaps[10])
+        ax.set_title(f"SNR ({kklip})")
+        imax = ax.imshow(snrmaps[kklip])
         fig.colorbar(imax, ax=ax)
         ax.scatter(*misc.center_to_ll_coords(stamp_shape, pos), marker='x', c='w', s=50)
 
