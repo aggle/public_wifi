@@ -2,6 +2,9 @@ import itertools
 import numpy as np
 import pandas as pd
 from scipy import optimize
+
+from matplotlib import pyplot as plt
+
 from public_wifi import catalog_processing, misc
 from public_wifi import detection_utils as dutils
 from public_wifi import matched_filter_utils as mf_utils
@@ -328,18 +331,47 @@ def contrast_map_to_radial(contrast_map, stamp_size):
 
 def inject_and_recover_snr(
         star,
-        row,
-        contrast,
-        pos,
-        snr_thresh=5.,
-        n_modes=3,
-        kklip=None,
-        plot=False
+        row : pd.Series,
+        contrast : float,
+        pos : tuple[int],
+        snr_thresh : float = 5.,
+        n_modes : int = 3,
+        kklip : int | None = None,
+        plot : bool = False
 ) -> float:
     """
     Inject a PSF into a stamp and recover the SNR, as defined by the residuals
     of the stamp itself.
+    This method is used by an optimization function to determine the contrast
+    at which a particular SNR is reached.
+
+    Parameters
+    ----------
+    star : sc.Star
+      A starclass.Star object
+    row : pd.Series
+      A row from the star.cat dataframe
+    contrast: float
+      Flux of injection relative to primary, as measured by the PSF model
+    pos : tuple[int]
+      (x, y) position of the injection measured from the central pixel of the
+      stamp
+    snr_thresh : float = 5.
+      The threshold for determining if something is a detection or not
+    n_modes : int = 3.
+      A candidate must appear above snr_thresh in this many PCA modes to count
+    kklip : int | None = None
+      Measure the SNR at this particular value of Kklip, ignoring n_modes
+    plot : bool = False
+      Make some diagnostic plots. Make sure to set to False when passing to an optimization function
+
+    Output
+    ------
+    snr : float
+      The SNR of of the candidate measured at the injection site
     """
+
+    stamp_shape = row['stamp'].shape
     inj_row = row_inject_psf(
         row, star=star, pos=pos, contrast=contrast, kklip=-1
     )
@@ -353,10 +385,32 @@ def inject_and_recover_snr(
     )
     if kklip is None:
         snr = dutils.calc_snr_from_series(
-            inj_snr, thresh=5., n_modes=3
+            inj_snr, thresh=snr_thresh, n_modes=n_modes,
         )
     else:
         snr = inj_snr[kklip]
+
+    if plot:
+        nrows, ncols = 1, 3
+        fig, axes = plt.subplots(nrows=nrows, ncols=ncols, squeeze=False, figsize=(5*ncols, 5*nrows))
+        fig.suptitle(f"{star.star_id} \n Contrast: {contrast:0.1e}" )
+        ax = axes.flat[0]
+        ax.set_title("Stamp")
+        imax = ax.imshow(inj_row['stamp'])
+        fig.colorbar(imax, ax=ax)
+        ax.scatter(*misc.center_to_ll_coords(stamp_shape, pos), marker='x', c='w', s=50)
+
+        ax = axes.flat[1]
+        ax.set_title("Resid (10)")
+        imax = ax.imshow(results['klip_sub'][10])
+        fig.colorbar(imax, ax=ax)
+        ax.scatter(*misc.center_to_ll_coords(stamp_shape, pos), marker='x', c='w', s=50)
+
+        ax = axes.flat[2]
+        ax.set_title("SNR (10)")
+        imax = ax.imshow(snrmaps[10])
+        fig.colorbar(imax, ax=ax)
+        ax.scatter(*misc.center_to_ll_coords(stamp_shape, pos), marker='x', c='w', s=50)
 
     return snr
 

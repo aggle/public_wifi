@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 
-from scipy.signal import correlate2d as correlate
+from scipy.signal import correlate
 from astropy.convolution import convolve
 from astropy.nddata import Cutout2D
 from astropy.modeling.models import Gaussian2D
