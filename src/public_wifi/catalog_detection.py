@@ -109,7 +109,7 @@ class CatDet:
     def normalize_residuals_and_apply_matched_filter(self, results):
         # normalize the arrays so we can compare them against each other
         results['klip_sub_std'] = results['klip_sub'].apply(
-            lambda img: sigma_clipped_stats(img, sigma=1)
+            lambda img: sigma_clipped_stats(img, sigma=1)[-1]
         )
         results['klip_sub_norm'] = results['klip_sub'].map(normalize_array)
         # apply the matched filters to the normalized residual stamps
