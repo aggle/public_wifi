@@ -420,6 +420,11 @@ def optimize_snr_vs_thresh(
     """
     Compute the difference between the snr and the target threshold.
     Pass this to a minimization function like optimize.minimize_scalar
+    Example: optimize.minimize_scalar(
+      optimize_snr_vs_thresh, 
+      bounds=(lb, ub),
+      args=(star, row, pos, thresh, n_modes, kklip)
+    ).x
     """
     snr = inject_and_recover_snr(
         star, row, contrast, pos, snr_thresh, n_modes, kklip
