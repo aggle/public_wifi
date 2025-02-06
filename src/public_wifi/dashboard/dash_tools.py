@@ -2,6 +2,7 @@
 Generic dashboard-related utilities that are not specific to the dat\a
 """
 import functools
+from collections import OrderedDict
 import numpy as np
 import pandas as pd
 
@@ -500,7 +501,7 @@ def generate_multiindex_cube_scroller_widget(
 
     # Sliders
     # index_cols = sorted([k for k in cds.data.keys() if 'index' in k])
-    sliders = {}
+    sliders = OrderedDict()
     for name in source.data['cube'][0].index.names:
         categories = source.data['cube'][0].index.get_level_values(name).unique()
         categories = categories.astype(str)
@@ -532,7 +533,7 @@ def generate_multiindex_cube_scroller_widget(
     for slider in sliders.values():
         slider.on_change('value', slider_change)
 
-    layout = bklyts.column(plot, *[sliders[s] for s in sorted(sliders.keys())])
+    layout = bklyts.column(plot, *[sliders[s] for s in sliders.keys()])
     return layout
 
 make_multiindex_cube_scroller = standalone(
