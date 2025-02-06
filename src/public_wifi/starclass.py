@@ -149,7 +149,7 @@ class Star:
             row,
             stamp_size : int,
             ext : int | str = 'SCI',
-            pad = 2
+            pad = 0
     ) -> Cutout2D:
         """
         Cut out the stamp from the data
@@ -174,17 +174,17 @@ class Star:
             copy=True
         )
         # recenter on the brightest pixel
-        # maxpix = np.array(
-        #     np.unravel_index(np.nanargmax(cutout.data), cutout.shape)[::-1]
-        # ) + np.array(cutout.origin_original)
-        # actually, recenter on the centroid
-        # maxpix = misc.compute_psf_center(cutout.data, pad=5) +\
-        center = misc.get_stamp_center(cutout.data)
-        maxpix = centroid.compute_centroid(
-            cutout.data,
-            incoord = tuple(center),
-            silent = True,
+        maxpix = np.array(
+            np.unravel_index(np.nanargmax(cutout.data), cutout.shape)[::-1]
         ) + np.array(cutout.origin_original)
+        # # actually, recenter on the centroid
+        # # maxpix = misc.compute_psf_center(cutout.data, pad=5) +\
+        # center = misc.get_stamp_center(cutout.data)
+        # maxpix = centroid.compute_centroid(
+        #     cutout.data,
+        #     incoord = tuple(center),
+        #     silent = True,
+        # ) + np.array(cutout.origin_original)
         # print(maxpix, tuple(row[['x','y']]))
 
         cutout = Cutout2D(
