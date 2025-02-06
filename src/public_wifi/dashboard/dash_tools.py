@@ -83,7 +83,7 @@ def series_to_CDS(
         index : None | list | np.ndarray | pd.Series = None,
         index_val = None,
         properties : dict = {},
-) -> None:
+) -> bkmdls.ColumnDataSource:
     """
     When you get a new cube, you should update its corresponding CDS.
     This is a generic helper function to do that.
@@ -328,8 +328,8 @@ def show_in_notebook(app, url='localhost:9999'):
     Convenience, because I keep forgetting the syntax, for showing a Bokeh app in a notebook.
     Example usage:
       dash = star_dashboard.all_stars_dashboard(anamgr, plot_size=350)
-      app = dashtools.standalone(dash)
-      dashtools.show_in_notebook(app, url='localhost:9999')
+      app = dash_tools.standalone(dash)
+      dash_tools.show_in_notebook(app, url='localhost:9999')
 
     """
     bkio.output_notebook()
@@ -354,3 +354,188 @@ def show_in_browser(app, port=5006):
     print(f'\nOpening Bokeh application on http://localhost:{port}/\n')
     server.io_loop.add_callback(server.show, "/")
     server.io_loop.start()
+
+
+def multiindex_series_to_CDS(
+        cube : pd.Series,
+        cds : bkmdls.ColumnDataSource = None,
+        index_val : tuple | None = None,
+        properties : dict = {},
+) -> bkmdls.ColumnDataSource:
+    """
+    Generate a ColumnDataSource from a series with a MultiIndex
+
+    Parameters
+    ----------
+    cube : pd.Series
+      A series that stores 2-D image arrays in each entry
+    cds : bkmdls.ColumnDataSource | None
+      a ColumnDataSource in which to store the data. Pass one in if you need it
+      to be persistent, or leave as None to generate a new one.
+    index_val = tuple | None
+      the value to set the index to (if None, then the zeroth element)
+    properties : dict = {}
+      this argument is used to pass any other entries to the data field that you may want to add
+
+    Output
+    ------
+    cds : bkmdls.ColumnDataSource
+
+    """
+    # store the images in the CDS
+    if cds is None:
+        # if none provided, make one.
+        cds = bkmdls.ColumnDataSource()
+    # series metadata
+    cds.tags = [cube.name, cube.index.names]
+
+    if index_val is None:
+        index_val = cube.index[0]
+    cube_shape = np.stack(cube.values).shape
+    center = np.floor(np.array(cube_shape[-2:])/2).astype(int)[::-1]
+    data = dict(
+        # these are the fields that the plots will inspect
+        img=[cube.loc[index_val]],
+        i=[index_val],
+        # these fields store the available values
+        cube=[cube],
+        # these fields help format the plots
+        nimgs = [cube.shape[0]],
+        # lower left corner coordinates
+        x = [-center[0]-0.5], y = [-center[1]-0.5],
+        # image height and width in pixels
+        dw = [cube_shape[-1]], dh = [cube_shape[-2]],
+    )
+    # add the index
+    for i, name in enumerate(cube.index.names):
+        data[f'index_{i}'] = [cube.index.get_level_values(i).unique()]
+    data.update(**properties)
+    cds.data.update(**data)
+    return cds
+
+def generate_multiindex_cube_scroller_widget(
+        source,
+        plot_kwargs={},
+        use_diverging_cmap : bool = False,
+        cmap_range : tuple[float, float] = (0.01, 0.99),
+):
+    """
+    Generate a contained layout object to scroll through a cube. Can be added
+    to other documents.
+
+    Parameters
+    ----------
+    source : bkmdls.ColumnDataSource
+      a CDS containing the data to plot. Generate with series_to_CDS(pd.Series)
+    plot_kwargs : dict
+      kwargs to pass to bkplt.figure
+    add_log_scale : bool = False
+      Add a switch to change the color mapping between linear and log scaling
+    diverging_cmap : bool = False
+      If True, use a diverging Blue-Red colormap that is white in the middle
+      This is useful for residual plots that are mean 0
+    cmap_range : tuple[float] = (0.1, 0.9)
+      color range
+      
+    """
+    if isinstance(source, pd.Series):
+        source = multiindex_series_to_CDS(source)
+
+    TOOLS = "box_select,pan,reset"
+
+    palette = 'Magma256'
+    if use_diverging_cmap:
+        palette = bokeh.palettes.diverging_palette(
+            bokeh.palettes.brewer['Greys'][256],
+            bokeh.palettes.brewer['Reds'][256],
+            256
+        )
+
+    # plot configuration and defaults
+    # plot_kwargs['match_aspect'] = plot_kwargs.get('match_aspect', True)
+    for k, v in dict(height=400, width=400, match_aspect=True).items():
+        plot_kwargs[k] = plot_kwargs.get(k, v)
+    plot = figure(
+        tools=TOOLS,
+        **plot_kwargs,
+        name='plot',
+    )
+
+    # set the color bar
+    # low, high = np.nanquantile(source.data['img'][0], cmap_range)
+    color_mapper = bkmdls.LinearColorMapper(
+        palette=palette,
+        # low=low, high=high,
+    )
+
+    # Stamp image
+    img_plot = plot.image(
+        image='img',
+        source=source,
+        # x=-0.5, y=-0.5,
+        # dw=source.data['img'][0].shape[-1], dh=source.data['img'][0].shape[-2],
+        x='x', y='y',
+        dw='dw', dh='dh',
+        # palette=palette,
+        color_mapper=color_mapper,
+    )
+    # plot crosshairs across the origin
+    line_style = dict(line_width=0.5, line_color="white", line_dash='dashed')
+    plot.hspan(y=[0], **line_style)
+    plot.vspan(x=[0], **line_style)
+    # Add a color bar to the image
+    color_bar = bkmdls.ColorBar(
+        color_mapper=color_mapper,
+        height=int(0.9*plot_kwargs['height']),
+        label_standoff=12
+    )
+    plot.add_layout(color_bar, 'right')
+
+    # add hover tool
+    hover_tool = bkmdls.HoverTool()
+    hover_tool.tooltips=[("value", "@img"),
+                         ("(x,y)", "($x{0}, $y{0})")]
+    plot.add_tools(hover_tool)
+    plot.toolbar.active_inspect = hover_tool
+
+    # Sliders
+    # index_cols = sorted([k for k in cds.data.keys() if 'index' in k])
+    sliders = {}
+    for name in source.data['cube'][0].index.names:
+        categories = source.data['cube'][0].index.get_level_values(name).unique()
+        categories = categories.astype(str)
+        sliders[name] = bkmdls.CategoricalSlider(
+            show_value=True,
+            title=name,
+            categories=categories,
+            value=categories[0],
+            name='slider_'+name,
+        )
+    def slider_change(attr, old, new):
+        # get the new index. This is tricky because you need to convert
+        # the slider values from str to whatever the native index type was
+        dtypes = source.data['cube'][0].index.dtypes
+        names = source.data['cube'][0].index.names
+        new_index = tuple(
+            dtype.type(sliders[name].value) for dtype, name in zip(dtypes, names)
+        )
+        try:
+            source.data['i'] = [new_index]
+            source.data['img'] = [ source.data['cube'][0].loc[new_index] ]
+        except KeyError:
+            return
+        color_mapper.update(
+            low=np.nanmin(source.data['img'][0]),
+            high=np.nanmax(source.data['img'][0]),
+        )
+        return
+    for slider in sliders.values():
+        slider.on_change('value', slider_change)
+
+    layout = bklyts.column(plot, *[sliders[s] for s in sorted(sliders.keys())])
+    return layout
+
+make_multiindex_cube_scroller = standalone(
+    generate_multiindex_cube_scroller_widget
+)
+

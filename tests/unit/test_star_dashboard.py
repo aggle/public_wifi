@@ -57,3 +57,12 @@ def test_make_row_cds(random_processed_star):
         assert(k in cds.keys())
     return
 
+
+def test_multiindex_series_to_CDS(random_processed_star):
+    star = random_processed_star
+    print(f"Star: {star.star_id}")
+    cube = star.results['detmap']
+    cds = dt.multiindex_series_to_CDS(cube)
+    for i, name in enumerate(cube.index.names):
+        assert(f'index_{i}' in cds.data.keys())
+
