@@ -407,9 +407,6 @@ def multiindex_series_to_CDS(
         # image height and width in pixels
         dw = [cube_shape[-1]], dh = [cube_shape[-2]],
     )
-    # add the index
-    for i, name in enumerate(cube.index.names):
-        data[f'index_{i}'] = [cube.index.get_level_values(i).unique()]
     data.update(**properties)
     cds.data.update(**data)
     return cds
@@ -487,7 +484,7 @@ def generate_multiindex_cube_scroller_widget(
     # Add a color bar to the image
     color_bar = bkmdls.ColorBar(
         color_mapper=color_mapper,
-        height=int(0.9*plot_kwargs['height']),
+        height=int(0.8*plot_kwargs['height']),
         label_standoff=12
     )
     plot.add_layout(color_bar, 'right')
@@ -512,17 +509,23 @@ def generate_multiindex_cube_scroller_widget(
             value=categories[0],
             name='slider_'+name,
         )
+    # get names and types of index levels
+    # if source.data['cube'][0].index.nlevels > 1:
+    #     dtypes = source.data['cube'][0].index.dtypes
+    # else:
+    #     dtypes = [source.data['cube'][0].index.dtype]
+    index = source.data['cube'][0].index
+    names = index.names
+    dtypes = [index.get_level_values(name).dtype for name in names]
     def slider_change(attr, old, new):
         # get the new index. This is tricky because you need to convert
         # the slider values from str to whatever the native index type was
-        dtypes = source.data['cube'][0].index.dtypes
-        names = source.data['cube'][0].index.names
-        new_index = tuple(
+        new_index_val = tuple(
             dtype.type(sliders[name].value) for dtype, name in zip(dtypes, names)
         )
         try:
-            source.data['i'] = [new_index]
-            source.data['img'] = [ source.data['cube'][0].loc[new_index] ]
+            source.data['i'] = [new_index_val]
+            source.data['img'] = [ source.data['cube'][0].loc[new_index_val] ]
         except KeyError:
             return
         color_mapper.update(
