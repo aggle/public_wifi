@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 
+from scipy import stats
 from astropy.stats import sigma_clipped_stats
 
 from public_wifi import misc
@@ -190,3 +191,19 @@ def jackknife_analysis(
     jackknife.name = 'klip_jackknife'
     return jackknife
 
+
+def compare_stamp_distribution(
+    stamp,
+    ref_distro : np.ndarray | None = None
+) -> float:
+    """
+    Compare the pixel values in a stamp to a normal distribution (or to a
+    reference distribution, if provided)
+    """
+    stamp = np.sorted(np.array(stamp).ravel())
+    if ref_distro is None:
+        score = stats.shapiro(stamp).statistic
+    else:
+        ref_distro = np.sorted(np.array(ref_distro).ravel())
+        score = stats.kstest(stamp, ref_distro).statisic
+    return score
