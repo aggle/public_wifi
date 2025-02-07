@@ -189,3 +189,4 @@ def jackknife_analysis(
     jackknife = make_series_snrmaps(jackknife)
     jackknife.name = 'klip_jackknife'
     return jackknife
+

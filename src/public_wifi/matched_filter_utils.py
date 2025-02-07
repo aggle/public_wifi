@@ -192,3 +192,84 @@ def make_gaussian_psf(stamp_size, filt='F850LP') -> np.ndarray:
     psf = g2d_func(xy[0], xy[1])
     return psf
 
+
+def apply_matched_filters_from_catalog(
+        target_star,
+        all_stars : pd.Series
+) -> pd.DataFrame :
+    """
+    Use other stars' PSFs as the matched filter. This allows us to sample the
+    pixel phase. Match on filter and Kklip. You also have to recompute the
+    pca_bias term by convolving the new matched filter with the target star's
+    klip modes.
+
+    Parameters
+    ----------
+    star : starclass.Star object
+    all_stars : pd.Series
+      the pd.Series object with one star for each entry.
+
+    Output
+    ------
+    mf_results : pd.DataFrame
+      dataframe indexed by [mf_star, cat_row, numbasis] with columns [mf, detmap, pca_bias, fluxmap]
+      index: mf_star is the star_id of the star providing the matched filter,
+        cat_row is the catalog row, numbasis is Kklip
+      columns: mf is the result of the unnormalized matched filter, detmap is
+        the result of the matched filter divided by the mf norm, pca_bias is the
+        square of the mf convolved with the KLIP modes, and fluxmap is the mf
+        result divided by the throughput (norm - pca_bias)
+    """
+    # match on Kklip
+    max_kklip = all_stars.apply(lambda star: star.results.index.get_level_values("numbasis").max()).min()
+    target_subset = target_star.results.query(f"numbasis <= {max_kklip}")
+
+    # match Kklip and cross-correlate the catalog MF against the target's residuals
+    crossmf = all_stars.apply(
+        lambda mf_star: target_subset.apply(
+            lambda row: correlate(
+                row['klip_sub'],
+                mf_star.results.loc[row.name, 'mf'],
+                mode='same', method='auto'
+            ),#/mf_star.results.loc[row.name, 'mf_norm'],
+        axis=1
+        )
+    )
+    crossmf = pd.concat({i: row for i, row in crossmf.iterrows()}, names=['mf_star'])
+    crossmf.name = 'mf'
+    crossmf = pd.DataFrame(crossmf)
+
+    # divide by the mf's norm
+    crossmf['detmap'] = crossmf.apply(
+        lambda row: row['mf'] / all_stars.loc[row.name[0]].results['mf_norm'].loc[row.name[1:]],
+        axis=1
+    )
+
+    # compute the pca bias of the new matched filter against the target star's KLIP modes
+    crossmf_pca_bias = all_stars.apply(
+        lambda mf_star: target_subset.apply(
+            lambda row: compute_pca_bias(
+                mf_star.results.loc[row.name, 'mf'],
+                target_subset['klip_basis'].loc[row.name[0], :row.name[1]],
+                nan_center=True,
+            ).iloc[-1],
+            axis=1
+        )
+    )
+    crossmf_pca_bias = pd.concat({i: row for i, row in crossmf_pca_bias.iterrows()}, names=['mf_star'])
+    crossmf['pca_bias'] = crossmf_pca_bias
+
+
+    # divide the mf by the throughput to get the flux
+    crossmf['fluxmap'] = crossmf.apply(
+        lambda row: row['mf'] / (all_stars.loc[row.name[0]].results['mf_norm'].loc[row.name[1:]] - row['pca_bias']),
+        axis=1
+    )
+    # divide by the primary flux to get the contrast
+    crossmf['contrastmap'] = crossmf.apply(
+        lambda row: row['fluxmap'] / target_subset['mf_prim_flux'].loc[row.name[1:]],
+        axis=1
+    )
+
+    return crossmf
+
