@@ -194,7 +194,7 @@ def make_gaussian_psf(stamp_size, filt='F850LP') -> np.ndarray:
 
 
 def apply_matched_filters_from_catalog(
-        target_star,
+        target_star_results,
         all_stars : pd.Series
 ) -> pd.DataFrame :
     """
@@ -222,7 +222,7 @@ def apply_matched_filters_from_catalog(
     """
     # match on Kklip
     max_kklip = all_stars.apply(lambda star: star.results.index.get_level_values("numbasis").max()).min()
-    target_subset = target_star.results.query(f"numbasis <= {max_kklip}")
+    target_subset = target_star_results.query(f"numbasis <= {max_kklip}")
 
     # match Kklip and cross-correlate the catalog MF against the target's residuals
     crossmf = all_stars.apply(
@@ -245,7 +245,8 @@ def apply_matched_filters_from_catalog(
         axis=1
     )
 
-    # compute the pca bias of the new matched filter against the target star's KLIP modes
+    # compute the pca bias of the new matched filter against the *target star's*
+    # KLIP modes.
     crossmf_pca_bias = all_stars.apply(
         lambda mf_star: target_subset.apply(
             lambda row: compute_pca_bias(
@@ -256,16 +257,20 @@ def apply_matched_filters_from_catalog(
             axis=1
         )
     )
-    crossmf_pca_bias = pd.concat({i: row for i, row in crossmf_pca_bias.iterrows()}, names=['mf_star'])
+    # this gets automatically formatted into a dataframe, so let's reshape it
+    # into a series
+    crossmf_pca_bias = pd.concat(
+        {i: row for i, row in crossmf_pca_bias.iterrows()},
+        names=['mf_star']
+    )
     crossmf['pca_bias'] = crossmf_pca_bias
-
 
     # divide the mf by the throughput to get the flux
     crossmf['fluxmap'] = crossmf.apply(
         lambda row: row['mf'] / (all_stars.loc[row.name[0]].results['mf_norm'].loc[row.name[1:]] - row['pca_bias']),
         axis=1
     )
-    # divide by the primary flux to get the contrast
+    # and finally, divide by the primary flux to get the contrast
     crossmf['contrastmap'] = crossmf.apply(
         lambda row: row['fluxmap'] / target_subset['mf_prim_flux'].loc[row.name[1:]],
         axis=1
