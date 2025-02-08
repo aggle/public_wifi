@@ -517,6 +517,10 @@ def generate_multiindex_cube_scroller_widget(
     index = source.data['cube'][0].index
     names = index.names
     dtypes = [index.get_level_values(name).dtype for name in names]
+    for i in range(len(dtypes)):
+        if dtypes[i] == 'O':
+            dtypes[i] = str
+
     def slider_change(attr, old, new):
         # get the new index. This is tricky because you need to convert
         # the slider values from str to whatever the native index type was
