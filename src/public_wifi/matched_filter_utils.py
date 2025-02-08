@@ -145,7 +145,8 @@ def compute_mf_norm(
 def compute_pca_bias(
         mf : np.ndarray,
         modes : np.ndarray | pd.Series,
-        nan_center : bool = True
+        nan_center : bool = True,
+        pos : tuple[int] | None = None
 ) -> pd.Series :
     """
     Compute the bias introduced by sub-optimal PSF modeling
@@ -158,6 +159,9 @@ def compute_pca_bias(
       The KLIP modes used to construct the model PSF
     nan_center : bool = True
       if True, set the center value to NaN
+    pos : tuple[int] | None = None
+      a (row, col) pixel coordinate. If given, compute the throughput only at
+      this position. This makes things go a lot faster
     Output
     ------
     bias : pd.Series

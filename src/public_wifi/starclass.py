@@ -755,7 +755,10 @@ def apply_mf_to_pca_results(
 
 
 def combine_pca_results(subtr_results) -> pd.DataFrame | None:
-    """Combine the results of PSF subtraction into a dataframe indexed by the ordered modes"""
+    """
+    Combine the results of PSF subtraction into a dataframe indexed by the
+    ordered modes
+    """
     if isinstance(subtr_results, pd.DataFrame):
         pca_results = pd.concat(
             {k: pd.concat(v, axis=1) for k, v in subtr_results.T.to_dict().items()},
