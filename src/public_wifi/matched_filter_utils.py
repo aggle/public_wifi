@@ -171,6 +171,21 @@ def compute_pca_bias(
     if not isinstance(modes, pd.Series):
         modes = pd.Series({i+1: mode for i, mode in enumerate(modes)})
     center = misc.get_stamp_center(modes)[::-1]
+    mode_shape = np.stack(modes).shape[-2:]
+    # if you only want one position, skip the correlation and do a dot product
+    if pos is not None:
+        # if you only want one position, skip the correlation and do a dot product
+        # pad the matched filter array so that the size matches up with the stamp,
+        # with the central pixel in the right spot
+        # pad the matched filter so that it lines up correctly
+        mf_padded = line_up_matched_filter_with_pos(
+            mf, modes, pos
+        )
+        bias = modes.apply(
+            lambda klmode: np.dot(mf_padded.ravel(), klmode.ravel())**2
+        )
+        return bias.cumsum()
+
     bias = modes.apply(
         # compute the correlation with the MF for each KL mode
         lambda klmode: correlate(
@@ -282,3 +297,42 @@ def apply_matched_filters_from_catalog(
 
     return crossmf
 
+def line_up_matched_filter_with_pos(
+        mf : np.ndarray,
+        modes : pd.Series,
+        pos : tuple[int]
+) -> np.ndarray:
+    """pos is in (row, col) convention"""
+    mode_shape = np.stack(modes).shape[-2:]
+    # get the boundaries
+    mf_half = misc.get_stamp_center(mf)
+    # if this is negative, add padding
+    pad_lb = np.array(pos) - mf_half
+    # if this is positive, add padding
+    pad_ub = (np.array(mode_shape)-1) - (np.array(pos) + mf_half)
+    mf_padded = mf.copy()
+    if pad_lb[0] < 0:
+        mf_padded = mf_padded[-1*pad_lb[0]:, :]
+    elif pad_lb[0] > 0:
+        mf_padded = np.pad(mf_padded, ((pad_lb[0], 0), (0, 0)))
+    else:
+        pass
+    if pad_lb[1] < 0:
+        mf_padded = mf_padded[:, -1*pad_lb[1]:]
+    elif pad_lb[1] > 0:
+        mf_padded = np.pad(mf_padded, ((0, 0), (pad_lb[1], 0)))
+    else:
+        pass
+    if pad_ub[0] > 0:
+        mf_padded = np.pad(mf_padded, ((0, pad_ub[0]), (0, 0)))
+    elif pad_ub[0] < 0:
+        mf_padded = mf_padded[:pad_ub[0]]
+    else:
+        pass
+    if pad_ub[1] > 0:
+        mf_padded = np.pad(mf_padded, ((0, 0), (0, pad_ub[1])))
+    elif pad_ub[1] < 0:
+        mf_padded = mf_padded[:, :pad_ub[1]]
+    else:
+        pass
+    return mf_padded
