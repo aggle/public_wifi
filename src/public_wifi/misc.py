@@ -82,5 +82,5 @@ def center_to_ll_coords(stamp_size, pix):
 def ll_to_center_coords(stamp_size, pix):
     """Convert center-origin coordinates to ll-origin coordinates"""
     center = get_stamp_center(stamp_size)
-    center_coord = center + np.array(pix)
+    center_coord = np.array(pix) - center
     return center_coord
