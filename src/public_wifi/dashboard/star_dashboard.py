@@ -630,6 +630,6 @@ def all_stars_dashboard(
             ]
         )
 
-        doc.title = "PUBLIC-WIFI DEI"
+        doc.title = "PUBLIC-WIFI"
         doc.add_root(lyt)
     return app

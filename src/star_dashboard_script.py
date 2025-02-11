@@ -9,10 +9,11 @@ from public_wifi.analysis_manager import AnalysisManager
 
 from bokeh.server.server import Server
 
-catalog_file = sc.Path("~/Projects/Research/hst17167-ffp/catalogs/targets_drc.csv")
+# catalog_file = sc.Path("~/Projects/Research/hst17167-ffp/catalogs/targets_drc.csv")
+catalog_file = sc.Path("~/Projects/Research/hst17167-ffp/catalogs/targets_drc-low_snr.csv")
 data_folder = sc.Path("~/Projects/Research/hst17167-ffp/data/HST/")
 
-catalog = catproc.load_catalog(catalog_file, 50)
+catalog = catproc.load_catalog(catalog_file, 50)[:30]
 
 
 # load file with list of bad references
@@ -53,7 +54,7 @@ if __name__ == "__main__":
     dash = sd.all_stars_dashboard(anamgr, plot_size=350)
     t2 = time.time()
     print(f"Elapsed time to create and display dashboard: {t2-t1} seconds.")
-    port = 5006
+    port = 5007
     apps = {'/': dash}
     server = Server(apps, port=port)
     print(f'\nOpening Bokeh application on http://localhost:{port}/\n')

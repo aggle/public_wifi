@@ -200,10 +200,10 @@ def compare_stamp_distribution(
     Compare the pixel values in a stamp to a normal distribution (or to a
     reference distribution, if provided)
     """
-    stamp = np.sorted(np.array(stamp).ravel())
+    stamp = np.sort(np.array(stamp).ravel())
     if ref_distro is None:
         score = stats.shapiro(stamp).statistic
     else:
-        ref_distro = np.sorted(np.array(ref_distro).ravel())
+        ref_distro = np.sort(np.array(ref_distro).ravel())
         score = stats.kstest(stamp, ref_distro).statisic
     return score

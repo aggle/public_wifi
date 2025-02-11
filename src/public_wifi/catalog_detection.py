@@ -27,21 +27,56 @@ def normalize_array(x):
     mean, _, std = sigma_clipped_stats(x, sigma=1)
     return (x-mean)/std
 
-def compute_pixelwise_norm(stack: pd.Series):
-    """Normalize a series of images pixelwise"""
+# def compute_pixelwise_norm(stack: pd.Series):
+#     """Normalize a series of images pixelwise"""
+#     stamp_shape = np.stack(stack.values).shape[-2:]
+#     normed_stack = stack.apply(
+#         # this turns the series into a dataframe, where each column is one pixel
+#         lambda r: pd.Series(r.ravel())
+#     ).apply(
+#         # normalize down the columns
+#         normalize_array
+#     ).apply(
+#         # reshape the images
+#         lambda row: np.reshape(row, stamp_shape),
+#         axis=1
+#     )
+#     return normed_stack
+def compute_pixelwise_norm(stack : pd.Series) -> pd.Series:
+    """
+    Take a stack of images, and normalize each pixel against the other pixels at the same position. Return it back as images.
+    Index must have the following levels:
+        - cat_row
+        - target
+        - numbasis
+    """
+    try:
+        assert(all([i in stack.index.names for i in ['cat_row', 'target', 'numbasis']]))
+    except AssertionError as e:
+        print("Error: Index does not have required levels.")
+        raise(e)
     stamp_shape = np.stack(stack.values).shape[-2:]
-    normed_stack = stack.apply(
-        # this turns the series into a dataframe, where each column is one pixel
-        lambda r: pd.Series(r.ravel())
-    ).apply(
-        # normalize down the columns
-        normalize_array
-    ).apply(
-        # reshape the images
-        lambda row: np.reshape(row, stamp_shape),
-        axis=1
+    pixel_df = pd.concat(
+        stack.map(lambda img: pd.Series(np.ravel(img))).to_dict(),
+        names=list(stack.index.names) + ['pixel_id']
     )
-    return normed_stack
+    # compute the sigma-clipped mean and std, for scaling
+    pixel_df_mean = pixel_df.groupby(["cat_row","numbasis","pixel_id"]).apply(
+        lambda pixels: dutils.sigma_clipped_stats(pixels)[0]
+    )
+    pixel_df_std = pixel_df.groupby(["cat_row","numbasis","pixel_id"]).apply(
+        lambda pixels: dutils.sigma_clipped_stats(pixels)[-1]
+    )
+    # apply the scaling
+    pixel_df_norm = pixel_df.groupby(["cat_row","numbasis","pixel_id"], group_keys=False).apply(
+       lambda group: (group - pixel_df_mean.loc[group.name])/pixel_df_std.loc[group.name]
+    )
+    # convert it back into images for each target
+    pixel_df_norm_stamps = pixel_df_norm.groupby(["cat_row","numbasis","target"], group_keys=False).apply(
+        lambda pixels: np.reshape(pixels, stamp_shape)
+    )
+    return pixel_df_norm_stamps
+
 
 
 class CatDet:
@@ -69,7 +104,7 @@ class CatDet:
         # call a function that updates everything you need to update when Kklip or mf_width change
         self.all_results['pixelwise_snrmap'] = self.generate_pixelwise_snrmap(self.all_results, 'klip_sub_norm')
         self.all_results['pixelwise_detmap'] = self.generate_pixelwise_snrmap(self.all_results, 'detmap_norm')
-        self.all_results['candidates'] = self.find_sources(self.all_results['pixelwise_detmap'])
+        # self.all_results['candidates'] = self.find_sources(self.all_results['pixelwise_detmap'])
         self.results = self.filter_kklip(self.all_results, self.kklip)
         self.filter_maps()
 
