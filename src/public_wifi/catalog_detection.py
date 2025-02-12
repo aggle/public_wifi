@@ -170,12 +170,12 @@ class CatDet:
         In the final image, the value at each pixel represents the pixel's SNR
         in a different distribution from all the other pixels.
         """
-        snrmap = results_df[results_column].groupby(['cat_row', 'numbasis'], group_keys=False).apply(
+        column = results_df[results_column]
+        snrmap = column.groupby(['cat_row', 'numbasis'], group_keys=False).apply(
             compute_pixelwise_norm
         )
-        # # Kklip is redundant so let's remove it from the index
-        # snrmap.index = snrmap.index.droplevel("numbasis")
-        return snrmap
+        # make sure the indices are aligned with the original dataframe
+        return snrmap.reorder_levels(results_df.index.names).loc[results_df.index]
 
     def find_sources(self, snrmaps : pd.Series, threshold=3, npixels=1):
         "Run photutils' source detection algo on some SNR maps"
