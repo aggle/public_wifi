@@ -34,6 +34,9 @@ class Star:
     - klip_detect : apply detection methods to PSF-subtracted data products
     - klip_contrast : compute the contrast / detection limits
     """
+    def __repr__(self):
+        return f"Star {self.star_id}"
+
     def __init__(
             self,
             star_id : str,
