@@ -5,6 +5,7 @@ from scipy import stats
 from astropy.stats import sigma_clipped_stats
 
 from public_wifi import misc
+from public_wifi import matched_filter_utils as mf_utils
 
 def flag_candidate_pixels(
         maps : np.ndarray | pd.Series,
@@ -207,3 +208,67 @@ def compare_stamp_distribution(
         ref_distro = np.sort(np.array(ref_distro).ravel())
         score = stats.kstest(stamp, ref_distro).statisic
     return score
+
+
+def estimate_crossmf_filter_position(
+        crossmf_df : pd.DataFrame,
+        numbasis : list[int] | None = None,
+) -> pd.Series :
+    """
+    compute the position from a weighted sum of the cross-matched filter
+    results. The uncertainty is assumed to be half a pixel and the weight is
+    the normalized matched filter response.
+
+    Parameters
+    ----------
+    crossmf_df : pd.DataFrame
+      A dataframe with a detpos and detmap column
+    numbasis : list[int] | None = None
+      if provided, use these values of numbasis 
+
+    Output
+    ------
+    pos : pd.Series
+      a series with row, col, d_row, and d_col entries
+    """
+    
+    def estimate_kklip_position(group):
+        """
+        Compute the posiiton for many MF responses for a single Kklip
+        """
+        weights = group.apply(
+            lambda row: row['detmap'][*row['detpos']],
+            axis=1
+        )
+        weights = weights/weights.sum()
+        unc = 0.5 # 0.5 pixel uncertainty
+        weighted_pos = group['detpos'].apply(
+            lambda row: pd.Series(row, index=['row','col'])
+        ).apply(
+            lambda row: row*weights.loc[row.name], axis=1
+        ).sum()
+        # sigma**2 = sum(w_i**2 * sigma_i**2) w_i -> weight sigma_i -> uncertainty
+        weighted_unc =  weights.apply(
+            lambda row_wts: pd.Series(row_wts, index=['row','col'])
+        ).apply(
+            lambda row_wts: np.sqrt((row_wts**2) * (unc)**2), axis=1
+        ).apply(np.linalg.norm)
+        pos = pd.Series({
+            'row': weighted_pos['row'], 
+            'col': weighted_pos['col'], 
+            'd_row': weighted_unc['row'], 
+            'd_col': weighted_unc['col']
+        })
+        return pos
+
+    if numbasis is not None:
+        crossmf_df = crossmf_df.query(f"numbasis in {numbasis}")
+    pca_positions = crossmf_df.groupby(['numbasis']).apply(lambda group: estimate_kklip_position(group))
+    positions = {}
+    for i in ['row','col']:
+        weights = 1/pca_positions['d_'+i]**2
+        pos = np.sum(pca_positions[i] * weights / (weights.sum()))
+        unc = np.sqrt(1/weights.sum())
+        positions[i] = pos
+        positions['d_'+i] = unc
+    return pd.Series(positions)
