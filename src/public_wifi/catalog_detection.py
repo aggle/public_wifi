@@ -16,16 +16,13 @@ from public_wifi import matched_filter_utils as mf_utils
 
 def make_cdf(x):
     """Shorthand for making a CDF/EDF of all the values in an n-dimensional array"""
+    if isinstance(x, pd.Series):
+        x = x.to_numpy()
     return np.sort(x.ravel())
 
 def gaussian_cdf(mu=0, sigma=1, n=1000):
     return make_cdf(np.random.normal(mu, sigma, n))
 
-
-def normalize_array(x):
-    """Normalize an array with sigma-clipped stats"""
-    mean, _, std = sigma_clipped_stats(x, sigma=1)
-    return (x-mean)/std
 
 # def compute_pixelwise_norm(stack: pd.Series):
 #     """Normalize a series of images pixelwise"""
