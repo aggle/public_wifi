@@ -193,6 +193,44 @@ def find_injection(img : np.ndarray, pos : np.ndarray):
                 continue
     return max_pos
 
+def inject_and_subtract(
+        star,
+        row : pd.Series,
+        contrast : float,
+        pos : tuple[int],
+) -> pd.DataFrame:
+    """
+    Inject a PSF into a stamp and recover the SNR, as defined by the residuals
+    of the stamp itself.
+    This method is used by an optimization function to determine the contrast
+    at which a particular SNR is reached.
+
+    Parameters
+    ----------
+    star : sc.Star
+      A starclass.Star object
+    row : pd.Series
+      A row from the star.cat dataframe
+    contrast: float
+      Flux of injection relative to primary, as measured by the PSF model
+    pos : tuple[int]
+      (x, y) position of the injection measured from the central pixel of the
+      stamp
+
+    Output
+    ------
+    results : float
+      The SNR of of the candidate measured at the injection site
+    """
+
+    inj_row = row_inject_psf(
+        row, star=star, pos=pos, contrast=contrast, kklip=-1
+    )
+    results = star._row_klip_subtract(
+        inj_row,
+        **star.subtr_args,
+    )
+    return results
 
 def inject_subtract_detect(
         star, pos, contrast, use_kklip, n_modes = 3, snr_thresh=5,
