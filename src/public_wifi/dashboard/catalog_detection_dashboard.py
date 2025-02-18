@@ -108,6 +108,25 @@ def link_scrollers(
 
     return
 
+def link_multiindex_scrollers(
+        plot_dicts : dict,
+) -> None:
+    all_plots = list(plot_dicts.values())
+    for combo in combinations(all_plots, 2):
+        children = combo[0].children[1:]
+        # iterate over the scrollers and link both ways
+        for scroller0 in children:
+            scroller1 = combo[1].select_one(dict(name=scroller0.name))
+            scroller0.js_link(
+                "value", scroller1, "value"
+            )
+            print(f"{scroller0.name} linked to {scroller1.name}" )
+            scroller1.js_link(
+                "value", scroller0, "value"
+            )
+            print(f"{scroller1.name} linked to {scroller0.name}" )
+    return
+
 def detection_layout(
     anamgr : analysis_manager.AnalysisManager,
     plot_size = 400,
@@ -229,5 +248,23 @@ def detection_dashboard(
         lyt = detection_layout(anamgr, plot_size)
 
         doc.title = "PUBLIC-WIFI Dashboard"
+        doc.add_root(lyt)
+    return app
+
+def linked_multiindex_display(
+        scrollers : dict
+):
+    """
+    Link scrollers with the same names in two multiindex scrollers
+    """
+    def app(doc):
+        link_multiindex_scrollers(scrollers)
+        lyt = bklyts.layout(
+            [
+                bklyts.row(
+                    *[scrollers[k] for k in scrollers.keys()],
+                )
+            ]
+        )
         doc.add_root(lyt)
     return app

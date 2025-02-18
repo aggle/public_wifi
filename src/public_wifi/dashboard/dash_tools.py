@@ -44,7 +44,6 @@ def standalone(func):
     return appwrap
 
 
-
 ### Helper functions for standardizing data input ###
 def img_to_CDS(
         img : np.ndarray,
@@ -233,7 +232,7 @@ def generate_cube_scroller_widget(
       
     """
     if isinstance(source, pd.Series):
-        source = series_to_CDS(source)
+        source = multiindex_series_to_CDS(source)
 
     TOOLS = "box_select,pan,reset"
 
@@ -499,21 +498,19 @@ def generate_multiindex_cube_scroller_widget(
     # Sliders
     # index_cols = sorted([k for k in cds.data.keys() if 'index' in k])
     sliders = OrderedDict()
-    for name in source.data['cube'][0].index.names:
+    for i, name in enumerate(source.data['cube'][0].index.names):
         categories = source.data['cube'][0].index.get_level_values(name).unique()
         categories = categories.astype(str)
+        # for one-dimensional indexes, this is a tuple and you'll need to index it
+        init_value = source.data['i'][0]
         sliders[name] = bkmdls.CategoricalSlider(
             show_value=True,
             title=name,
             categories=categories,
-            value=categories[0],
+            value=str(init_value) if np.ndim(init_value) == 0 else str(init_value[i]),
             name='slider_'+name,
         )
     # get names and types of index levels
-    # if source.data['cube'][0].index.nlevels > 1:
-    #     dtypes = source.data['cube'][0].index.dtypes
-    # else:
-    #     dtypes = [source.data['cube'][0].index.dtype]
     index = source.data['cube'][0].index
     names = index.names
     dtypes = [index.get_level_values(name).dtype for name in names]
