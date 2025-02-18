@@ -146,7 +146,7 @@ class CatDet:
         results['klip_sub_std'] = results['klip_sub'].apply(
             lambda img: sigma_clipped_stats(img, sigma=1)[-1]
         )
-        results['klip_sub_norm'] = results['klip_sub'].map(normalize_array)
+        results['klip_sub_norm'] = results['klip_sub'].map(mf_utils.normalize_array_sigmaclip)
         # apply the matched filters to the normalized residual stamps
         results['mf_map_norm'] = results.apply(
             lambda row:  mf_utils.correlate(
