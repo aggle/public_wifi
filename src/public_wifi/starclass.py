@@ -674,6 +674,7 @@ def apply_mf_to_pca_results(
         init_pca_results : pd.DataFrame,
         mf_width : int | None = None,
         det_pos : tuple[int] | None = None,
+        normalize_stamp_sigma : bool = False,
 ):
     """
     Apply matched filtering to the star.pca_results dataframe
@@ -689,7 +690,6 @@ def apply_mf_to_pca_results(
     detpos : the brightest pixel in the detmap
     detmap_posflux : the flux of the detpos pixel in the detmap
     fluxmap_posflux : the flux of the detpos pixel in the fluxmap
-
     Parameters
     ----------
     init_pca_results : pd.DataFrame
@@ -697,8 +697,11 @@ def apply_mf_to_pca_results(
       vector, model, and residual
     mf_width : int | None = None
       the width of the matched filter. If None, set equal to the stamp size
-    det_pos : if provided, use this position for recovering the flux
-      useful for fake injection and recovery
+    det_pos : tuple[row, col]
+      if provided, use this position for recovering the flux.
+      useful for fake injection and recovery. Note: row, col coordinates from lower left(not x, y from center)
+    normalize_stamp_sigma : bool = False
+      If True, normalize the PCA residuals before applying the matched filter
 
     Output
     ------
@@ -707,6 +710,8 @@ def apply_mf_to_pca_results(
 
     """
     pca_results = init_pca_results.copy()
+    if normalize_stamp_sigma:
+        pca_results['klip_sub'] = pca_results['klip_sub'].apply(mf_utils.normalize_array_sigmaclip)
     pca_results['mf'] = pca_results['klip_model'].apply(
         mf_utils.make_matched_filter, width=mf_width
     )
