@@ -13,7 +13,7 @@ from bokeh.server.server import Server
 catalog_file = sc.Path("~/Projects/Research/hst17167-ffp/catalogs/targets_drc-low_snr.csv")
 data_folder = sc.Path("~/Projects/Research/hst17167-ffp/data/HST/")
 
-catalog = catproc.load_catalog(catalog_file, 50)[:30]
+catalog = catproc.load_catalog(catalog_file, 50)
 
 
 # load file with list of bad references
@@ -50,10 +50,8 @@ print(f"Elapsed time to instantiate AnalysisManager object: {t1-t0:0f} seconds."
 
 
 if __name__ == "__main__":
-    print("Displaying dashboard")
     dash = sd.all_stars_dashboard(anamgr, plot_size=350)
-    t2 = time.time()
-    print(f"Elapsed time to create and display dashboard: {t2-t1} seconds.")
+    print("\nDisplaying dashboard\n")
     port = 5007
     apps = {'/': dash}
     server = Server(apps, port=port)

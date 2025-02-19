@@ -5,10 +5,12 @@ These tools use the whole catalog to measure detections
 import numpy as np
 import pandas as pd
 import warnings
+from public_wifi.misc import shift_stamp_to_center
 from scipy.stats import zscore, shapiro
 from astropy.stats import sigma_clipped_stats
 from photutils.segmentation import detect_sources
 
+from public_wifi import misc
 from public_wifi import starclass
 from public_wifi import contrast_utils as cutils
 from public_wifi import detection_utils as dutils
@@ -189,29 +191,56 @@ class CatDet:
 
 
 def snr_vs_catalog(
-        star : starclass.Star,
-        catalog : pd.Series,
-        kklip : int = 10,
-        col : str = 'detmap'
+        results_stack : pd.Series,
+        target_id : str,
+        drop_stars : list[str] = []
 ) -> np.ndarray:
     """
     Compute the pixel-wise SNR of a stamp against the catalog.
+    You may want to first apply the cross-catalog matched filter and the pick the brightest value across the matched filters
 
     Parameters
     ----------
-    star : starclass.Star
-      The test star
-    catalog : pd.Series
-      the other stars (if `star` is in this series, it will be excluded from the analysis)
-    kklip : int = 10
-      The Kklip index to compare
-    col : str = 'detmap'
-      which column of the star.results dataframe to use
+    results_stack : pd.Series
+        A series of images indexed by: target_star, cat_row, numbasis
+    target_id : str
+        The identifier of the target star
+    drop_stars : list[str]
+        Any stars to exclude from the reference set
 
     Output
     ------
     snr_map : np.array
       A map of each pixel's SNR measured against that pixel in the catalog
     """
-    pass # insert body here
+    target_pix = results_stack.loc[target_id].apply(mf_utils.normalize_array_sigmaclip)
+    stamp_shape = np.stack(target_pix).shape[-2:]
+    reference_pixels = results_stack.drop([target_id] + drop_stars, level='target_star').apply(
+        lambda img: pd.Series(np.ravel(img), name='pixel_id')
+    ).apply(
+        # normalize each stamp to sigma=1
+        lambda pix: mf_utils.normalize_array_sigmaclip(pix),
+        axis=1
+    )
+    reference_mean = reference_pixels.groupby(["cat_row", "numbasis"]).apply(
+        # compute the sigma-clipped STD for each pixel
+        lambda group: group.apply(lambda pix: dutils.sigma_clipped_stats(pix)[0])
+    ).apply(
+        # reshape into images
+        np.reshape,
+        shape=stamp_shape,
+        axis=1
+    )
+    reference_std = reference_pixels.groupby(["cat_row", "numbasis"]).apply(
+        # compute the sigma-clipped STD for each pixel
+        lambda group: group.apply(lambda pix: dutils.sigma_clipped_stats(pix)[-1])
+    ).apply(
+        # reshape into images
+        np.reshape,
+        shape=stamp_shape,
+        axis=1
+    )
+    snr_stack = (target_pix - reference_mean)/reference_std
+    return snr_stack
+
 
