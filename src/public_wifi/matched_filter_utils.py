@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 
+import time
 from scipy.signal import correlate
 from astropy.convolution import convolve
 from astropy.nddata import Cutout2D
@@ -225,7 +226,7 @@ def cross_apply_matched_filters(
         resid_col : str = 'klip_sub',
         normalize_residuals : bool = False,
         convert_to_flux : bool = True,
-
+        verbose : bool = False,
 ) -> pd.DataFrame :
     """
     Use other stars' PSFs as the matched filter. This allows us to sample the
@@ -248,6 +249,8 @@ def cross_apply_matched_filters(
       Also, skip flux conversion since that is meaningless now.
     convert_to_flux : bool = True
       If True, correct by PCA throughput to get the flux and contrast. If False, skip
+    verbose : bool = False
+      If True, print "finished" when finished
 
     Output
     ------
@@ -260,6 +263,8 @@ def cross_apply_matched_filters(
         square of the mf convolved with the KLIP modes, and fluxmap is the mf
         result divided by the throughput (norm - pca_bias)
     """
+    if verbose:
+        t0 = time.time()
     # Set the max Kklip value, and filter down to the requested values
     max_kklip = all_stars.apply(lambda star: star.results.index.get_level_values("numbasis").max()).min()
     if isinstance(numbasis, int):
@@ -334,6 +339,10 @@ def cross_apply_matched_filters(
             lambda row: row['fluxmap'] / target_subset['mf_prim_flux'].loc[row.name[1:]],
             axis=1
         )
+    if verbose:
+        t1 = time.time()
+        dt = t1-t0
+        print(f"Cross-matched filtering finished after {int(dt)} seconds.")
 
     return crossmf
 
