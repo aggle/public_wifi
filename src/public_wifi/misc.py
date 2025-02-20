@@ -84,3 +84,37 @@ def ll_to_center_coords(stamp_size, pix):
     center = get_stamp_center(stamp_size)
     center_coord = np.array(pix) - center
     return center_coord
+
+def get_annuli(
+        stamp_size : int,
+        width : int = 2,
+        rolling : bool = False,
+) -> tuple[float, tuple[tuple[np.ndarray]]] :
+    """
+    Return a list of indices that define successive annuli of the stamp
+
+    Parameters
+    ----------
+    stamp_size : int
+      The one-sided size of the stamp
+    width : int = 2
+      width in pixels of the annuli
+    rolling : bool = False
+      if True, the annuli overlap by half the width
+
+    Output
+    ------
+    annuli : dict
+      Key is the whole-integer radius. Value is the list of coordinates
+
+    """
+    radii = get_pix_separation_from_center(stamp_size)
+    overlap = width/2 if rolling else 0
+    max_width = int(np.floor(stamp_size/2)) - width
+    annuli = []
+    for i in np.arange(0, max_width+overlap+1, width - overlap):
+         pix = np.where((radii >= i) & (radii < i+width))
+         sep = np.mean(radii[pix])
+         annuli.append((sep, pix))
+    return annuli
+
