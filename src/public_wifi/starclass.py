@@ -675,6 +675,7 @@ def apply_mf_to_pca_results(
         mf_width : int | None = None,
         det_pos : tuple[int] | None = None,
         normalize_stamp_sigma : bool = False,
+        convert_to_flux : bool = True,
 ):
     """
     Apply matched filtering to the star.pca_results dataframe
@@ -702,6 +703,8 @@ def apply_mf_to_pca_results(
       useful for fake injection and recovery. Note: row, col coordinates from lower left(not x, y from center)
     normalize_stamp_sigma : bool = False
       If True, normalize the PCA residuals before applying the matched filter
+    convert_to_flux : bool = True
+      If True, compute the PCA throughput and rescale. If False, skip all that.
 
     Output
     ------
@@ -723,13 +726,6 @@ def apply_mf_to_pca_results(
     pca_results['mf_norm'] = pca_results['mf'].apply(
         mf_utils.compute_throughput, klmodes=None
     )
-    pca_results['pca_bias'] = pca_results.apply(
-        lambda row: mf_utils.compute_pca_bias(
-            row['mf'],
-            modes=pca_results.loc[:row.name, 'klip_basis']
-        ).iloc[-1],
-        axis=1
-    )
     pca_results['mf_map'] = pca_results.apply(
         lambda row:  mf_utils.correlate(
             row['klip_sub'],
@@ -740,9 +736,6 @@ def apply_mf_to_pca_results(
         axis=1
     )
     pca_results['detmap'] = pca_results['mf_map']/pca_results['mf_norm']
-    thpt = (pca_results['mf_norm'] - pca_results['pca_bias'])
-    pca_results['fluxmap'] = pca_results['mf_map']/thpt
-    pca_results['contrastmap'] = pca_results['fluxmap']/pca_results['mf_prim_flux']
 
     if det_pos is None:
         pca_results['detpos'] = pca_results['detmap'].apply(
@@ -755,10 +748,24 @@ def apply_mf_to_pca_results(
         lambda row: row['detmap'][*row['detpos']],
         axis=1
     )
-    pca_results['fluxmap_posflux'] = pca_results.apply(
-        lambda row: row['fluxmap'][*row['detpos']],
-        axis=1
-    )
+
+    # only go through with computing the PCA bias if this is requested
+    if convert_to_flux:
+        pca_results['pca_bias'] = pca_results.apply(
+            lambda row: mf_utils.compute_pca_bias(
+                row['mf'],
+                modes=pca_results.loc[:row.name, 'klip_basis']
+            ).iloc[-1],
+            axis=1
+        )
+        thpt = (pca_results['mf_norm'] - pca_results['pca_bias'])
+        pca_results['fluxmap'] = pca_results['mf_map']/thpt
+        pca_results['contrastmap'] = pca_results['fluxmap']/pca_results['mf_prim_flux']
+
+        pca_results['fluxmap_posflux'] = pca_results.apply(
+            lambda row: row['fluxmap'][*row['detpos']],
+            axis=1
+        )
     return pca_results
 
 
