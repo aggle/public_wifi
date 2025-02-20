@@ -213,6 +213,7 @@ def compare_stamp_distribution(
 def estimate_crossmf_filter_position(
         crossmf_df : pd.DataFrame,
         numbasis : list[int] | None = None,
+        base_uncertainty : float = 0.5,
 ) -> pd.Series :
     """
     compute the position from a weighted sum of the cross-matched filter
@@ -225,13 +226,14 @@ def estimate_crossmf_filter_position(
       A dataframe with a detpos and detmap column
     numbasis : list[int] | None = None
       if provided, use these values of numbasis 
+    base_uncertainty : float = 0.5
+      uncertainty of the centroid in pixel units
 
     Output
     ------
     pos : pd.Series
       a series with row, col, d_row, and d_col entries
     """
-    
     def estimate_kklip_position(group):
         """
         Compute the posiiton for many MF responses for a single Kklip
@@ -241,7 +243,6 @@ def estimate_crossmf_filter_position(
             axis=1
         )
         weights = weights/weights.sum()
-        unc = 0.5 # 0.5 pixel uncertainty
         weighted_pos = group['detpos'].apply(
             lambda row: pd.Series(row, index=['row','col'])
         ).apply(
@@ -251,12 +252,12 @@ def estimate_crossmf_filter_position(
         weighted_unc =  weights.apply(
             lambda row_wts: pd.Series(row_wts, index=['row','col'])
         ).apply(
-            lambda row_wts: np.sqrt((row_wts**2) * (unc)**2), axis=1
+            lambda row_wts: np.sqrt((row_wts**2) * (base_uncertainty)**2), axis=1
         ).apply(np.linalg.norm)
         pos = pd.Series({
-            'row': weighted_pos['row'], 
-            'col': weighted_pos['col'], 
-            'd_row': weighted_unc['row'], 
+            'row': weighted_pos['row'],
+            'col': weighted_pos['col'],
+            'd_row': weighted_unc['row'],
             'd_col': weighted_unc['col']
         })
         return pos
@@ -272,3 +273,4 @@ def estimate_crossmf_filter_position(
         positions[i] = pos
         positions['d_'+i] = unc
     return pd.Series(positions)
+
