@@ -87,7 +87,7 @@ class Star:
         self.subtr_args = subtr_args
         self.det_args = det_args
         # values that are initialized by methods
-        self._cutout_pad = 2
+        self._cutout_pad = 0
         self.cat['cutout'] = self.cat.apply(
             lambda row: self._get_cutout(row, stamp_size, pad=self._cutout_pad),
             axis=1,
