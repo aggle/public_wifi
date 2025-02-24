@@ -213,7 +213,7 @@ def compare_stamp_distribution(
 def estimate_crossmf_filter_position(
         crossmf_df : pd.DataFrame,
         numbasis : list[int] | None = None,
-        base_uncertainty : float = 0.5,
+        base_uncertainty : float = 1,
 ) -> pd.Series :
     """
     compute the position from a weighted sum of the cross-matched filter
@@ -226,7 +226,7 @@ def estimate_crossmf_filter_position(
       A dataframe with a detpos and detmap column
     numbasis : list[int] | None = None
       if provided, use these values of numbasis 
-    base_uncertainty : float = 0.5
+    base_uncertainty : float = 1
       uncertainty of the centroid in pixel units
 
     Output
