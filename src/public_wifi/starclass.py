@@ -89,7 +89,11 @@ class Star:
         # values that are initialized by methods
         self._cutout_pad = 0
         self.cat['cutout'] = self.cat.apply(
-            lambda row: self._get_cutout(row, stamp_size, pad=self._cutout_pad),
+            lambda row: self._get_cutout(row, stamp_size, ext='SCI', pad=self._cutout_pad),
+            axis=1,
+        )
+        self.cat['cutout_err'] = self.cat.apply(
+            lambda row: self._get_cutout(row, stamp_size, ext='WHT', pad=self._cutout_pad),
             axis=1,
         )
         # measure the background
