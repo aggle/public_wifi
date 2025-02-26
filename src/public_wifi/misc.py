@@ -6,6 +6,27 @@ import pandas as pd
 from photutils.centroids import centroid_2dg as centroid_func
 from scipy import ndimage
 
+def get_stamp_shape(stamp : int | np.ndarray | pd.Series) -> np.ndarray:
+    """
+    Get the 2-d shape of a stamp given an int, array, or series
+
+    Parameters
+    ----------
+    stamp : int | np.ndarray | pd.Series
+      Either the length of one side, a 2-D image, or a Series of 2-D images
+    Output
+    ------
+    shape : tuple[int]
+      the (row, col) shape
+    """
+    if isinstance(stamp, int):
+        shape = np.tile(stamp, 2)
+    elif isinstance(stamp, pd.Series):
+        shape = np.stack(stamp.values).shape[-2:]
+    else:
+        shape = stamp.shape[-2:]
+    return shape
+
 def get_stamp_center(stamp : int | np.ndarray | pd.Series) -> np.ndarray:
     """
     Get the central pixel of a stamp or cube
@@ -19,12 +40,7 @@ def get_stamp_center(stamp : int | np.ndarray | pd.Series) -> np.ndarray:
     center : np.ndarray
       the center in (x, y)/(col, row) format
     """
-    if isinstance(stamp, int):
-        shape = np.tile(stamp, 2)
-    elif isinstance(stamp, pd.Series):
-        shape = np.stack(stamp.values).shape[-2:]
-    else:
-        shape = stamp.shape[-2:]
+    shape = get_stamp_shape(stamp)
     center = np.floor(np.array(shape)/2).astype(int)
     return center
 
