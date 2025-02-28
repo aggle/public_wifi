@@ -584,25 +584,13 @@ def all_stars_dashboard(
                 ),
             ]),
         )
+        plots_to_show = ['klip_residuals', 'snr_maps', 'det_maps', 'klip_jackknife']
         tab2 = bkmdls.TabPanel(
             title='KLIP results',
-            child= bklyts.layout([
-                # the target selectors
-                bklyts.row(
-                    plot_dicts[0]['klip_residuals'],
-                    plot_dicts[0]['snr_maps'],
-                    # plot_dicts[0]['klip_mf'],
-                    plot_dicts[0]['det_maps'],
-                    plot_dicts[0]['klip_jackknife'],
-                ),
-                bklyts.row(
-                    plot_dicts[1]['klip_residuals'],
-                    plot_dicts[1]['snr_maps'],
-                    # plot_dicts[1]['klip_mf'],
-                    plot_dicts[1]['det_maps'],
-                    plot_dicts[1]['klip_jackknife'],
-                ),
-            ]),
+            child = bklyts.layout([bklyts.row(
+                *[plot_dicts[i][plot_kw] for plot_kw in plots_to_show]
+            ) for i in sorted(plot_dicts.keys())
+            ])
         )
         tab3 = bkmdls.TabPanel(
             title = 'Catalog detection maps',

@@ -350,6 +350,7 @@ def cross_apply_matched_filters(
 def select_brightest_pixel(mf_stack, return_index=False):
     """
     For a variety of matched filters, select the strongest response at each pixel. Collapse the mf_star index
+    if return_index, then instead of the brightest pixel value, you give the matched filter to use for that index
     """
     # group by all indices except `mf_star`
     names = list(mf_stack.index.names)
