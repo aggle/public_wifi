@@ -291,13 +291,15 @@ def all_stars_dashboard(
     anamgr : analysis_manager.AnalysisManager,
     plot_size = 400,
 ):
+    # drop these columns from the display
+    exclude_columns = ["cutout", "cutout_err", "stamp"]
     # This returns a Bokeh application that takes a doc for displaying
     def app(doc):
 
         init_star = anamgr.stars.index[0]
 
         catalog_cds, catalog_table = make_catalog_display(
-            anamgr.stars.loc[init_star].cat.drop(["cutout", "stamp" ], axis=1),
+            anamgr.stars.loc[init_star].cat.drop(exclude_columns, axis=1),
             70*len(anamgr.stars.loc[init_star].cat.columns),
         )
         # candidates table
@@ -366,7 +368,7 @@ def all_stars_dashboard(
             )
         def update_catalog_cds():
            catalog_cds.data.update(
-               anamgr.stars.loc[star_selector.value].cat.drop(["cutout", "stamp" ], axis=1)
+               anamgr.stars.loc[star_selector.value].cat.drop(exclude_columns, axis=1)
            )
 
         def update_cds_dicts():
