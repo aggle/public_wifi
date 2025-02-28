@@ -335,6 +335,7 @@ def all_stars_dashboard(
         )
         def change_star(attrname, old_id, new_id):
             ## update the data structures and scroller limits
+            star_name_display.value = new_id
             update_reference_switch()
             update_candidates_switch()
             update_catalog_cds()
@@ -343,10 +344,7 @@ def all_stars_dashboard(
             update_cube_scrollers()
         star_selector.on_change("value", change_star)
         # Print a star name to terminal for copying
-        print_button = bkmdls.Button(label="Print star name", button_type="default")
-        def print_star_name():
-            print(star_selector.value)
-        print_button.on_click(print_star_name)
+        star_name_display = bkmdls.TextInput(value=star_selector.value)
 
         def update_reference_switch():
             status  = anamgr.stars.loc[star_selector.value].is_good_reference
@@ -617,7 +615,7 @@ def all_stars_dashboard(
         lyt = bklyts.layout(
             [
                 bklyts.row(
-                    bklyts.column(star_selector, print_button),
+                    bklyts.column(star_selector, star_name_display),
                     catalog_table,
                 ),
                 bklyts.row(
