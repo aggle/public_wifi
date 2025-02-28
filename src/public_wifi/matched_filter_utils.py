@@ -41,7 +41,6 @@ def normalize_array_sigmaclip(x):
 def make_matched_filter(
         stamp : np.ndarray,
         width : int | None = None,
-        center : bool = False
 ):
     # take in an arbitrary PSF stamp and turn it into a matched filter
     stamp = stamp.copy()
