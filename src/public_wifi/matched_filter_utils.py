@@ -89,7 +89,8 @@ def apply_matched_filter_to_stamp(
         target_stamp,
         matched_filter,
         method='direct',
-        mode=correlate_mode)
+        mode=correlate_mode
+    )
     # this returns the MF norm if kl_basis is None, else a pd.Series
     throughput = compute_throughput(matched_filter, klmodes=kl_basis)
     if isinstance(throughput, pd.Series):
@@ -99,6 +100,9 @@ def apply_matched_filter_to_stamp(
             throughput[*center] = np.nan
     mf_map = mf_map / throughput
     return mf_map
+
+
+
 
 def compute_throughput(mf, klmodes=None) -> float | pd.Series:
     """
@@ -226,6 +230,7 @@ def cross_apply_matched_filters(
         normalize_residuals : bool = False,
         convert_to_flux : bool = True,
         verbose : bool = False,
+        det_pos : tuple[int] | None = None,
 ) -> pd.DataFrame :
     """
     Use other stars' PSFs as the matched filter. This allows us to sample the
@@ -250,6 +255,10 @@ def cross_apply_matched_filters(
       If True, correct by PCA throughput to get the flux and contrast. If False, skip
     verbose : bool = False
       If True, print "finished" when finished
+    det_pos : tuple[row, col]
+      if provided, use this position for recovering the flux.
+      useful for fake injection and recovery. Note: row, col coordinates from
+      lower left(not x, y from center) to run faster
 
     Output
     ------
@@ -366,7 +375,11 @@ def line_up_matched_filter_with_pos(
         modes : pd.Series,
         pos : tuple[int]
 ) -> np.ndarray:
-    """pos is in (row, col) convention"""
+    """
+    pos is in (row, col) convention
+    this is used for reducing the time it takes to compute the PCA bias, if you
+    are only interested in one position.
+    """
     mode_shape = np.stack(modes).shape[-2:]
     # get the boundaries
     mf_half = misc.get_stamp_center(mf)
@@ -400,3 +413,100 @@ def line_up_matched_filter_with_pos(
     else:
         pass
     return mf_padded
+
+
+
+def apply_matched_filters_to_results(
+        mfs : pd.Series,
+        init_pca_results : pd.DataFrame,
+        det_pos : tuple[int] | None = None,
+        normalize_stamp_sigma : bool = False,
+        convert_to_flux : bool = True,
+) -> pd.DataFrame :
+    """
+    Apply the matched filters to the pca results, which can be the entire
+    results dataframe, a single row out of the dataframe, or a subset.
+
+    Parameters
+    ----------
+    mf : pd.Series
+      the matched filter. Index is the Kklip
+    pca_results : pd.Series | pd.DataFrame
+      PCA results with columns klip_sub, klip_basis, klip_model. If a Series,
+      will be turned into a one-row dataframe. Indexed by Kklip
+    det_pos : tuple[row, col]
+      if provided, use this position for recovering the flux.
+      useful for fake injection and recovery. Note: row, col coordinates from
+      lower left(not x, y from center)
+    normalize_stamp_sigma : bool = False
+      If True, normalize the PCA residuals before applying the matched filter
+    convert_to_flux : bool = True
+      If True, compute the PCA throughput and rescale. If False, skip all that.
+
+    Output
+    ------
+    mf_results : pd.Series | pd.DataFrame
+      adds the following columns to the dataframe: 
+
+    """
+    pca_results = init_pca_results.copy()
+    pca_results['mf'] = pd.Series(
+        [mf for mf in pca_results.index],
+        index=pca_results.index
+    )
+    pca_results['mf_prim_flux'] = pca_results.apply( 
+        lambda row: measure_primary_flux(row['klip_model'], mf),
+        axis=1
+    )
+    pca_results['mf_norm'] = pca_results['mf'].apply(
+        compute_throughput, klmodes=None
+    )
+
+
+def measure_primary_flux(
+        stamp : np.ndarray,
+        psf_model : np.ndarray,
+        mf_args = {}
+) -> float :
+    """
+    Measure the flux of an unsubtracted PSF
+
+    Parameters
+    ----------
+    stamp : np.ndarray
+      2-D stamp with a star in the middle
+    psf_model : np.ndarray
+      a model of the PSF to use for flux measurement
+    mf_args : {}
+      Arguments to pass to mf_utils.apply_matched_filter_to_stamp
+      Defaults: mf_width=None, correlate_mode='same', and kl_basis=None
+
+    Output
+    ------
+    flux : float
+      the flux of the primary
+    """
+    # mf = mf_utils.make_matched_filter(model_psf)
+    # collect arguments
+    kwargs = dict(
+        mf_width = mf_args.get("mf_width", min(psf_model.shape)),
+        correlate_mode=mf_args.get('correlate_mode', 'valid'),
+        kl_basis=mf_args.get('kl_basis', None),
+    )
+    star_flux = apply_matched_filter_to_stamp(
+        stamp, psf_model,
+        **kwargs,
+    )
+    center = misc.get_stamp_center(star_flux)
+    return star_flux[*center[::-1]]
+
+
+def get_brightest_map(maps : pd.Series, max_index : pd.Series):
+    """For each pixel, pick out the MF response specified by the index"""
+    shape = misc.get_stamp_shape(maps)
+    best_map = maps.apply(
+        lambda img: pd.Series(np.ravel(img))
+    ).apply(
+        lambda col: col[max_index[col.name]]
+    )
+    return best_map.to_numpy().reshape(shape)

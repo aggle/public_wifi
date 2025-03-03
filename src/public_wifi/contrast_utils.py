@@ -11,43 +11,8 @@ from public_wifi import matched_filter_utils as mf_utils
 from public_wifi import catalog_processing as catproc
 
 
-def measure_primary_flux(
-        stamp : np.ndarray,
-        psf_model : np.ndarray,
-        mf_args = {}
-) -> float :
-    """
-    Measure the flux of an unsubtracted PSF
-
-    Parameters
-    ----------
-    stamp : np.ndarray
-      2-D stamp with a star in the middle
-    psf_model : np.ndarray
-      a model of the PSF to use for flux measurement
-    mf_args : {}
-      Arguments to pass to mf_utils.apply_matched_filter_to_stamp
-      Defaults: mf_width=None, correlate_mode='same', and kl_basis=None
-
-    Output
-    ------
-    flux : float
-      the flux of the primary
-    """
-    # mf = mf_utils.make_matched_filter(model_psf)
-    # collect arguments
-    kwargs = dict(
-        mf_width = mf_args.get("mf_width", min(psf_model.shape)),
-        correlate_mode=mf_args.get('correlate_mode', 'valid'),
-        kl_basis=mf_args.get('kl_basis', None),
-    )
-    star_flux = mf_utils.apply_matched_filter_to_stamp(
-        stamp, psf_model,
-        **kwargs,
-    )
-    center = misc.get_stamp_center(star_flux)
-    return star_flux[*center[::-1]]
-
+# for legacy compatibility
+measure_primary_flux = mf_utils.measure_primary_flux
 
 def inject_psf(
         stamp : np.ndarray,

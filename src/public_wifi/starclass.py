@@ -680,6 +680,7 @@ def apply_mf_to_pca_results(
         det_pos : tuple[int] | None = None,
         normalize_stamp_sigma : bool = False,
         convert_to_flux : bool = True,
+        mf_kklip : int | None = None
 ):
     """
     Apply matched filtering to the star.pca_results dataframe
@@ -695,6 +696,8 @@ def apply_mf_to_pca_results(
     detpos : the brightest pixel in the detmap
     detmap_posflux : the flux of the detpos pixel in the detmap
     fluxmap_posflux : the flux of the detpos pixel in the fluxmap
+    contrastmap_posflux : the contrast at the detpos pixel
+
     Parameters
     ----------
     init_pca_results : pd.DataFrame
@@ -709,6 +712,8 @@ def apply_mf_to_pca_results(
       If True, normalize the PCA residuals before applying the matched filter
     convert_to_flux : bool = True
       If True, compute the PCA throughput and rescale. If False, skip all that.
+    mf_kklip : int | None
+      use this kklip to select the matched filter
 
     Output
     ------
@@ -718,10 +723,18 @@ def apply_mf_to_pca_results(
     """
     pca_results = init_pca_results.copy()
     if normalize_stamp_sigma:
-        pca_results['klip_sub'] = pca_results['klip_sub'].apply(mf_utils.normalize_array_sigmaclip)
-    pca_results['mf'] = pca_results['klip_model'].apply(
-        mf_utils.make_matched_filter, width=mf_width
-    )
+        pca_results['klip_sub'] = pca_results['klip_sub'].apply(
+            mf_utils.normalize_array_sigmaclip
+        )
+    if mf_kklip is not None:
+        pca_results['mf'] = pca_results.apply(
+            lambda row: mf_utils.make_matched_filter(pca_results.loc[mf_kklip, 'klip_model'], width=mf_width),
+            axis=1
+        )
+    else:
+        pca_results['mf'] = pca_results['klip_model'].apply(
+            mf_utils.make_matched_filter, width=mf_width
+        )
     # primary star flux as measured by the matched filter
     pca_results['mf_prim_flux'] = pca_results.apply( 
         lambda row: cutils.measure_primary_flux(row['klip_model'], row['mf']),
@@ -768,6 +781,10 @@ def apply_mf_to_pca_results(
 
         pca_results['fluxmap_posflux'] = pca_results.apply(
             lambda row: row['fluxmap'][*row['detpos']],
+            axis=1
+        )
+        pca_results['contrastmap_posflux'] = pca_results.apply(
+            lambda row: row['contrastmap'][*row['detpos']],
             axis=1
         )
     return pca_results
