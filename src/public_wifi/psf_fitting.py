@@ -9,13 +9,16 @@ from matplotlib import pyplot as plt
 import emcee
 import corner
 
+from IPython.display import display, Math
+
 from public_wifi import misc
 
 def star2epsf(star, cat_row_ind : int) -> pupsf.epsf_stars.EPSFStar:
     """Convert a star to an EPSF object"""
     stamp = star.cat.loc[cat_row_ind, 'cutout'].data
-    # weights = star.cat.loc[cat_row_ind, 'cutout_err'].data
-    weights = np.sqrt(stamp - stamp.min())
+    # normalize the stamp to max 1
+    weights = star.cat.loc[cat_row_ind, 'cutout_err'].data
+    # weights = np.sqrt(stamp - stamp.min())
     center = misc.get_stamp_center(stamp)[::-1]
     epsf = pupsf.EPSFStar(
         stamp,
@@ -172,3 +175,13 @@ class FitStar:
             q = np.diff(mcmc)
             values[label] = (mcmc[1], *q)
         self.estimates = values
+
+    def print_estimates(self):
+        for label, est in self.estimates.items():
+            txt = "\mathrm{{{3}}} = {0:.3f}_{{-{1:.3f}}}^{{{2:.3f}}}"
+            txt = txt.format(est[0], est[1], est[2], label)
+            display(Math(txt))
+
+
+
+
