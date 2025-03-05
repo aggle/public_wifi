@@ -61,23 +61,30 @@ def construct_epsf(
 
 
 class FitStar:
-    def __init__(self, star, epsf, cat_row_ind, use_kklip : int = 0):
+    def __init__(self, stamp, epsf, stamp_unc : np.ndarray = None):
         self.epsf = epsf
-        self.star = star
-        if use_kklip > 0:
-            self.stamp = star.results['klip_model'].loc[cat_row_ind, use_kklip]
-        else:
-            self.stamp = star.cat.loc[cat_row_ind, 'stamp']
-        self.stamp_unc = np.sqrt(self.stamp - self.stamp.min())
+        self.stamp = stamp
+        self.center = misc.get_stamp_center(stamp)
+        # self.star = star
+        # if use_kklip > 0:
+        #     self.stamp = star.results['klip_model'].loc[cat_row_ind, use_kklip]
+        # else:
+        #     self.stamp = star.cat.loc[cat_row_ind, 'stamp']
+        self.stamp_unc = stamp_unc
+        if self.stamp_unc is None:
+            self.stamp_unc = np.sqrt(self.stamp - self.stamp.min()) + 1e-4*np.ptp(stamp)/stamp.max()
         self.sampler = None
-        self.labels = ["f", "x", "y", "log(f)"]
+        self.labels = ["f", "x", "y"]#, "log(f)"]
         self.initial_values = self.get_default_initial_estimates()
+        self.ygrid, self.xgrid = np.mgrid[:self.stamp.shape[0], :self.stamp.shape[1]]
+        self.xgrid -= self.center[0]
+        self.ygrid -= self.center[1]
 
     def get_default_initial_estimates(self):
-        x0, y0 = misc.get_stamp_center(self.stamp)
+        x0, y0 = 0.0, 0.0 #np.unravel_index(np.argmax(self.stamp), self.stamp.shape)[::-1]
         f0 = self.stamp.max()
-        log_f = 0.5
-        return {'f': f0, 'x': x0, 'y': y0, 'log(f)': log_f}
+        # log_f = 0.5
+        return {'f': f0, 'x': x0, 'y': y0}#, 'log(f)': log_f}
 
     def log_likelihood(
             self,
@@ -100,27 +107,29 @@ class FitStar:
         ll : float
           the log-likelihood difference between the model and the data
         """
-        stamp_shape = self.stamp.shape
-        ycoords, xcoords = np.mgrid[:stamp_shape[0], :stamp_shape[1]]
         # [p]rimary [f]lux, [x], [y]
         # log_f is a factor corresponding to underestimated uncertainties
-        fp, xp, yp, log_f = theta
+        # fp, xp, yp, log_f = theta
+        fp, xp, yp = theta
         # evaluate the epsf for this set of parameters
-        model_guess = self.epsf.evaluate(xcoords, ycoords, fp, xp, yp)
-        sigma2 = self.stamp_unc**2 + model_guess**2 * np.exp(2*log_f)
+        model_guess = self.epsf.evaluate(self.xgrid, self.ygrid, fp, xp, yp)
+        sigma2 = self.stamp_unc**2# * np.exp(2*log_f)
         ll = -0.5 * np.sum((self.stamp - model_guess) ** 2 / sigma2 + np.log(sigma2))
         return ll
 
     def log_prior(self, theta : list) -> float:
-        fp, xp, yp, log_f = theta
+        # fp, xp, yp, log_f = theta
+        fp, xp, yp = theta
         x0 = self.initial_values['x']
         y0 = self.initial_values['y']
         f0 = self.initial_values['f']
+        # log_f = self.initial_values['log(f)']
         # uniform priors
-        fp_prior = (0 < fp <= f0*self.stamp.size)
-        xp_prior = (x0-0.5 < xp < x0+0.5)
-        yp_prior = (y0-0.5 < yp < y0+0.5)
-        if fp_prior and xp_prior and yp_prior:
+        fp_prior = (0 < fp < self.stamp.max()*self.stamp.size)
+        xp_prior = (x0-0.5 <= xp <= x0+0.5)
+        yp_prior = (y0-0.5 <= yp <= y0+0.5)
+        # logf_prior = (-10.0 < log_f < 1.0)
+        if fp_prior and xp_prior and yp_prior:# and logf_prior:
             return 0.0
         else:
             return -np.inf
@@ -136,10 +145,10 @@ class FitStar:
         x0 = self.initial_values['x']
         y0 = self.initial_values['y']
         f0 = self.initial_values['f']
-        log_f = self.initial_values['log(f)']
+        # log_f = self.initial_values['log(f)']
         # uniform priors
-        init = [f0, x0, y0, log_f]
-        pos = np.array(init)+ 1e-4 * np.random.randn(nwalkers, len(init))
+        init = [f0, x0, y0]#, log_f]
+        pos = np.array(init) + 1e-4 * np.random.randn(nwalkers, len(init))
         nwalkers, ndim = pos.shape
         sampler = emcee.EnsembleSampler(
             nwalkers, ndim, self.log_probability,
@@ -149,9 +158,10 @@ class FitStar:
         return
 
     def show_chains(self):
-        fig, axes = plt.subplots(4, figsize=(10, 7), sharex=True)
         samples = self.sampler.get_chain()
-        for i in range(4):
+        nchains = len(self.labels)
+        fig, axes = plt.subplots(nchains, figsize=(10, 7), sharex=True)
+        for i in range(nchains):
             ax = axes[i]
             ax.plot(samples[:, :, i], "k", alpha=0.3)
             ax.set_xlim(0, len(samples))
