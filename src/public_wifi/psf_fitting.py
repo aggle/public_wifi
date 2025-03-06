@@ -23,7 +23,7 @@ def star2epsf(star, cat_row_ind : int) -> pupsf.epsf_stars.EPSFStar:
     epsf = pupsf.EPSFStar(
         stamp,
         weights=weights,
-        id_label=star.star_id,
+       id_label=star.star_id,
         cutout_center=center
     )
     return epsf
@@ -82,7 +82,7 @@ class FitStar:
 
     def get_default_initial_estimates(self):
         x0, y0 = 0.0, 0.0 #np.unravel_index(np.argmax(self.stamp), self.stamp.shape)[::-1]
-        f0 = self.stamp.max()
+        f0 = self.stamp.sum()
         # log_f = 0.5
         return {'f': f0, 'x': x0, 'y': y0}#, 'log(f)': log_f}
 
@@ -129,7 +129,8 @@ class FitStar:
         xp_prior = (x0-0.5 <= xp <= x0+0.5)
         yp_prior = (y0-0.5 <= yp <= y0+0.5)
         # logf_prior = (-10.0 < log_f < 1.0)
-        if fp_prior and xp_prior and yp_prior:# and logf_prior:
+        priors = ( fp_prior and xp_prior and yp_prior )# and logf_prior )
+        if priors:# and logf_prior:
             return 0.0
         else:
             return -np.inf
