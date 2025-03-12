@@ -3,8 +3,10 @@ Tools for fitting PSFs with MCMC methods
 """
 import numpy as np
 import pandas as pd
+from astropy.coordinates import SkyCoord
 from photutils import psf as pupsf
 
+import matplotlib as mpl
 from matplotlib import pyplot as plt
 import emcee
 import corner
@@ -16,14 +18,16 @@ from public_wifi import misc
 def star2epsf(star, cat_row_ind : int) -> pupsf.epsf_stars.EPSFStar:
     """Convert a star to an EPSF object"""
     stamp = star.cat.loc[cat_row_ind, 'cutout'].data
+    bgnd = star.cat.loc[cat_row_ind, 'bgnd'][0]
     # normalize the stamp to max 1
-    weights = star.cat.loc[cat_row_ind, 'cutout_err'].data
+    # weights = star.cat.loc[cat_row_ind, 'cutout_err'].data
+    weights = None
     # weights = np.sqrt(stamp - stamp.min())
     center = misc.get_stamp_center(stamp)[::-1]
     epsf = pupsf.EPSFStar(
-        stamp,
+        stamp - bgnd,
         weights=weights,
-       id_label=star.star_id,
+        id_label=star.star_id,
         cutout_center=center
     )
     return epsf
@@ -61,7 +65,7 @@ def construct_epsf(
 
 
 class FitStar:
-    def __init__(self, stamp, epsf, stamp_unc : np.ndarray = None):
+    def __init__(self, stamp, epsf):
         self.epsf = epsf
         self.stamp = stamp
         self.center = misc.get_stamp_center(stamp)
@@ -70,9 +74,6 @@ class FitStar:
         #     self.stamp = star.results['klip_model'].loc[cat_row_ind, use_kklip]
         # else:
         #     self.stamp = star.cat.loc[cat_row_ind, 'stamp']
-        self.stamp_unc = stamp_unc
-        if self.stamp_unc is None:
-            self.stamp_unc = np.sqrt(self.stamp - self.stamp.min()) + 1e-4*np.ptp(stamp)/stamp.max()
         self.sampler = None
         self.labels = ["f", "x", "y"]#, "log(f)"]
         self.initial_values = self.get_default_initial_estimates()
@@ -113,8 +114,9 @@ class FitStar:
         fp, xp, yp = theta
         # evaluate the epsf for this set of parameters
         model_guess = self.epsf.evaluate(self.xgrid, self.ygrid, fp, xp, yp)
-        sigma2 = self.stamp_unc**2# * np.exp(2*log_f)
-        ll = -0.5 * np.sum((self.stamp - model_guess) ** 2 / sigma2 + np.log(sigma2))
+        residual = self.stamp - model_guess
+        weight2 = np.sqrt(residual**2)
+        ll = -0.5 * np.sum(residual ** 2 / weight2 + np.log(weight2))
         return ll
 
     def log_prior(self, theta : list) -> float:
@@ -122,7 +124,7 @@ class FitStar:
         fp, xp, yp = theta
         x0 = self.initial_values['x']
         y0 = self.initial_values['y']
-        f0 = self.initial_values['f']
+        # f0 = self.initial_values['f']
         # log_f = self.initial_values['log(f)']
         # uniform priors
         fp_prior = (0 < fp < self.stamp.max()*self.stamp.size)
