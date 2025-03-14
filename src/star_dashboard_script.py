@@ -27,29 +27,34 @@ nstars = len(catalog['target'].unique())
 print(f"Processing catalog: {nobs} observations of {nstars} stars...")
 
 
-t0 = time.time()
-anamgr = AnalysisManager(
-    input_catalog = catalog,
-    star_id_column = 'target',
-    match_references_on = ['filter'],
-    data_folder = data_folder,
-    stamp_size = 21,
-    bad_references = bad_references,
-    scale_stamps = False,
-    center_stamps = False,
-    min_nref = 20,
-    sim_thresh = 0.5,
-    snr_thresh = 5.,
-    n_modes = 5,
-    cat_det_kklip=10,
-    mf_width=15
-)
-t1 = time.time()
-print(f"Elapsed time to instantiate AnalysisManager object: {t1-t0:0f} seconds.")
+def make_analysis_manager():
+    anamgr = AnalysisManager(
+        input_catalog = catalog,
+        star_id_column = 'target',
+        match_references_on = ['filter'],
+        data_folder = data_folder,
+        stamp_size = 21,
+        bad_references = bad_references,
+        scale_stamps = False,
+        center_stamps = False,
+        min_nref = 20,
+        sim_thresh = 0.5,
+        snr_thresh = 5.,
+        n_modes = 5,
+        cat_det_kklip=10,
+        mf_width=15
+    )
+    return anamgr
 
 
 
 if __name__ == "__main__":
+    t0 = time.time()
+    anamgr = make_analysis_manager()
+    t1 = time.time()
+    print(
+        f"Elapsed time to instantiate AnalysisManager object: {t1-t0:0f} seconds."
+    )
     dash = sd.all_stars_dashboard(anamgr, plot_size=350)
     print("\nDisplaying dashboard\n")
     port = 5007
