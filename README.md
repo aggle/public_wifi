@@ -1,8 +1,7 @@
 PUBLIC WIFI USER GUIDE
 ======================
 
-A warning to the user: this is not a good README. It is very much a work in
-progress. Instructions and information may be incorrect.
+A warning to the user: This is very much a work in progress. I will do my best to keep this README current, but it may be outdated.
 
 
 Table of Contents
