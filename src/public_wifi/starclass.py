@@ -80,6 +80,8 @@ class Star:
         self.data_folder = data_folder
         self.match_by = match_by
         self.cat = group.sort_values(by=self.match_by)
+        if self.cat.index.name is None:
+            self.cat.index.name = 'index'
         # status flags
         self.is_good_reference = True # assumed True
         self.has_candidates = False
