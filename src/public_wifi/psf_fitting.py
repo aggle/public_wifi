@@ -421,3 +421,48 @@ class FitTwoStars:
             ax.set_aspect("equal")
 
         return fig
+
+def make_forward_modeled_psf(
+        epsf : pupsf.image_models.ImagePSF,
+        x : float,
+        y : float,
+        klip_basis : pd.Series,
+        flux : float = 1.0,
+        kklip : int | None = None
+) -> np.ndarray :
+    """
+    Forward model a companion PSF through the KLIP basis. Return a KLIP-modified PSF.
+
+    Parameters
+    ----------
+    epsf : an oversampled effective PSF object from photutils
+    x, y : float
+      the (col, row) location of the PSF
+    klip_basis : pd.Series
+      the KLIP basis vectors, indexed by order
+    flux : float = 1
+      normalize the flux of the generated PSF to this value
+    width : int | None = None
+      if None, return then entire generated PSF. Otherwise, return a stamp of (width, width) shape
+    kklip : int | None = None
+      If given, return only the psf for this kklip correction. If None, return all KKlips
+
+    Output
+    ------
+    fm_companion : a stamp of the modified PSF
+
+    """
+    stamp_shape = misc.get_stamp_shape(klip_basis)
+    ygrid, xgrid = np.mgrid[:stamp_shape[0], :stamp_shape[1]]
+    psf = epsf.evaluate(xgrid, ygrid, flux, x, y)
+    # subtract mean before applying klip basis
+    psf = psf - psf.mean()
+    # compute the projection of the psf onto each kb mode
+    kb_coeffs = np.cumsum(
+        klip_basis.apply(lambda kb: kb * np.dot(kb.ravel(), psf.ravel()))
+    )
+    psf_corrected = kb_coeffs.apply(lambda coeff: psf - coeff)
+    if kklip is not None:
+        psf_corrected = psf_corrected.loc[kklip]
+    return psf_corrected
+
