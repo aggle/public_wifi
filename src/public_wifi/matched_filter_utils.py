@@ -42,9 +42,18 @@ def make_matched_filter(
         stamp : np.ndarray,
         width : int | None = None,
 ):
-    # take in an arbitrary PSF stamp and turn it into a matched filter
-    stamp = stamp.copy()
+    """
+    Take in an arbitrary PSF stamp and turn it into a matched filter by normalizing it and subtracting the mean
+    Parameters
+    ----------
+    stamp : np.ndarray
+      a PSF
+    width : int | None = None
+      If specified, crop the PSF to be this wide
+
+    """
     if isinstance(width, int) and (width < min(stamp.shape)):
+        stamp = stamp.copy()
         borders = (np.array(stamp.shape) - width)/2
         borders = borders.astype(int)
         stamp = stamp[borders[0]:-borders[0], borders[1]:-borders[1]]
