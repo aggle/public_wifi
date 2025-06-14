@@ -466,3 +466,60 @@ def make_forward_modeled_psf(
         psf_corrected = psf_corrected.loc[kklip]
     return psf_corrected
 
+
+def chi2_fm(
+        stamp : np.ndarray,
+        epsf : pupsf.image_models.ImagePSF,
+        x : float,
+        y : float,
+        flux : float,
+        klip_basis : pd.Series,
+        kklip : int,
+        wgt : np.ndarray | None = None,
+        roi : int | None = None
+) -> float:
+    """
+    Compute the Chi2 value between a stamp containing the a putative companion,
+    and a PSF that has been forward-modeled through KLIP at that position.
+    Useful as the cost function in a minimization function.
+
+    Parameters
+    ----------
+    stamp : a residual stamp with a candidate companion in it
+    epsf : an oversampled effective PSF object from photutils
+    x, y : float
+      the (col, row) location of the PSF
+    flux : float 
+      normalize the flux of the generated PSF to this value
+    klip_basis : pd.Series
+      the KLIP basis vectors, indexed by order
+    width : int | None = None
+      if None, return then entire generated PSF. Otherwise, return a stamp of (width, width) shape
+    kklip : int | None = None
+      If given, return only the psf for this kklip correction. If None, return all KKlips
+    wgt : np.ndarray | None = None
+      weight array for the chi2 computation, usu. the unc at each pixel
+    roi : int | None = None
+      If given, only compute the GoF in a region with this width around the center (that is, a box of 2*roi+1 sixe)
+
+    Output
+    ------
+    chisquare : the chisquare GoF metric between the stamp and the foward-modeled PSF
+
+    """
+    model = make_forward_modeled_psf(
+        epsf, x, y, flux=flux, klip_basis=klip_basis, kklip=kklip,
+    )
+    residual = stamp - model
+    if wgt is None:
+        wgt = np.sqrt(np.abs(stamp))
+
+    # test region
+    if roi is not None:
+        yx_pix = np.round([x,y],0).astype(int)[::-1]
+        ll = yx_pix-roi
+        ur = ll + 2*roi+1
+        residual = residual[ll[0]:ur[0], ll[1]:ur[1]]
+        wgt = wgt[ll[0]:ur[0], ll[1]:ur[1]]
+    chi2 = np.sum((residual**2)/wgt)
+    return chi2
