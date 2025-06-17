@@ -23,6 +23,8 @@ def get_stamp_shape(stamp : int | np.ndarray | pd.Series) -> np.ndarray:
         shape = np.tile(stamp, 2)
     elif isinstance(stamp, pd.Series):
         shape = np.stack(stamp.values).shape[-2:]
+    elif (len(stamp) == 2) and (np.ndim(stamp) == 1):
+        shape = np.array(stamp)
     else:
         shape = stamp.shape[-2:]
     return shape
