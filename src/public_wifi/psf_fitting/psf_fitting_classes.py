@@ -17,14 +17,7 @@ from public_wifi import misc
 
 from public_wifi.psf_fitting import psf_fitting_template as pft
 
-uniform_priors = {
-    'f': (0., np.inf),
-    'x1': (-1. , +1.),
-    'y1': (-1. , +1.),
-    'c': (0., 1.),
-    'x2': (-4. , -2.),
-    'y2': (0. , +2.),
-}
+uniform_priors = pft.uniform_priors
 
 
 class FitPSF(pft.FitPSFTemplate):
@@ -175,13 +168,7 @@ class FitTwoPSFs(pft.FitPSFTemplate):
         return initial_values
                                   
     def generate_model(self, theta) -> np.ndarray:
-        f, x1, y1, c, x2, y2 = theta
-        # f = theta['f']
-        # x1 = theta['x1']
-        # y1 = theta['y1']
-        # c = theta['c']
-        # x2 = theta['x2']
-        # y2 = theta['y2']
+        f, x1, y1, c, x2, y2, *_ = theta
         # evaluate the epsf for this set of parameters
         model1 = self.epsf.evaluate(self.xgrid, self.ygrid, f, x1, y1)
         model2 = self.epsf.evaluate(self.xgrid, self.ygrid, f*c, x2, y2)
@@ -214,20 +201,3 @@ class FitTwoPSFs(pft.FitPSFTemplate):
             ( (img - model)**2 ) #/ ( unc**2 ) + np.log(2*np.pi*unc**2)
         )
         return ll
-
-    def guess_lstq_opt(self, theta):
-        nll = lambda *args: -self.log_likelihood(*args)
-        init = theta#self.initial_values
-        result = pft.minimize(
-            nll,
-            init,
-            bounds=[
-                (0, self.img.max()*self.img.size),
-                (-0.5, 0.5),
-                (-0.5, 0.5),
-                (0, 1.),
-                (-4, -2),
-                (0, 2),
-            ]
-        )
-        return result.x

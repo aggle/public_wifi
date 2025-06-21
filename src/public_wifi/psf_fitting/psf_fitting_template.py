@@ -6,6 +6,7 @@ import numpy as np
 import pandas as pd
 
 from scipy.optimize import minimize
+import lmfit
 
 from astropy.coordinates import SkyCoord
 from photutils import psf as pupsf
@@ -18,6 +19,16 @@ import corner
 from IPython.display import display, Math
 
 from public_wifi import misc
+
+
+uniform_priors = {
+    'f': (0., np.inf),
+    'x1': (-1. , +1.),
+    'y1': (-1. , +1.),
+    'c': (0., 1.),
+    'x2': (-4.5 , -1.5),
+    'y2': (0. , +2.),
+}
 
 def star2epsf(star, cat_row_ind : int) -> pupsf.epsf_stars.EPSFStar:
     """Convert a star to an EPSF object"""
@@ -138,21 +149,40 @@ class FitPSFTemplate(abc.ABC):
         mask[center[1]-rad:center[1]+rad+1, center[0]-rad:center[0]+rad+1] = False
         return mask
 
-    def guess_lstq_opt(self, theta, return_full_result=False):
-        nll = lambda *args: -self.log_likelihood(*args)
-        init = theta#self.initial_values
-        result = minimize(
-            nll,
-            init,
-            bounds=[
-                (0, self.img.max()*self.img.size),
-                (-2, 2),
-                (-2, 2)
-            ]
-        )
+    def guess_lstq_opt(
+            self,
+            theta : list,
+            bounds : dict = {},
+            return_full_result : bool = False,
+    ):
+        """
+        Use LMFIT to compute the best-fit parameters
+        Parameters
+        ----------
+        theta : list | array
+          array of values for the parameters that matches the order of self.param_labels
+        bounds : dict = {}
+          dictionary of boundaries for the parameters
+        return_full_result : bool = False
+          if True, return the full result object, not just the list of parameters
+        """
+        params = [
+            lmfit.Parameter(
+                label,
+                value=val,
+                min=uniform_priors[label][0],
+                max=uniform_priors[label][1]
+            ) for label, val in zip(self.param_labels, self.initial_values)
+        ]
+        resid = lambda theta: self.img - self.generate_model([theta[p] for p in theta])
+        mini = lmfit.Minimizer(resid, params)
+        result = mini.minimize(method='leastsq')
+        values = [result.params[label].value for label in self.param_labels]
+        stderr = [result.params[label].stderr for label in self.param_labels]
         if return_full_result:
             return result
-        return result.x
+        return values, stderr
+
 
     def log_probability(self, theta) -> float:
         lp = self.log_prior(theta)
